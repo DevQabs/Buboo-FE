@@ -326,9 +326,25 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
           <div className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 space-y-5 z-10 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-800">내역 추가</h3>
-              <button onClick={close} className="text-slate-400 hover:text-slate-600 transition-colors">
-                <XMarkIcon className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  {safeUsers.map(u => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => setUserID(u.id)}
+                      title={u.name}
+                      className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${userID === u.id ? 'ring-2 ring-offset-1 ring-indigo-400 scale-110' : 'opacity-40'}`}
+                      style={{ backgroundColor: u.avatar_color }}
+                    >
+                      {u.name[0]}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={close} className="text-slate-400 hover:text-slate-600 transition-colors">
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -421,32 +437,18 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
                 />
               )}
 
-              {/* User + Payment */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">누가?</label>
-                  <select
-                    value={userID}
-                    onChange={e => setUserID(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                  >
-                    {safeUsers.map(u => (
-                      <option key={u.id} value={u.id}>{u.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">결제수단</label>
-                  <select
-                    value={payment}
-                    onChange={e => setPayment(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                  >
-                    {PAYMENT_METHODS.map(m => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
+              {/* Payment */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 mb-1 block">결제수단</label>
+                <select
+                  value={payment}
+                  onChange={e => setPayment(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                >
+                  {PAYMENT_METHODS.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
               </div>
 
               {type === 'saving' && !savingLink && (

@@ -192,9 +192,25 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
           <h3 className="text-base font-bold text-slate-800">
             {mode === 'add' ? '자산 추가' : '자산 수정'}
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
-            <XMarkIcon className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1">
+              {safeUsers.map(u => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => setUserID(u.id)}
+                  title={u.name}
+                  className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${userID === u.id ? 'ring-2 ring-offset-1 ring-indigo-400 scale-110' : 'opacity-40'}`}
+                  style={{ backgroundColor: u.avatar_color }}
+                >
+                  {u.name[0]}
+                </button>
+              ))}
+            </div>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -240,22 +256,6 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                   isLocked ? 'translate-x-6' : 'translate-x-1'
                 }`} />
               </button>
-            </div>
-          )}
-
-          {/* 누가? */}
-          {safeUsers.length > 1 && (
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">누가?</label>
-              <select
-                value={userID}
-                onChange={e => setUserID(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-              >
-                {safeUsers.map(u => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </select>
             </div>
           )}
 
