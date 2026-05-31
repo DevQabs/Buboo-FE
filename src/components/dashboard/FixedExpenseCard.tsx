@@ -49,7 +49,7 @@ const CATEGORIES = [
   '교육비', '교통비', '의료비', '저축/투자', '기타',
 ]
 
-const OTHER_ASSET_TYPES: OtherAssetType[] = ['예/적금', '현금', '보험', '기타']
+const OTHER_ASSET_TYPES: OtherAssetType[] = ['부동산', '예/적금', '현금', '기타']
 
 // ─── sub-components ───────────────────────────────────────────────────────────
 

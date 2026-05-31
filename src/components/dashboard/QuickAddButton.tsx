@@ -28,7 +28,7 @@ interface QuickAddButtonProps {
 const EXPENSE_CATEGORIES = ['식비', '카페', '장보기', '주거', '교통', '의료', '문화', '쇼핑', '기타']
 const INCOME_CATEGORIES = ['급여', '용돈', '이자', '기타']
 const PAYMENT_METHODS = ['신용카드', '체크카드', '현금', '모바일페이', '계좌이체']
-const OTHER_ASSET_TYPES: OtherAssetType[] = ['예/적금', '현금', '보험', '기타']
+const OTHER_ASSET_TYPES: OtherAssetType[] = ['부동산', '예/적금', '현금', '기타']
 
 // ─── SavingLink sub-form ──────────────────────────────────────────────────────
 

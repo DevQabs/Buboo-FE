@@ -106,8 +106,11 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [valueKRW, setValueKRW] = useState(initial ? String(initial.value_krw) : '')
+  const [valueUSD, setValueUSD] = useState(initial?.value_usd != null ? String(initial.value_usd) : '')
+  const [currency, setCurrency] = useState<'KRW' | 'USD'>(
+    initial?.currency?.toUpperCase() === 'USD' ? 'USD' : 'KRW'
+  )
   const [costKRW, setCostKRW] = useState(initial?.cost_krw ? String(initial.cost_krw) : '')
-  const [isLiability, setIsLiability] = useState(initial?.is_liability ?? false)
   const [isLocked, setIsLocked] = useState(initial?.is_locked ?? false)
   const [interestRate, setInterestRate] = useState(initial?.interest_rate != null ? String(initial.interest_rate) : '')
   const [maturityDate, setMaturityDate] = useState(
@@ -116,8 +119,6 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
   const [acquiredAt, setAcquiredAt] = useState(
     initial?.acquired_at ? initial.acquired_at.slice(0, 10) : new Date().toISOString().slice(0, 10)
   )
-  const [cryptoSymbol, setCryptoSymbol] = useState(initial?.crypto_symbol ?? '')
-  const [cryptoQty, setCryptoQty] = useState(initial?.crypto_qty != null ? String(initial.crypto_qty) : '')
   const [loanType, setLoanType] = useState<LoanType>((initial?.loan_type as LoanType) ?? '원리금균등상환')
   const [paymentDay, setPaymentDay] = useState(initial?.payment_day ? String(initial.payment_day) : '25')
   const [memo, setMemo] = useState(initial?.memo ?? '')
@@ -125,13 +126,10 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
 
   const isLoan    = assetType === '대출'
   const isDeposit = assetType === '예/적금'
-  const showCrypto   = assetType === '가상화폐'
-  const showInterest = isDeposit || assetType === '보험' || isLoan
-  const showMaturity = isDeposit || assetType === '보험' || assetType === '부동산' || isLoan
-
-  // 대출은 항상 부채, 예/적금은 절대 부채 아님
-  const effectiveLiability = isLoan ? true : isDeposit ? false : isLiability
-  const showLiabilityToggle = !isLoan && !isDeposit
+  const isCash    = assetType === '현금'
+  const isUSD     = isCash && currency === 'USD'
+  const showInterest = isDeposit || isLoan
+  const showMaturity = isDeposit || assetType === '부동산' || isLoan
 
   // 예/적금 세후 만기 수령액
   const afterTaxMaturity = useMemo(() => {
@@ -147,34 +145,38 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
 
   const handleTypeChange = (t: OtherAssetType) => {
     setAssetType(t)
-    if (t === '대출') setIsLiability(true)
-    if (t === '예/적금') setIsLiability(false)
+    if (t !== '현금') setCurrency('KRW')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name || !valueKRW) return
+    const needsValue = isUSD ? !valueUSD : !valueKRW
+    if (!name || needsValue) return
     setLoading(true)
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         user_id: userID,
         asset_type: assetType,
         name: name.trim(),
         description: description.trim(),
-        value_krw: parseFloat(valueKRW.replace(/,/g, '')),
+        currency: isUSD ? 'USD' : 'KRW',
         cost_krw: costKRW ? parseFloat(costKRW.replace(/,/g, '')) : undefined,
-        is_liability: effectiveLiability,
-        is_locked: effectiveLiability ? false : isLocked,
+        is_locked: isLoan ? false : isLocked,
         interest_rate: interestRate ? parseFloat(interestRate) : null,
         maturity_date: maturityDate ? `${maturityDate}T00:00:00Z` : null,
-        crypto_symbol: cryptoSymbol.trim() || null,
-        crypto_qty: cryptoQty ? parseFloat(cryptoQty) : null,
         loan_type: isLoan ? loanType : '',
         payment_day: isLoan ? parseInt(paymentDay) || 0 : 0,
         memo: memo.trim(),
         acquired_at: acquiredAt ? `${acquiredAt}T00:00:00Z` : null,
       }
-      await onSubmit(payload)
+      if (isUSD) {
+        payload.value_usd = parseFloat(valueUSD)
+        payload.value_krw = 0  // server recomputes
+      } else {
+        payload.value_krw = parseFloat(valueKRW.replace(/,/g, ''))
+        payload.value_usd = null
+      }
+      await onSubmit(payload as CreateOtherAssetRequest | UpdateOtherAssetRequest)
       onClose()
     } finally {
       setLoading(false)
@@ -219,42 +221,24 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
             )}
           </div>
 
-          {/* 부채 / 인출불가 토글 — 대출·예금 제외 */}
-          {showLiabilityToggle && (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-slate-500">부채(마이너스 자산)?</label>
-                <button
-                  type="button"
-                  onClick={() => { setIsLiability(v => !v); if (!isLiability) setIsLocked(false) }}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    isLiability ? 'bg-rose-500' : 'bg-slate-200'
-                  }`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    isLiability ? 'translate-x-6' : 'translate-x-1'
-                  }`} />
-                </button>
+          {/* 인출불가 토글 — 대출 제외 */}
+          {!isLoan && (
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-xs font-medium text-slate-500">인출/처분 불가 자산?</label>
+                <p className="text-[10px] text-slate-400 mt-0.5">부동산·장기투자 등 즉시 현금화 불가</p>
               </div>
-              {!isLiability && (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-xs font-medium text-slate-500">인출/처분 불가 자산?</label>
-                    <p className="text-[10px] text-slate-400 mt-0.5">부동산·보험·장기투자 등 즉시 현금화 불가</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsLocked(v => !v)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
-                      isLocked ? 'bg-amber-500' : 'bg-slate-200'
-                    }`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      isLocked ? 'translate-x-6' : 'translate-x-1'
-                    }`} />
-                  </button>
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={() => setIsLocked(v => !v)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+                  isLocked ? 'bg-amber-500' : 'bg-slate-200'
+                }`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  isLocked ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </button>
             </div>
           )}
 
@@ -289,36 +273,76 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
             />
           </div>
 
-          {/* 금액 */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* 현금 통화 선택 */}
+          {isCash && (
             <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">
-                {isLoan ? '잔여 대출금 (원)' : isDeposit ? '납입 원금 (원)' : effectiveLiability ? '부채 금액 (원)' : '현재 가치 (원)'}
-              </label>
+              <label className="text-xs font-medium text-slate-500 mb-2 block">통화</label>
+              <div className="flex gap-2">
+                {(['KRW', 'USD'] as const).map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCurrency(c)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      currency === c ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {c === 'KRW' ? '🇰🇷 KRW' : '🇺🇸 USD'}
+                  </button>
+                ))}
+              </div>
+              {isUSD && (
+                <p className="text-[10px] text-indigo-500 mt-1">실시간 환율로 원화 환산됩니다</p>
+              )}
+            </div>
+          )}
+
+          {/* 금액 */}
+          {isUSD ? (
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">보유 금액 (USD)</label>
               <input
                 type="number"
-                value={valueKRW}
-                onChange={e => setValueKRW(e.target.value)}
-                placeholder="0"
+                value={valueUSD}
+                onChange={e => setValueUSD(e.target.value)}
+                placeholder="0.00"
                 min="0"
+                step="0.01"
                 required
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
               />
             </div>
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">
-                {isLoan ? '최초 대출 원금 (원)' : '취득원가 (원)'}
-              </label>
-              <input
-                type="number"
-                value={costKRW}
-                onChange={e => setCostKRW(e.target.value)}
-                placeholder="0 (선택)"
-                min="0"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
-              />
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-slate-500 mb-1 block">
+                  {isLoan ? '잔여 대출금 (원)' : isDeposit ? '납입 원금 (원)' : '현재 가치 (원)'}
+                </label>
+                <input
+                  type="number"
+                  value={valueKRW}
+                  onChange={e => setValueKRW(e.target.value)}
+                  placeholder="0"
+                  min="0"
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500 mb-1 block">
+                  {isLoan ? '최초 대출 원금 (원)' : '취득원가 (원)'}
+                </label>
+                <input
+                  type="number"
+                  value={costKRW}
+                  onChange={e => setCostKRW(e.target.value)}
+                  placeholder="0 (선택)"
+                  min="0"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 대출 전용: 상환 방식 */}
           {isLoan && (
@@ -337,34 +361,6 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                     {lt}
                   </button>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {/* 가상화폐 전용 */}
-          {showCrypto && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-slate-500 mb-1 block">코인 심볼</label>
-                <input
-                  type="text"
-                  value={cryptoSymbol}
-                  onChange={e => setCryptoSymbol(e.target.value.toUpperCase())}
-                  placeholder="BTC"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-500 mb-1 block">보유 수량</label>
-                <input
-                  type="number"
-                  value={cryptoQty}
-                  onChange={e => setCryptoQty(e.target.value)}
-                  placeholder="0.0"
-                  step="0.00000001"
-                  min="0"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
-                />
               </div>
             </div>
           )}
@@ -658,7 +654,7 @@ export default function OtherAssetCard({ assets = [], users = [], onAdd, onEdit,
           <div>
             <h2 className="text-sm font-semibold text-slate-700">기타 자산</h2>
             {safeAssets.length > 0 && (
-              <p className="text-[11px] text-slate-400 mt-0.5">부동산·예/적금·가상화폐·대출 등</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">부동산·예/적금·현금·대출 등</p>
             )}
           </div>
           <div className="flex items-center gap-3">

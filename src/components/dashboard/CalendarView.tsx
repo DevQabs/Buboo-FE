@@ -29,7 +29,7 @@ export interface AddTransactionPayload {
 
 const EXPENSE_CATEGORIES = ['식비', '교통', '쇼핑', '주거', '의료', '문화', '교육', '기타']
 const INCOME_CATEGORIES  = ['급여', '부수입', '용돈', '배당', '기타']
-const OTHER_ASSET_TYPES: OtherAssetType[] = ['예/적금', '현금', '보험', '기타']
+const OTHER_ASSET_TYPES: OtherAssetType[] = ['부동산', '예/적금', '현금', '기타']
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 

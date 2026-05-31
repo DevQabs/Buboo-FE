@@ -220,25 +220,19 @@ export type OtherAssetType =
   | '부동산'
   | '예/적금'
   | '현금'
-  | '가상화폐'
-  | '차량'
-  | '보험'
   | '대출'
   | '기타'
 
 export type LoanType = '만기일시상환' | '원리금균등상환' | '원금균등상환'
 
 export const OTHER_ASSET_TYPES: OtherAssetType[] = [
-  '부동산', '예/적금', '현금', '가상화폐', '차량', '보험', '대출', '기타',
+  '부동산', '예/적금', '현금', '대출', '기타',
 ]
 
 export const ASSET_TYPE_EMOJI: Record<OtherAssetType, string> = {
   부동산:   '🏠',
   '예/적금': '🏦',
   현금:     '💵',
-  가상화폐:  '₿',
-  차량:     '🚗',
-  보험:     '🛡️',
   대출:     '💳',
   기타:     '📦',
 }
@@ -251,17 +245,16 @@ export interface OtherAsset {
   name: string
   description: string
   value_krw: number
+  value_usd: number | null        // USD 현금 전용
   cost_krw: number
-  currency: string
-  is_liability: boolean
-  is_locked: boolean              // 인출/처분 불가 자산
+  currency: string                // "KRW" | "USD"
+  is_liability: boolean           // 대출이면 true (자동)
+  is_locked: boolean
   location: Location | null
-  maturity_date: string | null    // ISO 8601
-  interest_rate: number | null    // 연이율 %
-  crypto_symbol: string | null
-  crypto_qty: number | null
-  loan_type: string           // 대출 전용: 만기일시상환 | 원리금균등상환 | 원금균등상환
-  payment_day: number         // 대출 납입일 (1-28)
+  maturity_date: string | null
+  interest_rate: number | null
+  loan_type: string
+  payment_day: number
   memo: string
   acquired_at: string
   created_at: string
@@ -274,19 +267,17 @@ export interface CreateOtherAssetRequest {
   name: string
   description?: string
   value_krw: number
+  value_usd?: number | null       // USD 현금 전용
   cost_krw?: number
   currency?: string               // 기본값 "KRW"
-  is_liability?: boolean          // 기본값 false
-  is_locked?: boolean             // 기본값 false
+  is_locked?: boolean
   location?: Location | null
   maturity_date?: string | null
   interest_rate?: number | null
-  crypto_symbol?: string | null
-  crypto_qty?: number | null
   loan_type?: string
   payment_day?: number
   memo?: string
-  acquired_at?: string | null     // null이면 서버에서 현재 시각 사용
+  acquired_at?: string | null
 }
 
 export interface UpdateOtherAssetRequest {
@@ -294,14 +285,12 @@ export interface UpdateOtherAssetRequest {
   name?: string
   description?: string
   value_krw?: number
+  value_usd?: number | null       // USD 현금 전용
   cost_krw?: number
-  is_liability?: boolean
   is_locked?: boolean
   location?: Location | null
   maturity_date?: string | null
   interest_rate?: number | null
-  crypto_symbol?: string | null
-  crypto_qty?: number | null
   loan_type?: string
   payment_day?: number
   memo?: string
