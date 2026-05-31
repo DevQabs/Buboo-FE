@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline'
+import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PlusIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { useCategories } from '@/hooks/useCategories'
+import CategoryManager from '@/components/dashboard/CategoryManager'
 import type {
   CalendarSummaryResponse,
   CalendarDay,
@@ -27,8 +29,6 @@ export interface AddTransactionPayload {
   saving_link?: SavingLink
 }
 
-const EXPENSE_CATEGORIES = ['식비', '교통', '쇼핑', '주거', '의료', '문화', '교육', '기타']
-const INCOME_CATEGORIES  = ['급여', '부수입', '용돈', '배당', '기타']
 const OTHER_ASSET_TYPES: OtherAssetType[] = ['부동산', '예/적금', '현금', '기타']
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -334,8 +334,10 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
   const [title, setTitle]           = useState('')
   const [savingLink, setSavingLink] = useState<SavingLink | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [showCatManager, setShowCatManager] = useState(false)
+  const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories()
 
-  const categories = txType === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES
+  const categories = txType === 'expense' ? expenseCategories : incomeCategories
 
   const resetForm = () => {
     setShowForm(false); setAmount(''); setCategory(''); setTitle('')
@@ -470,20 +472,30 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
 
           {/* Row 4: category chips (income/expense only) */}
           {txType !== 'saving' && (
-            <div className="flex flex-wrap gap-1.5">
-              {categories.map(c => (
+            <div>
+              <div className="flex flex-wrap gap-1.5">
+                {categories.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => setCategory(prev => prev === c ? '' : c)}
+                    className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                      category === c
+                        ? txType === 'expense' ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
+                        : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
                 <button
-                  key={c}
-                  onClick={() => setCategory(prev => prev === c ? '' : c)}
-                  className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
-                    category === c
-                      ? txType === 'expense' ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
-                      : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300'
-                  }`}
+                  type="button"
+                  onClick={() => setShowCatManager(true)}
+                  className="text-xs px-2 py-1 rounded-full text-slate-400 border border-dashed border-slate-200 hover:border-slate-300 hover:text-slate-500 transition-colors"
+                  title="카테고리 관리"
                 >
-                  {c}
+                  <Cog6ToothIcon className="h-3.5 w-3.5" />
                 </button>
-              ))}
+              </div>
             </div>
           )}
 
@@ -584,6 +596,16 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
           })
         )}
       </div>
+
+      {showCatManager && (
+        <CategoryManager
+          expenseCategories={expenseCategories}
+          incomeCategories={incomeCategories}
+          onAdd={addCategory}
+          onRemove={removeCategory}
+          onClose={() => setShowCatManager(false)}
+        />
+      )}
     </div>
   )
 }

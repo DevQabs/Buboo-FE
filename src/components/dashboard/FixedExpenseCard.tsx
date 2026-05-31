@@ -92,7 +92,6 @@ function SavingLinkForm({ stocks, otherAssets, initial, onChange }: SavingLinkFo
   const [newQty, setNewQty] = useState(initial?.new_stock_qty?.toString() ?? '')
   const [newPrice, setNewPrice] = useState(initial?.new_stock_price?.toString() ?? '')
   const [newCurrency, setNewCurrency] = useState<'USD' | 'KRW'>((initial?.new_stock_currency as 'USD' | 'KRW') ?? 'USD')
-  const [newSector, setNewSector] = useState(initial?.new_stock_sector ?? '')
 
   // deposit/general existing
   const [assetId, setAssetId] = useState(
@@ -125,7 +124,6 @@ function SavingLinkForm({ stocks, otherAssets, initial, onChange }: SavingLinkFo
             new_stock_qty: qty,
             new_stock_price: price,
             new_stock_currency: newCurrency,
-            new_stock_sector: newSector || undefined,
           }
         }
       }
@@ -140,7 +138,7 @@ function SavingLinkForm({ stocks, otherAssets, initial, onChange }: SavingLinkFo
 
     onChange(link)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, isNew, stockId, addQty, addPrice, newSymbol, newExchange, newName, newQty, newPrice, newCurrency, newSector, assetId, newAssetName, newAssetType])
+  }, [kind, isNew, stockId, addQty, addPrice, newSymbol, newExchange, newName, newQty, newPrice, newCurrency, assetId, newAssetName, newAssetType])
 
   const inputCls = 'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400'
   const chipCls = (active: boolean) =>
@@ -218,18 +216,12 @@ function SavingLinkForm({ stocks, otherAssets, initial, onChange }: SavingLinkFo
               <input type="number" value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="0" className={inputCls} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs text-slate-500 mb-1 block">통화</label>
-              <select value={newCurrency} onChange={e => setNewCurrency(e.target.value as 'USD' | 'KRW')} className={inputCls}>
-                <option value="USD">USD</option>
-                <option value="KRW">KRW</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-slate-500 mb-1 block">섹터</label>
-              <input value={newSector} onChange={e => setNewSector(e.target.value)} placeholder="Technology" className={inputCls} />
-            </div>
+          <div>
+            <label className="text-xs text-slate-500 mb-1 block">통화</label>
+            <select value={newCurrency} onChange={e => setNewCurrency(e.target.value as 'USD' | 'KRW')} className={inputCls}>
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+            </select>
           </div>
         </div>
       )}

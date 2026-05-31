@@ -13,12 +13,9 @@ interface EditStockModalProps {
     name?: string
     quantity?: number
     average_price?: number
-    sector?: string
     memo?: string
   }) => Promise<void>
 }
-
-const SECTORS = ['기술', '금융', '헬스케어', '소비재', '에너지', '산업재', '통신', '부동산', '기타']
 
 export default function EditStockModal({ asset, users, onClose, onEdit }: EditStockModalProps) {
   const safeUsers = Array.isArray(users) ? users : []
@@ -26,7 +23,6 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
   const [name, setName] = useState(asset.name)
   const [quantity, setQuantity] = useState(String(asset.quantity))
   const [avgPrice, setAvgPrice] = useState(String(asset.average_price))
-  const [sector, setSector] = useState(asset.sector ?? '기타')
   const [memo, setMemo] = useState(asset.memo ?? '')
   const [loading, setLoading] = useState(false)
 
@@ -40,7 +36,6 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
         name: name.trim(),
         quantity: parseFloat(quantity),
         average_price: parseFloat(avgPrice.replace(/,/g, '')),
-        sector,
         memo,
       })
       onClose()
@@ -139,25 +134,6 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
               </p>
             </div>
           )}
-
-          {/* 섹터 chips */}
-          <div>
-            <label className="text-xs font-medium text-slate-500 mb-2 block">섹터</label>
-            <div className="flex flex-wrap gap-2">
-              {SECTORS.map(s => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setSector(s)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    sector === s ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* 메모 */}
           <div>

@@ -15,13 +15,11 @@ interface AddStockModalProps {
     quantity: number;
     average_price: number;
     currency: string;
-    sector: string;
     memo: string;
   }) => Promise<void>;
 }
 
 const EXCHANGES = ['NASDAQ', 'NYSE', 'KRX', '기타'];
-const SECTORS = ['기술', '금융', '헬스케어', '소비재', '에너지', '산업재', '통신', '부동산', '기타'];
 
 export default function AddStockModal({ users, onClose, onAdd }: AddStockModalProps) {
   const [userID, setUserID] = useState(users[0]?.id ?? '');
@@ -31,7 +29,6 @@ export default function AddStockModal({ users, onClose, onAdd }: AddStockModalPr
   const [currency, setCurrency] = useState('USD');
   const [quantity, setQuantity] = useState('');
   const [avgPrice, setAvgPrice] = useState('');
-  const [sector, setSector] = useState('기술');
   const [memo, setMemo] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -54,7 +51,6 @@ export default function AddStockModal({ users, onClose, onAdd }: AddStockModalPr
       quantity: parseFloat(quantity),
       average_price: parseFloat(avgPrice.replace(/,/g, '')),
       currency,
-      sector,
       memo,
     });
     setLoading(false);
@@ -195,25 +191,6 @@ export default function AddStockModal({ users, onClose, onAdd }: AddStockModalPr
                   }`}
                 >
                   {c === 'USD' ? '🇺🇸 USD' : '🇰🇷 KRW'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 섹터 chips */}
-          <div>
-            <label className='text-xs font-medium text-slate-500 mb-2 block'>섹터</label>
-            <div className='flex flex-wrap gap-2'>
-              {SECTORS.map((s) => (
-                <button
-                  key={s}
-                  type='button'
-                  onClick={() => setSector(s)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    sector === s ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {s}
                 </button>
               ))}
             </div>

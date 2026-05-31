@@ -403,7 +403,7 @@ export default function DashboardClient() {
 
   const handleEditStock = async (id: string, data: {
     user_id?: string; name?: string; quantity?: number
-    average_price?: number; sector?: string; memo?: string
+    average_price?: number; memo?: string
   }) => {
     const res = await fetch(`${API_BASE}/api/stocks/${id}`, {
       method: 'PUT',

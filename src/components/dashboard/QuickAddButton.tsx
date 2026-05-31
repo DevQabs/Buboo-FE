@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/solid'
+import { Cog6ToothIcon } from '@heroicons/react/24/outline'
 import type { User, SavingLink, SavingKind, StockAssetWithPrice, OtherAsset, OtherAssetType } from '@/types'
+import { useCategories } from '@/hooks/useCategories'
+import CategoryManager from '@/components/dashboard/CategoryManager'
 
 type TxType = 'income' | 'expense' | 'saving'
 
@@ -25,8 +28,6 @@ interface QuickAddButtonProps {
   onClose?: () => void
 }
 
-const EXPENSE_CATEGORIES = ['식비', '카페', '장보기', '주거', '교통', '의료', '문화', '쇼핑', '기타']
-const INCOME_CATEGORIES = ['급여', '용돈', '이자', '기타']
 const PAYMENT_METHODS = ['신용카드', '체크카드', '현금', '모바일페이', '계좌이체']
 const OTHER_ASSET_TYPES: OtherAssetType[] = ['부동산', '예/적금', '현금', '기타']
 
@@ -54,7 +55,6 @@ function SavingLinkForm({ stocks, otherAssets, onChange }: SavingLinkFormProps) 
   const [newQty, setNewQty] = useState('')
   const [newPrice, setNewPrice] = useState('')
   const [newCurrency, setNewCurrency] = useState<'USD' | 'KRW'>('USD')
-  const [newSector, setNewSector] = useState('')
 
   // deposit/general existing
   const [assetId, setAssetId] = useState(otherAssets[0]?.id ?? '')
@@ -85,7 +85,6 @@ function SavingLinkForm({ stocks, otherAssets, onChange }: SavingLinkFormProps) 
             new_stock_qty: qty,
             new_stock_price: price,
             new_stock_currency: newCurrency,
-            new_stock_sector: newSector || undefined,
           }
         }
       }
@@ -104,7 +103,7 @@ function SavingLinkForm({ stocks, otherAssets, onChange }: SavingLinkFormProps) 
 
     onChange(link)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, isNew, stockId, addQty, addPrice, newSymbol, newExchange, newName, newQty, newPrice, newCurrency, newSector, assetId, newAssetName, newAssetType])
+  }, [kind, isNew, stockId, addQty, addPrice, newSymbol, newExchange, newName, newQty, newPrice, newCurrency, assetId, newAssetName, newAssetType])
 
   const inputCls = 'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400'
   const chipCls = (active: boolean) =>
@@ -201,19 +200,12 @@ function SavingLinkForm({ stocks, otherAssets, onChange }: SavingLinkFormProps) 
                 placeholder="0" className={inputCls} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">통화</label>
-              <select value={newCurrency} onChange={e => setNewCurrency(e.target.value as 'USD' | 'KRW')} className={inputCls}>
-                <option value="USD">USD</option>
-                <option value="KRW">KRW</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">섹터</label>
-              <input value={newSector} onChange={e => setNewSector(e.target.value)}
-                placeholder="예: Technology" className={inputCls} />
-            </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">통화</label>
+            <select value={newCurrency} onChange={e => setNewCurrency(e.target.value as 'USD' | 'KRW')} className={inputCls}>
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+            </select>
           </div>
         </div>
       )}
@@ -273,6 +265,8 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
   const [payment, setPayment] = useState('신용카드')
   const [savingLink, setSavingLink] = useState<SavingLink | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showCatManager, setShowCatManager] = useState(false)
+  const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories()
 
   useEffect(() => {
     if (isOpen) {
@@ -287,7 +281,7 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
 
-  const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES
+  const categories = type === 'expense' ? expenseCategories : incomeCategories
 
   const close = () => {
     if (isControlled) onClose?.()
@@ -393,7 +387,12 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
               {/* Category (income/expense only) */}
               {type !== 'saving' && (
                 <div>
-                  <label className="text-xs font-medium text-slate-500 mb-2 block">카테고리</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-slate-500">카테고리</label>
+                    <button type="button" onClick={() => setShowCatManager(true)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                      <Cog6ToothIcon className="h-4 w-4" />
+                    </button>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {categories.map(cat => (
                       <button
@@ -462,6 +461,16 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
             </form>
           </div>
         </div>
+      )}
+
+      {showCatManager && (
+        <CategoryManager
+          expenseCategories={expenseCategories}
+          incomeCategories={incomeCategories}
+          onAdd={addCategory}
+          onRemove={removeCategory}
+          onClose={() => setShowCatManager(false)}
+        />
       )}
     </>
   )
