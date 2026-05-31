@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 한글 폰트: Pretendard (CDN) */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+
+@layer base {
+  html {
+    /* 모바일 탭 하이라이트 제거 */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-feature-settings: 'kern' 1;
+  }
+
+  /* 숫자 tabular-nums 기본 적용 */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  /* 스크롤바 숨김 (모바일 감) */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Safe area (노치/홈바 대응) */
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
