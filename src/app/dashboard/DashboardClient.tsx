@@ -372,6 +372,32 @@ export default function DashboardClient() {
     }
   }
 
+  // ── update/delete transaction ─────────────────────────────────────────────────
+  const handleUpdateTransaction = useCallback(async (id: string, data: { title: string; amount: number; category: string; user_id: string }) => {
+    const existing = transactions.find(tx => tx.id === id)
+    if (!existing) return
+    await fetch(`${API_BASE}/api/transactions/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...existing, ...data }),
+    })
+    const [txData] = await Promise.all([
+      apiFetch<Transaction[]>('/api/transactions'),
+      fetchSummary(summaryYear, summaryMonth, startDay),
+      apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`).then(d => setCalendarData(d)),
+    ])
+    setTransactions(Array.isArray(txData) ? txData : [])
+  }, [transactions, summaryYear, summaryMonth, startDay, calendarYear, calendarMonth, fetchSummary]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDeleteTransaction = useCallback(async (id: string) => {
+    await fetch(`${API_BASE}/api/transactions/${id}`, { method: 'DELETE' })
+    setTransactions(prev => prev.filter(tx => tx.id !== id))
+    await Promise.all([
+      fetchSummary(summaryYear, summaryMonth, startDay),
+      apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`).then(d => setCalendarData(d)),
+    ])
+  }, [summaryYear, summaryMonth, startDay, calendarYear, calendarMonth, fetchSummary]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── add transaction from calendar (specific date, refetches calendar + summary) ──
   const handleAddTransactionOnDate = useCallback(async (payload: {
     user_id: string
@@ -743,6 +769,8 @@ export default function DashboardClient() {
               budgetLimit={couple?.monthly_budget ?? 0}
               onMonthChange={handleCalendarMonthChange}
               onAddTransaction={handleAddTransactionOnDate}
+              onUpdateTransaction={handleUpdateTransaction}
+              onDeleteTransaction={handleDeleteTransaction}
             />
 
             {/* 배당 수익 */}

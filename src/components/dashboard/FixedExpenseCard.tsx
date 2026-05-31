@@ -600,10 +600,10 @@ export default function FixedExpenseCard({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
 
       {/* ── banner ── */}
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 border-b border-amber-100">
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 border-b border-amber-100 rounded-t-2xl overflow-hidden">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-medium text-amber-600 mb-0.5">😮‍💨 {year}년 {month}월 고정비</p>

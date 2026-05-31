@@ -42,7 +42,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "cd \"/Users/ktg2926/Documents/Claude/Projects/부부 자산 관리 앱/frontend\" && npx tsc --noEmit 2>&1 && echo \"FRONTEND OK\"",
+    "buildCommand": "cd \"/Users/ktg2926/Documents/Claude/Projects/부부 자산 관리 앱/frontend\" && npx tsc --noEmit 2>&1",
     "testCommand": null,
     "lintCommand": "npm run lint",
     "devCommand": "npm run dev",
@@ -107,15 +107,27 @@
   },
   "hotPaths": [
     {
+      "path": "src/components/dashboard/CalendarView.tsx",
+      "accessCount": 18,
+      "lastAccessed": 1780231111704,
+      "type": "file"
+    },
+    {
+      "path": "src/app/dashboard/DashboardClient.tsx",
+      "accessCount": 17,
+      "lastAccessed": 1780230386733,
+      "type": "file"
+    },
+    {
       "path": "src/components/dashboard/QuickAddButton.tsx",
       "accessCount": 15,
       "lastAccessed": 1780215554597,
       "type": "file"
     },
     {
-      "path": "src/components/dashboard/CalendarView.tsx",
-      "accessCount": 13,
-      "lastAccessed": 1780215409786,
+      "path": "src/components/dashboard/FixedExpenseCard.tsx",
+      "accessCount": 8,
+      "lastAccessed": 1780231269738,
       "type": "file"
     },
     {
@@ -131,21 +143,21 @@
       "type": "file"
     },
     {
-      "path": "src/components/dashboard/FixedExpenseCard.tsx",
-      "accessCount": 6,
-      "lastAccessed": 1780215582812,
-      "type": "file"
-    },
-    {
-      "path": "src/app/dashboard/DashboardClient.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1780215598550,
+      "path": "src/components/dashboard/SummaryCard.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1780227984194,
       "type": "file"
     },
     {
       "path": "src/hooks/useCategories.ts",
       "accessCount": 2,
       "lastAccessed": 1780220715945,
+      "type": "file"
+    },
+    {
+      "path": "src/components/dashboard/DividendCard.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1780231212923,
       "type": "file"
     },
     {

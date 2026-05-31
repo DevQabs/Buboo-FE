@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PlusIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PlusIcon, Cog6ToothIcon, PencilIcon, TrashIcon, CheckIcon } from '@heroicons/react/24/outline'
 import { formatAmountInput } from '@/lib/formatNumber'
 import { useCategories } from '@/hooks/useCategories'
 import CategoryManager from '@/components/dashboard/CategoryManager'
@@ -252,7 +252,7 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
     <button
       onClick={onClick}
       className={`
-        h-10 sm:h-12 rounded-lg p-0.5 flex flex-col items-center
+        h-12 sm:h-14 rounded-lg p-0.5 flex flex-col items-center
         text-left transition-all duration-150 relative
         ${isSelected
           ? 'bg-indigo-500 shadow-md ring-2 ring-indigo-300'
@@ -312,9 +312,11 @@ interface DetailPanelProps {
   otherAssets: OtherAsset[]
   onClose: () => void
   onAddTransaction?: (payload: AddTransactionPayload) => Promise<void>
+  onUpdateTransaction?: (id: string, data: { title: string; amount: number; category: string; user_id: string }) => Promise<void>
+  onDeleteTransaction?: (id: string) => Promise<void>
 }
 
-function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, otherAssets, onClose, onAddTransaction }: DetailPanelProps) {
+function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, otherAssets, onClose, onAddTransaction, onUpdateTransaction, onDeleteTransaction }: DetailPanelProps) {
   const dayTxns = useMemo(() =>
     transactions
       .filter(tx => toDateKey(new Date(tx.date)) === dateKey)
@@ -336,6 +338,12 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
   const [savingLink, setSavingLink] = useState<SavingLink | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [showCatManager, setShowCatManager] = useState(false)
+  const [editingTxId, setEditingTxId]       = useState<string | null>(null)
+  const [editTitle, setEditTitle]           = useState('')
+  const [editAmount, setEditAmount]         = useState('')
+  const [editCategory, setEditCategory]     = useState('')
+  const [editUserId, setEditUserId]         = useState('')
+  const [editSaving, setEditSaving]         = useState(false)
   const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories()
 
   const categories = txType === 'expense' ? expenseCategories : incomeCategories
@@ -551,7 +559,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
       )}
 
       {/* Transaction timeline */}
-      <div className="divide-y divide-slate-50 max-h-64 overflow-y-auto">
+      <div className="divide-y divide-slate-50 max-h-72 overflow-y-auto">
         {dayTxns.length === 0 ? (
           <div className="px-4 py-5 text-center text-xs text-slate-400">
             {dayEvents.length > 0 ? '직접 등록된 거래 내역은 없어요' : '이 날은 조용했어요 🌿'}
@@ -563,8 +571,65 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
             const isExpense = tx.type === 'expense'
             const amtColor = isSaving ? 'text-indigo-600' : isExpense ? 'text-rose-500' : 'text-emerald-600'
             const amtPrefix = isExpense ? '-' : '+'
+            const isEditing = editingTxId === tx.id
+            const editCats = isExpense ? expenseCategories : incomeCategories
+
+            if (isEditing) {
+              return (
+                <div key={tx.id} className="px-4 py-3 bg-slate-50 space-y-2">
+                  <input
+                    className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    placeholder="내용"
+                  />
+                  <input
+                    type="number"
+                    className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    value={editAmount}
+                    onChange={e => setEditAmount(e.target.value)}
+                    placeholder="금액"
+                  />
+                  {!isSaving && (
+                    <div className="flex flex-wrap gap-1">
+                      {editCats.map(c => (
+                        <button key={c} onClick={() => setEditCategory(c)}
+                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${editCategory === c ? 'bg-indigo-500 text-white border-indigo-500' : 'border-slate-200 text-slate-500'}`}>
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <select
+                    className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    value={editUserId}
+                    onChange={e => setEditUserId(e.target.value)}
+                  >
+                    {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                  </select>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        const amt = Number(editAmount)
+                        if (!onUpdateTransaction || isNaN(amt) || amt <= 0 || !editTitle.trim()) return
+                        await onUpdateTransaction(tx.id, { title: editTitle.trim(), amount: amt, category: editCategory || tx.category, user_id: editUserId || tx.user_id })
+                        setEditingTxId(null)
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-indigo-500 text-white rounded-lg text-xs font-semibold hover:bg-indigo-600"
+                    >
+                      <CheckIcon className="h-3 w-3" /> 저장
+                    </button>
+                    <button onClick={() => setEditingTxId(null)}
+                      className="px-3 py-1.5 bg-slate-100 text-slate-500 rounded-lg text-xs hover:bg-slate-200">
+                      취소
+                    </button>
+                  </div>
+                </div>
+              )
+            }
+
             return (
-              <div key={tx.id} className="flex items-center gap-3 px-4 py-2.5">
+              <div key={tx.id} className="flex items-center gap-3 px-4 py-2.5 group">
                 {user && (
                   <div
                     className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-white text-[8px] font-bold"
@@ -591,6 +656,33 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
                 <span className={`text-sm font-bold tabular-nums shrink-0 ${amtColor}`}>
                   {amtPrefix}{tx.amount.toLocaleString()}원
                 </span>
+                {(onUpdateTransaction || onDeleteTransaction) && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    {onUpdateTransaction && (
+                      <button
+                        onClick={() => {
+                          setEditingTxId(tx.id)
+                          setEditTitle(tx.title)
+                          setEditAmount(String(tx.amount))
+                          setEditCategory(tx.category)
+                          setEditUserId(tx.user_id)
+                          setEditSaving(isSaving)
+                        }}
+                        className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-500"
+                      >
+                        <PencilIcon className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {onDeleteTransaction && (
+                      <button
+                        onClick={() => onDeleteTransaction(tx.id)}
+                        className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-rose-500"
+                      >
+                        <TrashIcon className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )
           })
@@ -623,6 +715,8 @@ interface CalendarViewProps {
   budgetLimit?: number
   onMonthChange: (year: number, month: number) => void
   onAddTransaction?: (payload: AddTransactionPayload) => Promise<void>
+  onUpdateTransaction?: (id: string, data: { title: string; amount: number; category: string; user_id: string }) => Promise<void>
+  onDeleteTransaction?: (id: string) => Promise<void>
 }
 
 export default function CalendarView({
@@ -636,6 +730,8 @@ export default function CalendarView({
   budgetLimit = 0,
   onMonthChange,
   onAddTransaction,
+  onUpdateTransaction,
+  onDeleteTransaction,
 }: CalendarViewProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const today = todayKey()
@@ -753,6 +849,8 @@ export default function CalendarView({
             otherAssets={otherAssets}
             onClose={() => setSelectedDate(null)}
             onAddTransaction={onAddTransaction}
+            onUpdateTransaction={onUpdateTransaction}
+            onDeleteTransaction={onDeleteTransaction}
           />
         </div>
       )}
