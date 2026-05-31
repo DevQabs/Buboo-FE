@@ -313,7 +313,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
               />
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className={isDeposit || isCash ? '' : 'grid grid-cols-2 gap-3'}>
               <div>
                 <label className="text-xs font-medium text-slate-500 mb-1 block">
                   {isLoan ? '잔여 대출금 (원)' : isDeposit ? '납입 원금 (원)' : '현재 가치 (원)'}
@@ -328,19 +328,21 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
                 />
               </div>
-              <div>
-                <label className="text-xs font-medium text-slate-500 mb-1 block">
-                  {isLoan ? '최초 대출 원금 (원)' : '취득원가 (원)'}
-                </label>
-                <input
-                  type="number"
-                  value={costKRW}
-                  onChange={e => setCostKRW(e.target.value)}
-                  placeholder="0 (선택)"
-                  min="0"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
-                />
-              </div>
+              {!isDeposit && !isCash && (
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">
+                    {isLoan ? '최초 대출 원금 (원)' : '취득원가 (원)'}
+                  </label>
+                  <input
+                    type="number"
+                    value={costKRW}
+                    onChange={e => setCostKRW(e.target.value)}
+                    placeholder="0 (선택)"
+                    min="0"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
+                  />
+                </div>
+              )}
             </div>
           )}
 

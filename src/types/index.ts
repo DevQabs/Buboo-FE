@@ -226,7 +226,7 @@ export type OtherAssetType =
 export type LoanType = '만기일시상환' | '원리금균등상환' | '원금균등상환'
 
 export const OTHER_ASSET_TYPES: OtherAssetType[] = [
-  '부동산', '예/적금', '현금', '대출', '기타',
+  '부동산', '예/적금', '현금', '기타', '대출',
 ]
 
 export const ASSET_TYPE_EMOJI: Record<OtherAssetType, string> = {
