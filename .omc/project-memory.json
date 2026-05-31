@@ -42,7 +42,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "npm run build",
+    "buildCommand": "cd \"/Users/ktg2926/Documents/Claude/Projects/부부 자산 관리 앱/frontend\" && npx tsc --noEmit 2>&1 && echo \"FRONTEND OK\"",
     "testCommand": null,
     "lintCommand": "npm run lint",
     "devCommand": "npm run dev",
@@ -105,6 +105,67 @@
       ]
     }
   },
-  "hotPaths": [],
+  "hotPaths": [
+    {
+      "path": "src/components/dashboard/QuickAddButton.tsx",
+      "accessCount": 15,
+      "lastAccessed": 1780215554597,
+      "type": "file"
+    },
+    {
+      "path": "src/components/dashboard/CalendarView.tsx",
+      "accessCount": 13,
+      "lastAccessed": 1780215409786,
+      "type": "file"
+    },
+    {
+      "path": "src/components/dashboard/AddStockModal.tsx",
+      "accessCount": 6,
+      "lastAccessed": 1780215495442,
+      "type": "file"
+    },
+    {
+      "path": "src/components/dashboard/EditStockModal.tsx",
+      "accessCount": 6,
+      "lastAccessed": 1780215514941,
+      "type": "file"
+    },
+    {
+      "path": "src/components/dashboard/FixedExpenseCard.tsx",
+      "accessCount": 6,
+      "lastAccessed": 1780215582812,
+      "type": "file"
+    },
+    {
+      "path": "src/app/dashboard/DashboardClient.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1780215598550,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/useCategories.ts",
+      "accessCount": 2,
+      "lastAccessed": 1780220715945,
+      "type": "file"
+    },
+    {
+      "path": "src/types/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1780214891050,
+      "type": "file"
+    },
+    {
+      "path": "src/components/dashboard/TransactionList.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780215160886,
+      "type": "file"
+    },
+    {
+      "path": "src/components/dashboard/CategoryManager.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1780215252330,
+      "type": "file"
+    }
+  ],
   "userDirectives": []
 }
