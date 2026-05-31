@@ -223,10 +223,13 @@ export type OtherAssetType =
   | '가상화폐'
   | '차량'
   | '보험'
+  | '대출'
   | '기타'
 
+export type LoanType = '만기일시상환' | '원리금균등상환' | '원금균등상환'
+
 export const OTHER_ASSET_TYPES: OtherAssetType[] = [
-  '부동산', '예/적금', '현금', '가상화폐', '차량', '보험', '기타',
+  '부동산', '예/적금', '현금', '가상화폐', '차량', '보험', '대출', '기타',
 ]
 
 export const ASSET_TYPE_EMOJI: Record<OtherAssetType, string> = {
@@ -236,6 +239,7 @@ export const ASSET_TYPE_EMOJI: Record<OtherAssetType, string> = {
   가상화폐:  '₿',
   차량:     '🚗',
   보험:     '🛡️',
+  대출:     '💳',
   기타:     '📦',
 }
 
@@ -256,6 +260,8 @@ export interface OtherAsset {
   interest_rate: number | null    // 연이율 %
   crypto_symbol: string | null
   crypto_qty: number | null
+  loan_type: string           // 대출 전용: 만기일시상환 | 원리금균등상환 | 원금균등상환
+  payment_day: number         // 대출 납입일 (1-28)
   memo: string
   acquired_at: string
   created_at: string
@@ -277,6 +283,8 @@ export interface CreateOtherAssetRequest {
   interest_rate?: number | null
   crypto_symbol?: string | null
   crypto_qty?: number | null
+  loan_type?: string
+  payment_day?: number
   memo?: string
   acquired_at?: string | null     // null이면 서버에서 현재 시각 사용
 }
@@ -294,6 +302,8 @@ export interface UpdateOtherAssetRequest {
   interest_rate?: number | null
   crypto_symbol?: string | null
   crypto_qty?: number | null
+  loan_type?: string
+  payment_day?: number
   memo?: string
 }
 
