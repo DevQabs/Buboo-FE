@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PlusIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { formatAmountInput } from '@/lib/formatNumber'
 import { useCategories } from '@/hooks/useCategories'
 import CategoryManager from '@/components/dashboard/CategoryManager'
 import type {
@@ -245,13 +246,13 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
     : budgetRatio >= 0.8 ? 'bg-amber-50'
     : ''
 
-  if (day === 0) return <div className="aspect-[4/5] sm:aspect-square" />
+  if (day === 0) return <div className="h-10 sm:h-12" />
 
   return (
     <button
       onClick={onClick}
       className={`
-        aspect-[4/5] sm:aspect-square rounded-xl p-1 flex flex-col items-center
+        h-10 sm:h-12 rounded-lg p-0.5 flex flex-col items-center
         text-left transition-all duration-150 relative
         ${isSelected
           ? 'bg-indigo-500 shadow-md ring-2 ring-indigo-300'
@@ -264,14 +265,14 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
         ${isOtherMonth ? 'opacity-25' : ''}
       `}
     >
-      <span className={`text-[11px] sm:text-xs font-semibold self-start leading-none ${
+      <span className={`text-[11px] font-semibold self-center leading-none mt-0.5 ${
         isSelected ? 'text-white' : isToday ? 'text-indigo-600' : 'text-slate-600'
       }`}>
         {day}
       </span>
 
       {hasExpense && (
-        <span className={`text-[9px] sm:text-[10px] font-bold tabular-nums leading-none mt-0.5 ${
+        <span className={`text-[9px] font-bold tabular-nums leading-none ${
           isSelected ? 'text-red-200' : budgetRatio > 1 ? 'text-rose-600' : 'text-rose-500'
         }`}>
           {fmtCell(dayData!.total_expense)}
@@ -279,7 +280,7 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
       )}
 
       {hasIncome && (
-        <span className={`text-[8px] sm:text-[9px] tabular-nums leading-none ${
+        <span className={`text-[8px] tabular-nums leading-none ${
           isSelected ? 'text-green-200' : 'text-emerald-500'
         }`}>
           +{fmtCell(dayData!.total_income)}
@@ -449,11 +450,10 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
           {/* Row 2: amount */}
           <div className="relative">
             <input
-              type="number"
-              min={0}
-              step={1000}
+              type="text"
+              inputMode="numeric"
               value={amount}
-              onChange={e => setAmount(e.target.value)}
+              onChange={e => setAmount(formatAmountInput(e.target.value))}
               placeholder="금액"
               className="w-full text-right text-lg font-bold border border-slate-200 rounded-xl px-3 py-2.5 pr-10 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 tabular-nums"
             />
@@ -682,50 +682,35 @@ export default function CalendarView({
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
 
       {/* ── Month navigator + stats ── */}
-      <div className="px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between mb-3">
-          <button onClick={goPrev} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+      <div className="px-3 pt-3 pb-2">
+        <div className="flex items-center justify-between">
+          <button onClick={goPrev} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
-          <div className="text-center">
-            <p className="text-sm font-bold text-slate-800">{year}년 {month}월</p>
-          </div>
-          <button onClick={goNext} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-            <ChevronRightIcon className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex items-center justify-center gap-4 text-[11px] mb-1">
-          <span className="flex items-center gap-1 text-rose-500 font-medium">↓ {fmtCell(monthTotal.expense)}</span>
-          <span className="text-slate-200">|</span>
-          <span className="flex items-center gap-1 text-emerald-600 font-medium">↑ {fmtCell(monthTotal.income)}</span>
-          {budgetLimit > 0 && (
-            <>
-              <span className="text-slate-200">|</span>
+          <div className="flex items-center gap-3 text-[11px]">
+            <span className="text-sm font-bold text-slate-800">{year}년 {month}월</span>
+            <span className="text-rose-500 font-medium">↓ {fmtCell(monthTotal.expense)}</span>
+            <span className="text-emerald-600 font-medium">↑ {fmtCell(monthTotal.income)}</span>
+            {budgetLimit > 0 && (
               <span className={`font-semibold ${
                 monthTotal.expense > budgetLimit ? 'text-rose-600' :
                 monthTotal.expense / budgetLimit >= 0.9 ? 'text-amber-500' :
                 'text-indigo-500'
               }`}>
-                예산 {Math.round(monthTotal.expense / budgetLimit * 100)}%
+                {Math.round(monthTotal.expense / budgetLimit * 100)}%
               </span>
-            </>
-          )}
-        </div>
-
-        <div className="flex items-center justify-center gap-3 text-[10px] text-slate-400">
-          {dailyBudget > 0 && <span className="text-indigo-400 font-medium">일 평균 {fmtCell(dailyBudget)}</span>}
-          {dailyBudget > 0 && <span className="text-slate-200">·</span>}
-          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />고정비</span>
-          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-teal-400 inline-block" />배당</span>
-          {dailyBudget > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-rose-400 inline-block" />예산 초과</span>}
+            )}
+          </div>
+          <button onClick={goNext} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+            <ChevronRightIcon className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
       {/* ── Weekday header ── */}
       <div className="grid grid-cols-7 border-t border-slate-100">
         {WEEKDAYS.map((d, i) => (
-          <div key={d} className={`text-center py-1.5 text-[11px] font-semibold ${
+          <div key={d} className={`text-center py-1 text-[11px] font-semibold ${
             i === 0 ? 'text-rose-400' : i === 6 ? 'text-blue-400' : 'text-slate-400'
           }`}>
             {d}
@@ -734,7 +719,7 @@ export default function CalendarView({
       </div>
 
       {/* ── Calendar grid ── */}
-      <div className="grid grid-cols-7 gap-0.5 px-1.5 pb-1.5 border-t border-slate-50">
+      <div className="grid grid-cols-7 gap-px px-1 pb-1 border-t border-slate-50">
         {cells.map((dayNum, i) => {
           const dateKey = dayNum > 0
             ? `${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`

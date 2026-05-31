@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { formatAmountInput } from '@/lib/formatNumber'
 import {
   PlusIcon,
   TrashIcon,
@@ -65,7 +66,7 @@ function AddDividendModal({ portfolio, portfolioSummary, onClose, onSave }: AddD
 
   // Real-time calculation
   const calc = useMemo(() => {
-    const aps   = parseFloat(amountPerShare) || 0
+    const aps   = parseFloat(amountPerShare.replace(/,/g, '')) || 0
     const qty   = selected?.quantity ?? 0
     const tr    = 0.15
     const total = aps * qty
@@ -169,11 +170,10 @@ function AddDividendModal({ portfolio, portfolioSummary, onClose, onSave }: AddD
                   주당 배당금 ({selected?.currency ?? 'USD'}) *
                 </label>
                 <input
-                  type="number"
-                  step="0.0001"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   value={amountPerShare}
-                  onChange={e => setAmountPerShare(e.target.value)}
+                  onChange={e => setAmountPerShare(formatAmountInput(e.target.value, true))}
                   placeholder="예: 0.4750"
                   className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                 />
@@ -341,52 +341,41 @@ export default function DividendCard({
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
 
       {/* ── YTD Summary banner ── */}
-      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-5 py-4 border-b border-emerald-100">
-        <div className="flex items-start justify-between gap-3">
+      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 border-b border-emerald-100">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium text-emerald-600 mb-0.5">
-              💰 {year}년 배당 수익 (세후)
-            </p>
-            <p className="text-2xl font-extrabold text-slate-900 tabular-nums">
-              {fmtKRW(summary?.total_krw ?? 0)}
-            </p>
-            <p className="text-[11px] text-slate-400 mt-1">
-              세전 ${fmtUSD(summary?.total_usd ?? 0)} →
-              세후 ${fmtUSD(summary?.total_after_tax_usd ?? 0)}
-              {portfolioSummary?.usd_krw && (
-                <span className="ml-1 text-slate-300">
-                  (USD/KRW {portfolioSummary.usd_krw.toFixed(0)})
-                </span>
-              )}
-            </p>
+            <p className="text-[10px] font-medium text-emerald-600 mb-0.5">💰 {year}년 배당 수익 (세후)</p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-xl font-extrabold text-slate-900 tabular-nums">
+                {fmtKRW(summary?.total_krw ?? 0)}
+              </p>
+              <p className="text-[10px] text-slate-400">
+                세후 ${fmtUSD(summary?.total_after_tax_usd ?? 0)}
+                {portfolioSummary?.usd_krw && (
+                  <span className="ml-1 text-slate-300">· {portfolioSummary.usd_krw.toFixed(0)}</span>
+                )}
+              </p>
+            </div>
           </div>
-          <div className="text-right shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {summary && summary.pending_count > 0 && (
-              <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">
+              <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
                 미반영 {summary.pending_count}건
               </span>
             )}
             {summary && summary.applied_count > 0 && summary.pending_count === 0 && (
-              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
-                전체 반영 완료
+              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+                전체 반영
               </span>
             )}
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-0.5 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />등록
+            </button>
           </div>
         </div>
-      </div>
-
-      {/* ── Header + Add ── */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-50">
-        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-          📋 배당 내역
-        </h3>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
-        >
-          <PlusIcon className="h-3.5 w-3.5" />
-          등록
-        </button>
       </div>
 
       {/* ── Event list ── */}
@@ -481,63 +470,44 @@ function DividendRow({
   const isApplying = applyingId === d.id
 
   return (
-    <div className={`flex items-center gap-3 px-5 py-3.5 ${d.is_applied ? 'opacity-60' : ''}`}>
-      {/* Status dot */}
+    <div className={`flex items-center gap-2 px-4 py-2 ${d.is_applied ? 'opacity-60' : ''}`}>
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${d.is_applied ? 'bg-emerald-400' : 'bg-amber-400'}`} />
 
-      {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-sm font-semibold text-slate-800">{d.symbol}</span>
-          <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">
-            {d.name}
-          </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold text-slate-800">{d.symbol}</span>
+          <span className="text-[10px] text-slate-400 truncate">{d.name}</span>
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-[11px] text-slate-400">
-            지급일 {fmtDate(d.payment_date)}
-          </span>
-          <span className="text-[11px] text-slate-300">·</span>
-          <span className="text-[11px] text-slate-400">
-            주당 ${fmtUSD(d.amount_per_share)} × {d.quantity}주
-          </span>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <span className="text-[10px] text-slate-400">{fmtDate(d.payment_date)}</span>
+          <span className="text-[10px] text-slate-300">·</span>
+          <span className="text-[10px] text-slate-400">${fmtUSD(d.amount_per_share)}×{d.quantity}주</span>
         </div>
       </div>
 
-      {/* Amount */}
       <div className="text-right shrink-0">
-        <p className="text-sm font-bold text-emerald-700 tabular-nums">
-          {fmtKRW(d.amount_krw)}
-        </p>
-        <p className="text-[10px] text-slate-400">
-          ${fmtUSD(d.after_tax_amount)} 세후
-        </p>
+        <p className="text-xs font-bold text-emerald-700 tabular-nums">{fmtKRW(d.amount_krw)}</p>
+        <p className="text-[10px] text-slate-400">${fmtUSD(d.after_tax_amount)}</p>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-0.5 shrink-0">
         {!d.is_applied ? (
           <button
             onClick={() => onApply(d.id)}
             disabled={isApplying}
             title="가계부 수입으로 반영"
-            className="flex items-center gap-1 text-[10px] bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-40"
+            className="flex items-center gap-0.5 text-[10px] bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-1.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-40"
           >
-            <ArrowDownTrayIcon className="h-3.5 w-3.5" />
+            <ArrowDownTrayIcon className="h-3 w-3" />
             {isApplying ? '...' : '반영'}
           </button>
         ) : (
-          <div className="flex items-center gap-1 text-[10px] text-emerald-500 px-2 py-1.5">
-            <CheckCircleIcon className="h-3.5 w-3.5" />
-            반영됨
+          <div className="flex items-center gap-0.5 text-[10px] text-emerald-500 px-1.5 py-1">
+            <CheckCircleIcon className="h-3 w-3" />
           </div>
         )}
-        <button
-          onClick={() => onDelete(d.id)}
-          title="삭제"
-          className="p-1.5 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors"
-        >
-          <TrashIcon className="h-3.5 w-3.5" />
+        <button onClick={() => onDelete(d.id)} title="삭제" className="p-1 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors">
+          <TrashIcon className="h-3 w-3" />
         </button>
       </div>
     </div>

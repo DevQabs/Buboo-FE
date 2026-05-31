@@ -106,6 +106,9 @@ export default function DashboardClient() {
   const now = new Date()
   const [summaryYear, setSummaryYear]   = useState(now.getFullYear())
   const [summaryMonth, setSummaryMonth] = useState(now.getMonth() + 1)
+  // calendarYear/calendarMonth: what CalendarView displays (always calendar month)
+  const [calendarYear, setCalendarYear]   = useState(now.getFullYear())
+  const [calendarMonth, setCalendarMonth] = useState(now.getMonth() + 1)
   // startDay는 DB(couple.ledger_start_day)에서 초기화 — localStorage 미사용
   const [startDay, setStartDay] = useState<number>(1)
 
@@ -165,7 +168,21 @@ export default function DashboardClient() {
       setCouple(coupleData)
       setStartDay(dbStartDay)
 
-      const { startDate, endDate } = buildDateRange(y, m, dbStartDay)
+      // calendarYear/calendarMonth always = current calendar month (for the grid)
+      setCalendarYear(y)
+      setCalendarMonth(m)
+
+      // summaryYear/summaryMonth = period that contains today.
+      // If today >= startDay (and startDay > 1), today is in the NEXT month's period.
+      // e.g. startDay=25, today=May 31 → period is "June" (May 25–Jun 25).
+      const todayDate = now.getDate()
+      const periodMonth = (dbStartDay > 1 && todayDate >= dbStartDay) ? m + 1 : m
+      const periodYear  = periodMonth > 12 ? y + 1 : y
+      const adjMonth    = periodMonth > 12 ? 1 : periodMonth
+      setSummaryYear(periodYear)
+      setSummaryMonth(adjMonth)
+
+      const { startDate, endDate } = buildDateRange(periodYear, adjMonth, dbStartDay)
 
       // ── Step 2: everything else in parallel ──
       const [usersData, txData, portfolioData, summaryData, assetsData, feData, feSummaryData, divData, calData, schData, diarData] = await Promise.all([
@@ -235,10 +252,15 @@ export default function DashboardClient() {
     [fetchSummary, fetchCalendar, couple]
   )
 
-  // ── calendar month change (independent navigation from CalendarView) ──────
+  // ── calendar month change — calendar display + summary period both update ──
   const handleCalendarMonthChange = useCallback((year: number, month: number) => {
+    setCalendarYear(year)
+    setCalendarMonth(month)
+    setSummaryYear(year)
+    setSummaryMonth(month)
     fetchCalendar(year, month)
-  }, [fetchCalendar])
+    fetchSummary(year, month, startDay)
+  }, [fetchCalendar, fetchSummary, startDay])
 
   // ── portfolio refetch ─────────────────────────────────────────────────────
   const refetchPortfolio = async () => {
@@ -381,14 +403,14 @@ export default function DashboardClient() {
 
     const refetches: Promise<unknown>[] = [
       apiFetch<Transaction[]>('/api/transactions').then(d => setTransactions(Array.isArray(d) ? d : [])),
-      apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${summaryYear}&month=${summaryMonth}`).then(d => setCalendarData(d)),
+      apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`).then(d => setCalendarData(d)),
       fetchSummary(summaryYear, summaryMonth, startDay),
     ]
     if (payload.type === 'saving') {
       refetches.push(refetchPortfolio(), refetchAssets())
     }
     await Promise.all(refetches)
-  }, [summaryYear, summaryMonth, startDay, fetchSummary, refetchPortfolio, refetchAssets]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [calendarYear, calendarMonth, summaryYear, summaryMonth, startDay, fetchSummary, refetchPortfolio, refetchAssets]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── stock handlers ────────────────────────────────────────────────────────
   const handleAddStock = async (data: Parameters<React.ComponentProps<typeof AddStockModal>['onAdd']>[0]) => {
@@ -711,8 +733,8 @@ export default function DashboardClient() {
 
             {/* 월간 캘린더 (날짜 클릭 → 수입/지출 입력) */}
             <CalendarView
-              year={summaryYear}
-              month={summaryMonth}
+              year={calendarYear}
+              month={calendarMonth}
               calendarData={calendarData}
               transactions={transactions}
               users={users}

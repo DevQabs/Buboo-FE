@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { PencilSquareIcon, TrashIcon, XMarkIcon, LockClosedIcon } from '@heroicons/react/24/outline'
 import { PlusIcon } from '@heroicons/react/24/solid'
+import { formatAmountInput } from '@/lib/formatNumber'
 import type {
   OtherAsset,
   OtherAssetType,
@@ -105,12 +106,12 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
   const [assetType, setAssetType] = useState<OtherAssetType>(initial?.asset_type ?? '기타')
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
-  const [valueKRW, setValueKRW] = useState(initial ? String(initial.value_krw) : '')
-  const [valueUSD, setValueUSD] = useState(initial?.value_usd != null ? String(initial.value_usd) : '')
+  const [valueKRW, setValueKRW] = useState(initial ? formatAmountInput(String(initial.value_krw)) : '')
+  const [valueUSD, setValueUSD] = useState(initial?.value_usd != null ? formatAmountInput(String(initial.value_usd), true) : '')
   const [currency, setCurrency] = useState<'KRW' | 'USD'>(
     initial?.currency?.toUpperCase() === 'USD' ? 'USD' : 'KRW'
   )
-  const [costKRW, setCostKRW] = useState(initial?.cost_krw ? String(initial.cost_krw) : '')
+  const [costKRW, setCostKRW] = useState(initial?.cost_krw ? formatAmountInput(String(initial.cost_krw)) : '')
   const [isLocked, setIsLocked] = useState(initial?.is_locked ?? false)
   const [interestRate, setInterestRate] = useState(initial?.interest_rate != null ? String(initial.interest_rate) : '')
   const [maturityDate, setMaturityDate] = useState(
@@ -134,13 +135,13 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
   // 예/적금 세후 만기 수령액
   const afterTaxMaturity = useMemo(() => {
     if (!isDeposit) return null
-    return calcAfterTaxMaturity(parseFloat(valueKRW) || 0, parseFloat(interestRate) || 0, acquiredAt, maturityDate)
+    return calcAfterTaxMaturity(parseFloat(valueKRW.replace(/,/g, '')) || 0, parseFloat(interestRate) || 0, acquiredAt, maturityDate)
   }, [isDeposit, valueKRW, interestRate, acquiredAt, maturityDate])
 
   // 대출 월 납입금
   const loanPayment = useMemo(() => {
     if (!isLoan) return null
-    return calcLoanPayment(parseFloat(valueKRW) || 0, parseFloat(interestRate) || 0, loanType, maturityDate)
+    return calcLoanPayment(parseFloat(valueKRW.replace(/,/g, '')) || 0, parseFloat(interestRate) || 0, loanType, maturityDate)
   }, [isLoan, valueKRW, interestRate, loanType, maturityDate])
 
   const handleTypeChange = (t: OtherAssetType) => {
@@ -302,12 +303,11 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 block">보유 금액 (USD)</label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={valueUSD}
-                onChange={e => setValueUSD(e.target.value)}
+                onChange={e => setValueUSD(formatAmountInput(e.target.value, true))}
                 placeholder="0.00"
-                min="0"
-                step="0.01"
                 required
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
               />
@@ -319,11 +319,11 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                   {isLoan ? '잔여 대출금 (원)' : isDeposit ? '납입 원금 (원)' : '현재 가치 (원)'}
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={valueKRW}
-                  onChange={e => setValueKRW(e.target.value)}
+                  onChange={e => setValueKRW(formatAmountInput(e.target.value))}
                   placeholder="0"
-                  min="0"
                   required
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
                 />
@@ -334,11 +334,11 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                     {isLoan ? '최초 대출 원금 (원)' : '취득원가 (원)'}
                   </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={costKRW}
-                    onChange={e => setCostKRW(e.target.value)}
+                    onChange={e => setCostKRW(formatAmountInput(e.target.value))}
                     placeholder="0 (선택)"
-                    min="0"
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
                   />
                 </div>
@@ -455,9 +455,9 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
               <p className="text-xs font-semibold text-indigo-700">세후 만기 수령액 (예상)</p>
               <p className="text-lg font-bold text-indigo-900 tabular-nums">{formatKRW(afterTaxMaturity)}</p>
               <div className="flex items-center justify-between text-[10px] text-indigo-500">
-                <span>원금 {formatKRW(parseFloat(valueKRW) || 0)}</span>
+                <span>원금 {formatKRW(parseFloat(valueKRW.replace(/,/g, '')) || 0)}</span>
                 <span>+</span>
-                <span>세후이자 {formatKRW(afterTaxMaturity - (parseFloat(valueKRW) || 0))}</span>
+                <span>세후이자 {formatKRW(afterTaxMaturity - (parseFloat(valueKRW.replace(/,/g, '')) || 0))}</span>
                 <span className="text-indigo-400">(세율 15.4%)</span>
               </div>
             </div>

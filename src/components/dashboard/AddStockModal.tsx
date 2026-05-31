@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import type { User } from '@/types';
+import { formatAmountInput } from '@/lib/formatNumber';
 
 interface AddStockModalProps {
   users: User[];
@@ -151,12 +152,11 @@ export default function AddStockModal({ users, onClose, onAdd }: AddStockModalPr
                 평균 매입가 ({currency === 'KRW' ? '원' : '$'})
               </label>
               <input
-                type='number'
+                type='text'
+                inputMode='decimal'
                 value={avgPrice}
-                onChange={(e) => setAvgPrice(e.target.value)}
+                onChange={(e) => setAvgPrice(formatAmountInput(e.target.value, true))}
                 placeholder='0'
-                min='0'
-                step='0.01'
                 required
                 className='w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal'
               />

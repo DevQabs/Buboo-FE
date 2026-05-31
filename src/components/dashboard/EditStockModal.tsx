@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import type { StockAssetWithPrice, User } from '@/types'
+import { formatAmountInput } from '@/lib/formatNumber'
 
 interface EditStockModalProps {
   asset: StockAssetWithPrice
@@ -22,7 +23,7 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
   const [userID, setUserID] = useState(asset.user_id)
   const [name, setName] = useState(asset.name)
   const [quantity, setQuantity] = useState(String(asset.quantity))
-  const [avgPrice, setAvgPrice] = useState(String(asset.average_price))
+  const [avgPrice, setAvgPrice] = useState(formatAmountInput(String(asset.average_price), true))
   const [memo, setMemo] = useState(asset.memo ?? '')
   const [loading, setLoading] = useState(false)
 
@@ -111,12 +112,11 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
                 평균 매입가 ({asset.currency === 'KRW' ? '원' : '$'})
               </label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={avgPrice}
-                onChange={e => setAvgPrice(e.target.value)}
+                onChange={e => setAvgPrice(formatAmountInput(e.target.value, true))}
                 placeholder="0"
-                min="0"
-                step="0.01"
                 required
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
               />

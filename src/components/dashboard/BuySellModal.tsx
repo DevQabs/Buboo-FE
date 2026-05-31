@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline'
 import type { StockAssetWithPrice } from '@/types'
+import { formatAmountInput } from '@/lib/formatNumber'
 
 interface BuySellModalProps {
   asset: StockAssetWithPrice
@@ -19,13 +20,13 @@ function formatNum(v: number, currency: string) {
 
 export default function BuySellModal({ asset, mode, onClose, onSubmit }: BuySellModalProps) {
   const [quantity, setQuantity] = useState('')
-  const [price, setPrice] = useState(String(asset.current_price))
+  const [price, setPrice] = useState(formatAmountInput(String(asset.current_price), true))
   const [memo, setMemo] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const qty = parseFloat(quantity) || 0
-  const prc = parseFloat(price) || 0
+  const prc = parseFloat(price.replace(/,/g, '')) || 0
   const totalCost = qty * prc
   const realizedPnL = mode === 'sell' ? (prc - asset.average_price) * qty : null
   const isBuy = mode === 'buy'
@@ -125,12 +126,11 @@ export default function BuySellModal({ asset, mode, onClose, onSubmit }: BuySell
               {isBuy ? '매수' : '매도'} 단가 ({asset.currency === 'KRW' ? '원' : '$'})
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={price}
-              onChange={e => setPrice(e.target.value)}
+              onChange={e => setPrice(formatAmountInput(e.target.value, true))}
               placeholder="0"
-              min="0"
-              step="0.01"
               required
               className="w-full px-4 py-3 rounded-xl border border-slate-200 text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
             />

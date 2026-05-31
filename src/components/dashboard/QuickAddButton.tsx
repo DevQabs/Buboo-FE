@@ -6,6 +6,7 @@ import { Cog6ToothIcon } from '@heroicons/react/24/outline'
 import type { User, SavingLink, SavingKind, StockAssetWithPrice, OtherAsset, OtherAssetType } from '@/types'
 import { useCategories } from '@/hooks/useCategories'
 import CategoryManager from '@/components/dashboard/CategoryManager'
+import { formatAmountInput } from '@/lib/formatNumber'
 
 type TxType = 'income' | 'expense' | 'saving'
 
@@ -69,13 +70,13 @@ function SavingLinkForm({ stocks, otherAssets, onChange }: SavingLinkFormProps) 
     if (kind === 'stock') {
       if (!isNew) {
         const qty = parseFloat(addQty)
-        const price = parseFloat(addPrice)
+        const price = parseFloat(addPrice.replace(/,/g, ''))
         if (stockId && qty > 0 && price > 0) {
           link = { kind: 'stock', link_asset_id: stockId, add_stock_qty: qty, add_stock_price: price }
         }
       } else {
         const qty = parseFloat(newQty)
-        const price = parseFloat(newPrice)
+        const price = parseFloat(newPrice.replace(/,/g, ''))
         if (newSymbol && newExchange && newName && qty > 0 && price > 0) {
           link = {
             kind: 'stock',
@@ -159,7 +160,7 @@ function SavingLinkForm({ stocks, otherAssets, onChange }: SavingLinkFormProps) 
             </div>
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 block">매수 단가</label>
-              <input type="number" value={addPrice} onChange={e => setAddPrice(e.target.value)}
+              <input type="text" inputMode="decimal" value={addPrice} onChange={e => setAddPrice(formatAmountInput(e.target.value, true))}
                 placeholder="0" className={inputCls} />
             </div>
           </div>
@@ -196,7 +197,7 @@ function SavingLinkForm({ stocks, otherAssets, onChange }: SavingLinkFormProps) 
             </div>
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 block">단가 *</label>
-              <input type="number" value={newPrice} onChange={e => setNewPrice(e.target.value)}
+              <input type="text" inputMode="decimal" value={newPrice} onChange={e => setNewPrice(formatAmountInput(e.target.value, true))}
                 placeholder="0" className={inputCls} />
             </div>
           </div>
@@ -360,9 +361,10 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
                 <label className="text-xs font-medium text-slate-500 mb-1 block">금액 (KRW)</label>
                 <div className="relative">
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={amount}
-                    onChange={e => setAmount(e.target.value)}
+                    onChange={e => setAmount(formatAmountInput(e.target.value))}
                     placeholder="0"
                     required
                     className="w-full px-4 py-3 pr-10 rounded-xl border border-slate-200 text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300"
