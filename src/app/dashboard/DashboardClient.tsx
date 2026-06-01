@@ -376,11 +376,12 @@ export default function DashboardClient() {
   const handleUpdateTransaction = useCallback(async (id: string, data: { title: string; amount: number; category: string; user_id: string }) => {
     const existing = transactions.find(tx => tx.id === id)
     if (!existing) return
-    await fetch(`${API_BASE}/api/transactions/${id}`, {
+    const res = await fetch(`${API_BASE}/api/transactions/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...existing, ...data }),
     })
+    if (!res.ok) throw new Error(`거래 수정 실패: ${res.status}`)
     const [txData] = await Promise.all([
       apiFetch<Transaction[]>('/api/transactions'),
       fetchSummary(summaryYear, summaryMonth, startDay),
@@ -492,6 +493,10 @@ export default function DashboardClient() {
     })
     if (!res.ok) throw new Error(`자산 추가 실패: ${res.status}`)
     await refetchAssets()
+    if (data.asset_type === '대출') {
+      await refetchFixedExpenses()
+      await fetchCalendar(calendarYear, calendarMonth)
+    }
   }
 
   const handleEditAsset = async (id: string, data: UpdateOtherAssetRequest) => {
