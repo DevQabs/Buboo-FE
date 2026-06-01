@@ -515,6 +515,13 @@ export default function DashboardClient() {
     setOtherAssets(prev => prev.filter(a => a.id !== id))
   }
 
+  const handleCreateLoanExpense = async (id: string) => {
+    const res = await fetch(`${API_BASE}/api/assets/${id}/loan-expense`, { method: 'POST' })
+    if (!res.ok) throw new Error(`고정비 생성 실패: ${res.status}`)
+    await refetchFixedExpenses()
+    await fetchCalendar(calendarYear, calendarMonth)
+  }
+
   // ── fixed expense handlers ────────────────────────────────────────────────
   const handleAddFixedExpense = async (data: CreateFixedExpenseRequest) => {
     const res = await fetch(`${API_BASE}/api/fixed-expenses`, {
@@ -742,6 +749,7 @@ export default function DashboardClient() {
               onAdd={handleAddAsset}
               onEdit={handleEditAsset}
               onDelete={handleDeleteAsset}
+              onCreateLoanExpense={handleCreateLoanExpense}
             />
           </>
         )}

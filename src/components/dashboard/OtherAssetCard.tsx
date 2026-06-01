@@ -20,6 +20,7 @@ interface OtherAssetCardProps {
   onAdd: (data: CreateOtherAssetRequest) => Promise<void>
   onEdit: (id: string, data: UpdateOtherAssetRequest) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  onCreateLoanExpense?: (id: string) => Promise<void>
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -528,7 +529,7 @@ function DeleteConfirm({ asset, onConfirm, onCancel }: { asset: OtherAsset; onCo
 
 // ─── Asset Row ────────────────────────────────────────────────────────────────
 
-function AssetRow({ asset, user, onEdit, onDelete }: { asset: OtherAsset; user?: User; onEdit: () => void; onDelete: () => void }) {
+function AssetRow({ asset, user, onEdit, onDelete, onCreateLoanExpense }: { asset: OtherAsset; user?: User; onEdit: () => void; onDelete: () => void; onCreateLoanExpense?: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const isLoan = asset.asset_type === '대출'
   const pnl = !isLoan && asset.cost_krw > 0 ? asset.value_krw - asset.cost_krw : null
@@ -614,10 +615,15 @@ function AssetRow({ asset, user, onEdit, onDelete }: { asset: OtherAsset; user?:
         {menuOpen && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-            <div className="absolute right-0 bottom-full mb-1 z-20 bg-white border border-slate-100 rounded-xl shadow-lg py-1 min-w-[100px]">
+            <div className="absolute right-0 bottom-full mb-1 z-20 bg-white border border-slate-100 rounded-xl shadow-lg py-1 min-w-[110px]">
               <button onClick={() => { setMenuOpen(false); onEdit() }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                 <PencilSquareIcon className="h-4 w-4 text-slate-400" />수정
               </button>
+              {isLoan && onCreateLoanExpense && (
+                <button onClick={() => { setMenuOpen(false); onCreateLoanExpense() }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-violet-600 hover:bg-violet-50 transition-colors">
+                  <span className="text-sm">📌</span>고정비 등록
+                </button>
+              )}
               <button onClick={() => { setMenuOpen(false); onDelete() }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-rose-500 hover:bg-rose-50 transition-colors">
                 <TrashIcon className="h-4 w-4" />삭제
               </button>
@@ -631,7 +637,7 @@ function AssetRow({ asset, user, onEdit, onDelete }: { asset: OtherAsset; user?:
 
 // ─── Main card ────────────────────────────────────────────────────────────────
 
-export default function OtherAssetCard({ assets = [], users = [], onAdd, onEdit, onDelete }: OtherAssetCardProps) {
+export default function OtherAssetCard({ assets = [], users = [], onAdd, onEdit, onDelete, onCreateLoanExpense }: OtherAssetCardProps) {
   const [showAdd, setShowAdd] = useState(false)
   const [editingAsset, setEditingAsset] = useState<OtherAsset | null>(null)
   const [pendingDelete, setPendingDelete] = useState<OtherAsset | null>(null)
@@ -717,7 +723,7 @@ export default function OtherAssetCard({ assets = [], users = [], onAdd, onEdit,
               </li>
             )}
             {liabilities.map(asset => (
-              <AssetRow key={asset.id} asset={asset} user={userMap[asset.user_id]} onEdit={() => setEditingAsset(asset)} onDelete={() => setPendingDelete(asset)} />
+              <AssetRow key={asset.id} asset={asset} user={userMap[asset.user_id]} onEdit={() => setEditingAsset(asset)} onDelete={() => setPendingDelete(asset)} onCreateLoanExpense={onCreateLoanExpense ? () => onCreateLoanExpense(asset.id) : undefined} />
             ))}
           </ul>
         )}
