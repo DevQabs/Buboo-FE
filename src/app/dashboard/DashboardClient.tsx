@@ -192,7 +192,7 @@ export default function DashboardClient() {
         apiFetch<MonthlySummary>(`/api/summary?start_date=${startDate}&end_date=${endDate}`),
         apiFetch<OtherAsset[]>('/api/assets'),
         apiFetch<FixedExpense[]>('/api/fixed-expenses'),
-        apiFetch<FixedExpenseSummary>(`/api/fixed-expenses/summary?year=${y}&month=${m}`),
+        apiFetch<FixedExpenseSummary>(`/api/fixed-expenses/summary?year=${periodYear}&month=${adjMonth}`),
         apiFetch<DividendYearlySummary>(`/api/dividends/summary?year=${y}`),
         apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${y}&month=${m}`),
         apiFetch<Schedule[]>('/api/schedules'),
@@ -529,7 +529,10 @@ export default function DashboardClient() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...data, couple_id: 'couple-001' }),
     })
-    if (!res.ok) throw new Error(`고정비 추가 실패: ${res.status}`)
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      throw new Error(body?.error ?? `고정비 추가 실패: ${res.status}`)
+    }
     await refetchFixedExpenses()
   }
 
@@ -609,10 +612,12 @@ export default function DashboardClient() {
       { method: 'POST' }
     )
     if (!res.ok) throw new Error(`고정비 적용 실패: ${res.status}`)
-    // Refresh transactions + summary + fe summary
+    // Refresh transactions + summary + fe summary + calendar
     await Promise.all([
       refetchFixedExpenses(),
       fetchSummary(summaryYear, summaryMonth, startDay),
+      apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`)
+        .then(d => setCalendarData(d)),
     ])
   }
 
@@ -768,6 +773,11 @@ export default function DashboardClient() {
                 onPeriodChange={handlePeriodChange}
                 budgetLimit={couple?.monthly_budget ?? 0}
                 onUpdateBudget={handleUpdateBudget}
+                unappliedFixedTotal={
+                  feSummary?.unapplied
+                    .filter(fe => fe.kind === 'spending')
+                    .reduce((s, fe) => s + fe.amount, 0) ?? 0
+                }
               />
             )}
 

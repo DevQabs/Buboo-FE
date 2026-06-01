@@ -16,6 +16,7 @@ interface SummaryCardProps {
   onPeriodChange: (params: { year: number; month: number; startDay: number }) => void
   budgetLimit?: number
   onUpdateBudget?: (amount: number) => Promise<void>
+  unappliedFixedTotal?: number
 }
 
 function formatKRW(amount: number): string {
@@ -48,13 +49,15 @@ export default function SummaryCard({
   onPeriodChange,
   budgetLimit = 0,
   onUpdateBudget,
+  unappliedFixedTotal = 0,
 }: SummaryCardProps) {
   const [editingBudget, setEditingBudget] = useState(false)
   const [budgetInput, setBudgetInput]     = useState('')
   const [saving, setSaving]              = useState(false)
 
-  const budgetUsedPct = budgetLimit > 0 ? (summary.total_expense / budgetLimit) * 100 : 0
-  const remaining     = budgetLimit - summary.total_expense
+  const committedExpense = summary.total_expense + unappliedFixedTotal
+  const budgetUsedPct = budgetLimit > 0 ? (committedExpense / budgetLimit) * 100 : 0
+  const remaining     = budgetLimit - committedExpense
   const tier          = getBudgetTier(budgetUsedPct)
   const styles        = TIER_STYLES[tier]
   const barWidth      = Math.min(budgetUsedPct, 100)
@@ -175,7 +178,10 @@ export default function SummaryCard({
         {/* Spent / Remaining */}
         <div className="flex justify-between text-xs">
           <span className="text-slate-500">
-            사용 <span className="font-semibold text-slate-700">{formatKRW(summary.total_expense)}</span>
+            사용 <span className="font-semibold text-slate-700">{formatKRW(committedExpense)}</span>
+            {unappliedFixedTotal > 0 && (
+              <span className="ml-1 text-amber-500 text-[10px]">(고정비 {formatKRW(unappliedFixedTotal)} 예정 포함)</span>
+            )}
             <span className="text-slate-300 mx-1">/</span>
             <span className="text-slate-500">{formatKRW(budgetLimit)}</span>
           </span>
