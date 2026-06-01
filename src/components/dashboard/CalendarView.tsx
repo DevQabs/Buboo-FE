@@ -5,6 +5,7 @@ import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PlusIcon, Cog6ToothIcon, 
 import { formatAmountInput } from '@/lib/formatNumber'
 import { useCategories } from '@/hooks/useCategories'
 import CategoryManager from '@/components/dashboard/CategoryManager'
+import { getHolidaysForMonth } from '@/lib/koreanHolidays'
 import type {
   CalendarSummaryResponse,
   CalendarDay,
@@ -229,10 +230,12 @@ interface CellProps {
   isSelected: boolean
   isOtherMonth: boolean
   dailyBudget: number
+  holiday?: string
+  col: number
   onClick: () => void
 }
 
-function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOtherMonth, dailyBudget, onClick }: CellProps) {
+function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOtherMonth, dailyBudget, holiday, col, onClick }: CellProps) {
   const feEvents   = events.filter(e => e.type === 'fixed_expense')
   const divEvents  = events.filter(e => e.type === 'dividend')
   const hasExpense = (dayData?.total_expense ?? 0) > 0
@@ -266,7 +269,11 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
       `}
     >
       <span className={`text-[11px] font-semibold self-center leading-none mt-0.5 ${
-        isSelected ? 'text-white' : isToday ? 'text-indigo-600' : 'text-slate-600'
+        isSelected ? 'text-white'
+        : isToday   ? 'text-indigo-600'
+        : col === 0 || (col !== 6 && holiday) ? 'text-rose-500'
+        : col === 6 ? 'text-blue-500'
+        : 'text-slate-600'
       }`}>
         {day}
       </span>
@@ -761,6 +768,7 @@ export default function CalendarView({
   const firstDayOfWeek = new Date(year, month - 1, 1).getDay()
   const daysInMonth    = new Date(year, month, 0).getDate()
   const dailyBudget    = budgetLimit > 0 ? Math.round(budgetLimit / daysInMonth) : 0
+  const holidayMap     = useMemo(() => getHolidaysForMonth(year, month), [year, month])
 
   const totalCells = Math.ceil((firstDayOfWeek + daysInMonth) / 7) * 7
   const cells = Array.from({ length: totalCells }, (_, i) => {
@@ -838,6 +846,8 @@ export default function CalendarView({
               isSelected={dateKey === selectedDate}
               isOtherMonth={false}
               dailyBudget={dailyBudget}
+              holiday={holidayMap[dateKey]}
+              col={i % 7}
               onClick={() => dayNum > 0 && handleCellClick(dayNum)}
             />
           )

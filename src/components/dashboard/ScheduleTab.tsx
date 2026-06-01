@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
+import { getHolidaysForMonth } from '@/lib/koreanHolidays'
 import {
   PlusIcon,
   TrashIcon,
@@ -91,6 +92,7 @@ function MiniCalendar({
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ]
 
+  const holidayMap = useMemo(() => getHolidaysForMonth(year, month), [year, month])
   const todayStr = today()
 
   return (
@@ -108,8 +110,10 @@ function MiniCalendar({
       </div>
 
       <div className="grid grid-cols-7 mb-1">
-        {['일', '월', '화', '수', '목', '금', '토'].map(d => (
-          <div key={d} className="text-center text-[10px] font-semibold text-slate-400 py-1">{d}</div>
+        {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
+          <div key={d} className={`text-center text-[10px] font-semibold py-1 ${
+            i === 0 ? 'text-rose-400' : i === 6 ? 'text-blue-400' : 'text-slate-400'
+          }`}>{d}</div>
         ))}
       </div>
 
@@ -121,6 +125,8 @@ function MiniCalendar({
           const isSelected = dateStr === selectedDate
           const hasSchedule = scheduleDays.has(dateStr)
           const hasDiary = diaryDays.has(dateStr)
+          const holiday = holidayMap[dateStr]
+          const col = i % 7
 
           return (
             <button
@@ -131,7 +137,11 @@ function MiniCalendar({
               }`}
             >
               <span className={`text-xs font-medium ${
-                isSelected ? 'text-white' : isToday ? 'text-indigo-600' : 'text-slate-700'
+                isSelected ? 'text-white'
+                : isToday   ? 'text-indigo-600'
+                : col === 0 || (col !== 6 && holiday) ? 'text-rose-500'
+                : col === 6 ? 'text-blue-500'
+                : 'text-slate-700'
               }`}>{day}</span>
               <div className="flex gap-0.5 mt-0.5 h-1">
                 {hasSchedule && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-indigo-400'}`} />}

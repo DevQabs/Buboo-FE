@@ -746,6 +746,7 @@ export default function DashboardClient() {
             <OtherAssetCard
               assets={otherAssets}
               users={users}
+              fixedExpenseTitles={fixedExpenses.map(fe => fe.title)}
               onAdd={handleAddAsset}
               onEdit={handleEditAsset}
               onDelete={handleDeleteAsset}

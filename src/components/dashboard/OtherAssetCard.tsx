@@ -17,6 +17,7 @@ import { OTHER_ASSET_TYPES, ASSET_TYPE_EMOJI } from '@/types'
 interface OtherAssetCardProps {
   assets: OtherAsset[]
   users: User[]
+  fixedExpenseTitles?: string[]
   onAdd: (data: CreateOtherAssetRequest) => Promise<void>
   onEdit: (id: string, data: UpdateOtherAssetRequest) => Promise<void>
   onDelete: (id: string) => Promise<void>
@@ -529,7 +530,7 @@ function DeleteConfirm({ asset, onConfirm, onCancel }: { asset: OtherAsset; onCo
 
 // ─── Asset Row ────────────────────────────────────────────────────────────────
 
-function AssetRow({ asset, user, onEdit, onDelete, onCreateLoanExpense }: { asset: OtherAsset; user?: User; onEdit: () => void; onDelete: () => void; onCreateLoanExpense?: () => void }) {
+function AssetRow({ asset, user, onEdit, onDelete, onCreateLoanExpense, loanExpenseExists }: { asset: OtherAsset; user?: User; onEdit: () => void; onDelete: () => void; onCreateLoanExpense?: () => void; loanExpenseExists?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const isLoan = asset.asset_type === '대출'
   const pnl = !isLoan && asset.cost_krw > 0 ? asset.value_krw - asset.cost_krw : null
@@ -615,16 +616,21 @@ function AssetRow({ asset, user, onEdit, onDelete, onCreateLoanExpense }: { asse
         {menuOpen && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-            <div className="absolute right-0 bottom-full mb-1 z-20 bg-white border border-slate-100 rounded-xl shadow-lg py-1 min-w-[110px]">
-              <button onClick={() => { setMenuOpen(false); onEdit() }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+            <div className="absolute right-0 bottom-full mb-1 z-20 bg-white border border-slate-100 rounded-xl shadow-lg py-1 min-w-[120px]">
+              <button onClick={() => { setMenuOpen(false); onEdit() }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap">
                 <PencilSquareIcon className="h-4 w-4 text-slate-400" />수정
               </button>
-              {isLoan && onCreateLoanExpense && (
-                <button onClick={() => { setMenuOpen(false); onCreateLoanExpense() }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-violet-600 hover:bg-violet-50 transition-colors">
-                  <span className="text-sm">📌</span>고정비 등록
+              {isLoan && onCreateLoanExpense && !loanExpenseExists && (
+                <button onClick={() => { setMenuOpen(false); onCreateLoanExpense() }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-violet-600 hover:bg-violet-50 transition-colors whitespace-nowrap">
+                  <span className="text-xs leading-none">📌</span>고정비 등록
                 </button>
               )}
-              <button onClick={() => { setMenuOpen(false); onDelete() }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-rose-500 hover:bg-rose-50 transition-colors">
+              {isLoan && loanExpenseExists && (
+                <div className="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-300 whitespace-nowrap cursor-default">
+                  <span className="text-xs leading-none">📌</span>등록됨
+                </div>
+              )}
+              <button onClick={() => { setMenuOpen(false); onDelete() }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-rose-500 hover:bg-rose-50 transition-colors whitespace-nowrap">
                 <TrashIcon className="h-4 w-4" />삭제
               </button>
             </div>
@@ -637,7 +643,7 @@ function AssetRow({ asset, user, onEdit, onDelete, onCreateLoanExpense }: { asse
 
 // ─── Main card ────────────────────────────────────────────────────────────────
 
-export default function OtherAssetCard({ assets = [], users = [], onAdd, onEdit, onDelete, onCreateLoanExpense }: OtherAssetCardProps) {
+export default function OtherAssetCard({ assets = [], users = [], fixedExpenseTitles = [], onAdd, onEdit, onDelete, onCreateLoanExpense }: OtherAssetCardProps) {
   const [showAdd, setShowAdd] = useState(false)
   const [editingAsset, setEditingAsset] = useState<OtherAsset | null>(null)
   const [pendingDelete, setPendingDelete] = useState<OtherAsset | null>(null)
@@ -723,7 +729,15 @@ export default function OtherAssetCard({ assets = [], users = [], onAdd, onEdit,
               </li>
             )}
             {liabilities.map(asset => (
-              <AssetRow key={asset.id} asset={asset} user={userMap[asset.user_id]} onEdit={() => setEditingAsset(asset)} onDelete={() => setPendingDelete(asset)} onCreateLoanExpense={onCreateLoanExpense ? () => onCreateLoanExpense(asset.id) : undefined} />
+              <AssetRow
+                key={asset.id}
+                asset={asset}
+                user={userMap[asset.user_id]}
+                onEdit={() => setEditingAsset(asset)}
+                onDelete={() => setPendingDelete(asset)}
+                onCreateLoanExpense={onCreateLoanExpense ? () => onCreateLoanExpense(asset.id) : undefined}
+                loanExpenseExists={fixedExpenseTitles.includes(asset.name + ' 납입금')}
+              />
             ))}
           </ul>
         )}
