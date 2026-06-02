@@ -154,28 +154,21 @@ export default function SummaryCard({
         {/* Top row */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-600">이번 달 예산</span>
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${styles.badge}`}>
-              {styles.label} {budgetUsedPct.toFixed(0)}%
-            </span>
-            <span className="text-slate-200">·</span>
             {startDaySelect}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs tabular-nums">
+            <span className="text-[11px] tabular-nums whitespace-nowrap">
               <span className="font-semibold text-slate-700">{formatKRW(committedExpense)}</span>
               <span className="text-slate-300 mx-0.5">/</span>
               <span className="text-slate-400">{formatKRW(budgetLimit)}</span>
             </span>
-            {onUpdateBudget && (
-              <button
-                onClick={e => { e.stopPropagation(); setBudgetInput(String(budgetLimit)); setEditingBudget(true) }}
-                className="p-1 rounded-lg hover:bg-white/70 text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <PencilSquareIcon className="h-3.5 w-3.5" />
-              </button>
-            )}
           </div>
+          {onUpdateBudget && (
+            <button
+              onClick={e => { e.stopPropagation(); setBudgetInput(String(budgetLimit)); setEditingBudget(true) }}
+              className="p-1 rounded-lg hover:bg-white/70 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <PencilSquareIcon className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Stacked progress bar */}
