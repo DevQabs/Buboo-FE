@@ -367,6 +367,7 @@ export default function DashboardClient() {
         body: JSON.stringify({ ...data, couple_id: 'couple-001', date: ts }),
       }).then(r => r.json())
       setTransactions(prev => prev.map(tx => tx.id === optimistic.id ? created : tx))
+      await fetchCalendar(calendarYear, calendarMonth)
     } catch {
       setTransactions(prev => prev.filter(tx => tx.id !== optimistic.id))
     }

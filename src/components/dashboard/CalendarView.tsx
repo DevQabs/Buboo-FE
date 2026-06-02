@@ -298,18 +298,19 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-rose-400 rounded-full" />
       )}
 
-      {(feEvents.length > 0 || divEvents.length > 0) && (
-        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5">
-          {feEvents.length > 0 && (
-            <span
-              title={feEvents.map(e => e.title).join(', ')}
-              className={`text-[8px] font-semibold tabular-nums leading-none ${isSelected ? 'text-violet-200' : 'text-violet-500'}`}
-            >
-              {fmtCell(feEvents.reduce((s, e) => s + e.amount, 0))}
-            </span>
-          )}
-          {divEvents.length > 0 && <span title={divEvents.map(e => e.title).join(', ')} className="w-1 h-1 rounded-full bg-teal-400 inline-block flex-shrink-0" />}
-        </div>
+      {feEvents.length > 0 && (
+        <span
+          title={feEvents.map(e => e.title).join(', ')}
+          className={`text-[8px] font-semibold tabular-nums leading-none ${isSelected ? 'text-violet-200' : 'text-violet-400'}`}
+        >
+          📌{fmtCell(feEvents.reduce((s, e) => s + e.amount, 0))}
+        </span>
+      )}
+      {divEvents.length > 0 && (
+        <span
+          title={divEvents.map(e => e.title).join(', ')}
+          className="absolute bottom-0.5 right-1 w-1 h-1 rounded-full bg-teal-400 inline-block"
+        />
       )}
     </button>
   )
