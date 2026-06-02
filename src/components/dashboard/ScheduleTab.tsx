@@ -11,7 +11,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from '@heroicons/react/24/outline'
-import type { Schedule, DiaryEntry, CreateScheduleRequest, CreateDiaryRequest, DiaryMood, ScheduleColor, User } from '@/types'
+import type { Schedule, DiaryEntry, CreateScheduleRequest, CreateDiaryRequest, UpdateScheduleRequest, UpdateDiaryRequest, DiaryMood, ScheduleColor, User } from '@/types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
 
@@ -195,7 +195,7 @@ function DDayBanner({ schedules }: { schedules: Schedule[] }) {
 
 // ─── Schedule row ─────────────────────────────────────────────────────────────
 
-function ScheduleRow({ s, onDelete }: { s: Schedule; onDelete: () => void }) {
+function ScheduleRow({ s, onEdit, onDelete }: { s: Schedule; onEdit: () => void; onDelete: () => void }) {
   const c = COLOR_MAP[s.color] ?? COLOR_MAP.indigo
   const dday = s.is_dday ? calcDDay(s.start_date) : null
   return (
@@ -213,12 +213,20 @@ function ScheduleRow({ s, onDelete }: { s: Schedule; onDelete: () => void }) {
         <p className="text-[11px] text-slate-400">{fmtDate(s.start_date)}{s.end_date ? ` ~ ${fmtDate(s.end_date)}` : ''}</p>
         {s.description && <p className="text-[11px] text-slate-500 truncate">{s.description}</p>}
       </div>
-      <button
-        onClick={onDelete}
-        className="p-1.5 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors flex-shrink-0"
-      >
-        <TrashIcon className="h-3.5 w-3.5" />
-      </button>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <button
+          onClick={onEdit}
+          className="p-1.5 rounded-lg text-slate-300 hover:text-indigo-400 hover:bg-indigo-50 transition-colors"
+        >
+          <PencilSquareIcon className="h-3.5 w-3.5" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="p-1.5 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors"
+        >
+          <TrashIcon className="h-3.5 w-3.5" />
+        </button>
+      </div>
     </div>
   )
 }
@@ -342,9 +350,112 @@ function AddScheduleModal({ users, onClose, onSave }: {
   )
 }
 
+// ─── Edit Schedule Modal ──────────────────────────────────────────────────────
+
+function EditScheduleModal({ schedule, onClose, onSave }: {
+  schedule: Schedule
+  onClose: () => void
+  onSave: (id: string, req: UpdateScheduleRequest) => Promise<void>
+}) {
+  const [title, setTitle]     = useState(schedule.title)
+  const [desc, setDesc]       = useState(schedule.description)
+  const [startDate, setStart] = useState(schedule.start_date.slice(0, 10))
+  const [endDate, setEnd]     = useState(schedule.end_date?.slice(0, 10) ?? '')
+  const [isDDay, setIsDDay]   = useState(schedule.is_dday)
+  const [ddayLabel, setLabel] = useState(schedule.dday_label)
+  const [color, setColor]     = useState<ScheduleColor>(schedule.color)
+  const [saving, setSaving]   = useState(false)
+  const [error, setError]     = useState('')
+
+  const handleSave = async () => {
+    if (!title.trim()) { setError('제목을 입력해주세요'); return }
+    setSaving(true); setError('')
+    try {
+      await onSave(schedule.id, {
+        title, description: desc,
+        start_date: startDate, end_date: endDate || undefined,
+        all_day: true, is_dday: isDDay, dday_label: ddayLabel, color,
+      })
+      onClose()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '저장 실패')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+          <h2 className="text-base font-bold text-slate-800">일정 수정</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">×</button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">제목 *</label>
+            <input value={title} onChange={e => setTitle(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              placeholder="일정 제목" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">메모</label>
+            <input value={desc} onChange={e => setDesc(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              placeholder="선택 사항" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">날짜 *</label>
+              <input type="date" value={startDate} onChange={e => setStart(e.target.value)}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">종료일</label>
+              <input type="date" value={endDate} onChange={e => setEnd(e.target.value)}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-2 block">색상</label>
+            <div className="flex gap-2">
+              {(Object.keys(COLOR_MAP) as ScheduleColor[]).map(c => (
+                <button key={c} onClick={() => setColor(c)}
+                  className={`w-7 h-7 rounded-full transition-all ${COLOR_MAP[c].dot} ${color === c ? 'ring-2 ring-offset-1 ring-slate-400 scale-110' : ''}`} />
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div
+                onClick={() => setIsDDay(v => !v)}
+                className={`w-10 h-5 rounded-full transition-colors ${isDDay ? 'bg-indigo-500' : 'bg-slate-200'} relative`}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isDDay ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-sm text-slate-700">D-Day 카운터</span>
+            </label>
+          </div>
+          {isDDay && (
+            <input value={ddayLabel} onChange={e => setLabel(e.target.value)}
+              placeholder="D-Day 라벨 (예: 결혼기념일)"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          )}
+          {error && <p className="text-xs text-rose-500">{error}</p>}
+        </div>
+        <div className="px-5 py-4 border-t border-slate-100 flex gap-2 shrink-0">
+          <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors">취소</button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors disabled:opacity-40">
+            {saving ? '저장 중...' : '저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Diary row ────────────────────────────────────────────────────────────────
 
-function DiaryRow({ d, apiBase, onDelete }: { d: DiaryEntry; apiBase: string; onDelete: () => void }) {
+function DiaryRow({ d, apiBase, onEdit, onDelete }: { d: DiaryEntry; apiBase: string; onEdit: () => void; onDelete: () => void }) {
   const [expanded, setExpanded] = useState(false)
   return (
     <div className="px-4 py-3 border-b border-slate-50 last:border-0">
@@ -358,6 +469,10 @@ function DiaryRow({ d, apiBase, onDelete }: { d: DiaryEntry; apiBase: string; on
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <button onClick={e => { e.stopPropagation(); onEdit() }}
+              className="p-1.5 rounded-lg text-slate-300 hover:text-amber-400 hover:bg-amber-50 transition-colors">
+              <PencilSquareIcon className="h-3.5 w-3.5" />
+            </button>
             <button onClick={e => { e.stopPropagation(); onDelete() }}
               className="p-1.5 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors">
               <TrashIcon className="h-3.5 w-3.5" />
@@ -370,10 +485,13 @@ function DiaryRow({ d, apiBase, onDelete }: { d: DiaryEntry; apiBase: string; on
           <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{d.content}</p>
           {d.photos.length > 0 && (
             <div className="flex gap-2 mt-2 flex-wrap">
-              {d.photos.map(p => (
-                <img key={p} src={`${apiBase}/uploads/${p}`} alt=""
-                  className="w-20 h-20 object-cover rounded-xl border border-slate-100" />
-              ))}
+              {d.photos.map(p => {
+                const src = p.startsWith('http') ? p : `${apiBase}${p}`
+                return (
+                  <img key={p} src={src} alt=""
+                    className="w-20 h-20 object-cover rounded-xl border border-slate-100" />
+                )
+              })}
             </div>
           )}
         </div>
@@ -506,6 +624,143 @@ function AddDiaryModal({ users, initialDate, onClose, onSave }: {
   )
 }
 
+// ─── Edit Diary Modal ─────────────────────────────────────────────────────────
+
+function EditDiaryModal({ diary, onClose, onSaved }: {
+  diary: DiaryEntry
+  onClose: () => void
+  onSaved: () => Promise<void>
+}) {
+  const [content, setContent]     = useState(diary.content)
+  const [mood, setMood]           = useState<DiaryMood>(diary.mood)
+  const [existingPhotos, setExistingPhotos] = useState<string[]>(diary.photos)
+  const [newPhotos, setNewPhotos] = useState<File[]>([])
+  const [newPreviews, setNewPreviews] = useState<string[]>([])
+  const [saving, setSaving]       = useState(false)
+  const [error, setError]         = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const photoSrc = (p: string) => p.startsWith('http') ? p : `${API_BASE}${p}`
+  const photoFilename = (p: string) => p.split('/').pop() ?? p
+
+  const handleDeleteExisting = async (photoURL: string) => {
+    const filename = photoFilename(photoURL)
+    try {
+      await fetch(`${API_BASE}/api/diaries/${diary.id}/photos/${encodeURIComponent(filename)}`, { method: 'DELETE' })
+      setExistingPhotos(ps => ps.filter(p => p !== photoURL))
+    } catch {
+      setError('사진 삭제 실패')
+    }
+  }
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return
+    const arr = Array.from(files)
+    setNewPhotos(p => [...p, ...arr])
+    arr.forEach(f => {
+      const reader = new FileReader()
+      reader.onload = e => setNewPreviews(p => [...p, e.target?.result as string])
+      reader.readAsDataURL(f)
+    })
+  }
+
+  const removeNewPhoto = (i: number) => {
+    setNewPhotos(p => p.filter((_, idx) => idx !== i))
+    setNewPreviews(p => p.filter((_, idx) => idx !== i))
+  }
+
+  const handleSave = async () => {
+    if (!content.trim()) { setError('내용을 입력해주세요'); return }
+    setSaving(true); setError('')
+    try {
+      const res = await fetch(`${API_BASE}/api/diaries/${diary.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, mood } satisfies UpdateDiaryRequest),
+      })
+      if (!res.ok) throw new Error(`수정 실패: ${res.status}`)
+      for (const photo of newPhotos) {
+        const form = new FormData()
+        form.append('photo', photo)
+        await fetch(`${API_BASE}/api/diaries/${diary.id}/photos`, { method: 'POST', body: form })
+      }
+      await onSaved()
+      onClose()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '저장 실패')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+          <h2 className="text-base font-bold text-slate-800">일기 수정</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">×</button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
+            <span className="text-xs text-slate-400">날짜</span>
+            <span className="text-sm font-semibold text-slate-700">{diary.date}</span>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">기분</label>
+            <select value={mood} onChange={e => setMood(e.target.value as DiaryMood)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+              {(Object.keys(MOOD_EMOJI) as DiaryMood[]).map(m => (
+                <option key={m} value={m}>{MOOD_EMOJI[m]} {MOOD_LABEL[m]}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">내용 *</label>
+            <textarea value={content} onChange={e => setContent(e.target.value)} rows={5}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-2 block">사진</label>
+            <div className="flex flex-wrap gap-2">
+              {existingPhotos.map(p => (
+                <div key={p} className="relative w-20 h-20">
+                  <img src={photoSrc(p)} alt="" className="w-full h-full object-cover rounded-xl border border-slate-100" />
+                  <button onClick={() => handleDeleteExisting(p)}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center">
+                    <XMarkIcon className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {newPreviews.map((src, i) => (
+                <div key={i} className="relative w-20 h-20">
+                  <img src={src} alt="" className="w-full h-full object-cover rounded-xl border border-amber-100" />
+                  <button onClick={() => removeNewPhoto(i)}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center">
+                    <XMarkIcon className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              <button onClick={() => fileRef.current?.click()}
+                className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-amber-400 hover:text-amber-500 transition-colors">
+                <PhotoIcon className="h-5 w-5 mb-0.5" />
+                <span className="text-[10px]">추가</span>
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
+                onChange={e => handleFiles(e.target.files)} />
+            </div>
+          </div>
+          {error && <p className="text-xs text-rose-500">{error}</p>}
+        </div>
+        <div className="px-5 py-4 border-t border-slate-100 flex gap-2 shrink-0">
+          <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors">취소</button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 transition-colors disabled:opacity-40">
+            {saving ? '저장 중...' : '저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main ScheduleTab ─────────────────────────────────────────────────────────
 
 interface ScheduleTabProps {
@@ -513,14 +768,17 @@ interface ScheduleTabProps {
   diaries: DiaryEntry[]
   users: User[]
   onAddSchedule: (req: CreateScheduleRequest) => Promise<void>
+  onEditSchedule: (id: string, req: UpdateScheduleRequest) => Promise<void>
   onDeleteSchedule: (id: string) => Promise<void>
   onAddDiary: (req: CreateDiaryRequest, photos: File[]) => Promise<void>
+  onDiaryEdited: () => Promise<void>
   onDeleteDiary: (id: string) => Promise<void>
 }
 
 export default function ScheduleTab({
   schedules, diaries, users,
-  onAddSchedule, onDeleteSchedule, onAddDiary, onDeleteDiary,
+  onAddSchedule, onEditSchedule, onDeleteSchedule,
+  onAddDiary, onDiaryEdited, onDeleteDiary,
 }: ScheduleTabProps) {
   const now = new Date()
   const [year, setYear]   = useState(now.getFullYear())
@@ -528,6 +786,8 @@ export default function ScheduleTab({
   const [selectedDate, setSelectedDate] = useState(today())
   const [showAddSchedule, setShowAddSchedule] = useState(false)
   const [showAddDiary, setShowAddDiary]       = useState(false)
+  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null)
+  const [editingDiary, setEditingDiary]       = useState<DiaryEntry | null>(null)
   const [activeSection, setActiveSection]     = useState<'schedule' | 'diary'>('schedule')
 
   const prevMonth = () => {
@@ -610,7 +870,7 @@ export default function ScheduleTab({
             ) : (
               <div className="divide-y divide-slate-50">
                 {dateSchedules.map(s => (
-                  <ScheduleRow key={s.id} s={s} onDelete={() => onDeleteSchedule(s.id)} />
+                  <ScheduleRow key={s.id} s={s} onEdit={() => setEditingSchedule(s)} onDelete={() => onDeleteSchedule(s.id)} />
                 ))}
               </div>
             )}
@@ -624,7 +884,7 @@ export default function ScheduleTab({
               </div>
             ) : (
               dateDiaries.map(d => (
-                <DiaryRow key={d.id} d={d} apiBase={API_BASE} onDelete={() => onDeleteDiary(d.id)} />
+                <DiaryRow key={d.id} d={d} apiBase={API_BASE} onEdit={() => setEditingDiary(d)} onDelete={() => onDeleteDiary(d.id)} />
               ))
             )}
           </div>
@@ -639,12 +899,26 @@ export default function ScheduleTab({
           onSave={onAddSchedule}
         />
       )}
+      {editingSchedule && (
+        <EditScheduleModal
+          schedule={editingSchedule}
+          onClose={() => setEditingSchedule(null)}
+          onSave={onEditSchedule}
+        />
+      )}
       {showAddDiary && (
         <AddDiaryModal
           users={users}
           initialDate={selectedDate}
           onClose={() => setShowAddDiary(false)}
           onSave={onAddDiary}
+        />
+      )}
+      {editingDiary && (
+        <EditDiaryModal
+          diary={editingDiary}
+          onClose={() => setEditingDiary(null)}
+          onSaved={onDiaryEdited}
         />
       )}
     </div>

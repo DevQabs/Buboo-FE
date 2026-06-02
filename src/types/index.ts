@@ -487,6 +487,17 @@ export interface CreateScheduleRequest {
   color?: ScheduleColor
 }
 
+export interface UpdateScheduleRequest {
+  title?: string
+  description?: string
+  start_date?: string
+  end_date?: string
+  all_day?: boolean
+  is_dday?: boolean
+  dday_label?: string
+  color?: ScheduleColor
+}
+
 // ─────────────────────────────────────────────
 //  DiaryEntry (일기)
 // ─────────────────────────────────────────────
@@ -510,4 +521,9 @@ export interface CreateDiaryRequest {
   date: string
   content: string
   mood: DiaryMood
+}
+
+export interface UpdateDiaryRequest {
+  content?: string
+  mood?: DiaryMood
 }

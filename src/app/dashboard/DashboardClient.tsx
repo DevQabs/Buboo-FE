@@ -44,6 +44,7 @@ import type {
   Schedule,
   DiaryEntry,
   CreateScheduleRequest,
+  UpdateScheduleRequest,
   CreateDiaryRequest,
 } from '@/types'
 
@@ -634,6 +635,17 @@ export default function DashboardClient() {
     setSchedules(s => [...s, created])
   }
 
+  const handleEditSchedule = async (id: string, req: UpdateScheduleRequest) => {
+    const res = await fetch(`${API_BASE}/api/schedules/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    })
+    if (!res.ok) throw new Error(`일정 수정 실패: ${res.status}`)
+    const updated: Schedule = await res.json()
+    setSchedules(s => s.map(x => x.id === id ? updated : x))
+  }
+
   const handleDeleteSchedule = async (id: string) => {
     const res = await fetch(`${API_BASE}/api/schedules/${id}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(`일정 삭제 실패: ${res.status}`)
@@ -656,6 +668,11 @@ export default function DashboardClient() {
       await fetch(`${API_BASE}/api/diaries/${created.id}/photos`, { method: 'POST', body: form })
     }
     // Refetch diary to get updated photos
+    const updated = await apiFetch<DiaryEntry[]>('/api/diaries')
+    setDiaries(Array.isArray(updated) ? updated : [])
+  }
+
+  const handleDiaryEdited = async () => {
     const updated = await apiFetch<DiaryEntry[]>('/api/diaries')
     setDiaries(Array.isArray(updated) ? updated : [])
   }
@@ -834,8 +851,10 @@ export default function DashboardClient() {
             diaries={diaries}
             users={users}
             onAddSchedule={handleAddSchedule}
+            onEditSchedule={handleEditSchedule}
             onDeleteSchedule={handleDeleteSchedule}
             onAddDiary={handleAddDiary}
+            onDiaryEdited={handleDiaryEdited}
             onDeleteDiary={handleDeleteDiary}
           />
         )}
