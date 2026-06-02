@@ -7,7 +7,6 @@ import {
   PencilIcon,
   TrashIcon,
   BoltIcon,
-  CheckCircleIcon,
 } from '@heroicons/react/24/outline'
 import { formatAmountInput } from '@/lib/formatNumber'
 import type {
@@ -560,7 +559,6 @@ interface FixedExpenseCardProps {
   onAdd: (data: CreateFixedExpenseRequest) => Promise<void>
   onEdit: (id: string, data: UpdateFixedExpenseRequest) => Promise<void>
   onDelete: (id: string) => Promise<void>
-  onApply: () => Promise<void>
 }
 
 export default function FixedExpenseCard({
@@ -574,22 +572,13 @@ export default function FixedExpenseCard({
   onAdd,
   onEdit,
   onDelete,
-  onApply,
 }: FixedExpenseCardProps) {
   const [showModal, setShowModal] = useState(false)
   const [editingFe, setEditingFe] = useState<FixedExpense | null>(null)
-  const [applying, setApplying] = useState(false)
 
   const activeItems = fixedExpenses.filter(fe => fe.is_active)
   const inactiveItems = fixedExpenses.filter(fe => !fe.is_active)
-  const unappliedCount = summary?.unapplied.length ?? 0
-  const totalAmount = summary?.total_amount ?? activeItems.reduce((s, fe) => s + fe.amount, 0)
-  const allApplied = unappliedCount === 0 && activeItems.length > 0
-
-  const handleApply = async () => {
-    setApplying(true)
-    try { await onApply() } finally { setApplying(false) }
-  }
+  const totalAmount = activeItems.reduce((s, fe) => s + fe.amount, 0)
 
   const handleSave = async (data: CreateFixedExpenseRequest | UpdateFixedExpenseRequest) => {
     if (editingFe) {
@@ -607,49 +596,16 @@ export default function FixedExpenseCard({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-medium text-amber-600 mb-0.5">😮‍💨 {year}년 {month}월 고정비</p>
-            <div className="flex items-baseline gap-2">
-              <p className="text-xl font-extrabold text-slate-900 tabular-nums">{formatKRW(totalAmount)}</p>
-              {summary && (
-                <p className="text-[10px] text-slate-400">{summary.applied_count}/{summary.total_count}개 반영</p>
-              )}
-            </div>
+            <p className="text-xl font-extrabold text-slate-900 tabular-nums">{formatKRW(totalAmount)}</p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {activeItems.length > 0 && (
-              allApplied ? (
-                <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[10px] font-medium px-2 py-1 rounded-lg">
-                  <CheckCircleIcon className="h-3.5 w-3.5" />모두 반영
-                </div>
-              ) : (
-                <button
-                  onClick={handleApply}
-                  disabled={applying}
-                  className="flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-semibold px-2 py-1 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  <BoltIcon className="h-3 w-3" />
-                  {applying ? '...' : `${unappliedCount}개 적용`}
-                </button>
-              )
-            )}
-            <button
-              onClick={() => { setEditingFe(null); setShowModal(true) }}
-              className="flex items-center gap-0.5 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-            >
-              <PlusIcon className="h-3.5 w-3.5" />추가
-            </button>
-          </div>
+          <button
+            onClick={() => { setEditingFe(null); setShowModal(true) }}
+            className="flex items-center gap-0.5 text-xs text-indigo-600 hover:text-indigo-700 font-medium shrink-0"
+          >
+            <PlusIcon className="h-3.5 w-3.5" />추가
+          </button>
         </div>
-
-        {unappliedCount > 0 && summary && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {summary.unapplied.map(fe => (
-              <span key={fe.id} className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
-                {fe.title} ({formatKRW(fe.amount)})
-              </span>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ── Fixed expense list ── */}
@@ -667,7 +623,7 @@ export default function FixedExpenseCard({
         ) : (
           <>
             {activeItems.map(fe => (
-              <FeRow key={fe.id} fe={fe} summary={summary}
+              <FeRow key={fe.id} fe={fe}
                 onEdit={() => { setEditingFe(fe); setShowModal(true) }}
                 onDelete={() => onDelete(fe.id)}
                 onToggle={() => onEdit(fe.id, { is_active: false })} />
@@ -678,7 +634,7 @@ export default function FixedExpenseCard({
                   <p className="text-[10px] text-slate-400 font-medium">비활성</p>
                 </div>
                 {inactiveItems.map(fe => (
-                  <FeRow key={fe.id} fe={fe} summary={summary}
+                  <FeRow key={fe.id} fe={fe}
                     onEdit={() => { setEditingFe(fe); setShowModal(true) }}
                     onDelete={() => onDelete(fe.id)}
                     onToggle={() => onEdit(fe.id, { is_active: true })} />
@@ -708,25 +664,18 @@ export default function FixedExpenseCard({
 
 function FeRow({
   fe,
-  summary,
   onEdit,
   onDelete,
   onToggle,
 }: {
   fe: FixedExpense
-  summary: FixedExpenseSummary | null
   onEdit: () => void
   onDelete: () => void
   onToggle: () => void
 }) {
-  const isApplied = summary ? !summary.unapplied.some(u => u.id === fe.id) && fe.is_active : false
-
   return (
     <div className={`flex items-center gap-2 px-4 py-2.5 ${!fe.is_active ? 'opacity-40' : ''}`}>
-      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-        !fe.is_active ? 'bg-slate-200' :
-        isApplied ? 'bg-emerald-400' : 'bg-amber-400'
-      }`} />
+      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${fe.is_active ? 'bg-amber-400' : 'bg-slate-200'}`} />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1 flex-wrap">
@@ -737,7 +686,6 @@ function FeRow({
         <p className="text-[10px] text-slate-400 mt-0.5">
           매월 {fe.day_of_month}일
           {fe.category && <span className="ml-1 text-slate-300">· {fe.category}</span>}
-          {isApplied && fe.is_active && <span className="ml-1 text-emerald-500 font-medium">✓</span>}
         </p>
       </div>
 

@@ -648,21 +648,6 @@ export default function DashboardClient() {
     ])
   }
 
-  const handleApplyFixedExpenses = async () => {
-    const res = await fetch(
-      `${API_BASE}/api/fixed-expenses/apply?year=${summaryYear}&month=${summaryMonth}`,
-      { method: 'POST' }
-    )
-    if (!res.ok) throw new Error(`고정비 적용 실패: ${res.status}`)
-    // Refresh transactions + summary + fe summary + calendar
-    await Promise.all([
-      refetchFixedExpenses(),
-      fetchSummary(summaryYear, summaryMonth, startDay),
-      apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`)
-        .then(d => setCalendarData(d)),
-    ])
-  }
-
   // ── schedule handlers ─────────────────────────────────────────────────────
   const handleAddSchedule = async (req: CreateScheduleRequest) => {
     const res = await fetch(`${API_BASE}/api/schedules`, {
@@ -831,11 +816,29 @@ export default function DashboardClient() {
                 onPeriodChange={handlePeriodChange}
                 budgetLimit={couple?.monthly_budget ?? 0}
                 onUpdateBudget={handleUpdateBudget}
-                unappliedFixedTotal={
-                  feSummary?.unapplied
-                    .filter(fe => fe.kind === 'spending')
-                    .reduce((s, fe) => s + fe.amount, 0) ?? 0
-                }
+                fixedExpenseTotal={fixedExpenses
+                  .filter(fe => fe.is_active && fe.kind === 'spending')
+                  .reduce((s, fe) => s + fe.amount, 0)}
+                categoryBreakdown={(() => {
+                  const map = new Map<string, { amount: number; isFixed: boolean }>()
+                  for (const tx of transactions) {
+                    if (tx.type === 'expense' && !tx.fixed_expense_id) {
+                      const cat = tx.category || '기타'
+                      const prev = map.get(cat)
+                      map.set(cat, { amount: (prev?.amount ?? 0) + tx.amount, isFixed: false })
+                    }
+                  }
+                  for (const fe of fixedExpenses) {
+                    if (fe.is_active && fe.kind === 'spending') {
+                      const cat = fe.category || '고정비'
+                      const prev = map.get(cat)
+                      map.set(cat, { amount: (prev?.amount ?? 0) + fe.amount, isFixed: prev?.isFixed ?? true })
+                    }
+                  }
+                  return Array.from(map.entries())
+                    .map(([category, v]) => ({ category, amount: v.amount, isFixed: v.isFixed }))
+                    .sort((a, b) => b.amount - a.amount)
+                })()}
               />
             )}
 
@@ -878,7 +881,6 @@ export default function DashboardClient() {
               onAdd={handleAddFixedExpense}
               onEdit={handleEditFixedExpense}
               onDelete={handleDeleteFixedExpense}
-              onApply={handleApplyFixedExpenses}
             />
 
           </>
