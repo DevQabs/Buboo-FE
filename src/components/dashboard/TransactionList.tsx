@@ -43,9 +43,12 @@ function formatAmount(amount: number, type: string): string {
   return `-${formatted}원`
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, createdAt?: string): string {
   const d = new Date(dateStr)
-  return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+  const t = createdAt ? new Date(createdAt) : null
+  const date = `${d.getMonth() + 1}/${d.getDate()}`
+  if (!t) return date
+  return `${date} ${t.getHours().toString().padStart(2, '0')}:${t.getMinutes().toString().padStart(2, '0')}`
 }
 
 type FilterType = 'all' | 'income' | 'expense' | 'saving'
@@ -140,7 +143,7 @@ export default function TransactionList({ transactions = [], users = [], stocks 
                       />
                     )}
                     <span className="text-xs text-slate-400 truncate">
-                      {user?.name} · {formatDate(tx.date)}
+                      {user?.name} · {formatDate(tx.date, tx.created_at)}
                       {tx.is_fixed && (
                         <span className="ml-1 text-xs text-indigo-400 font-medium">고정</span>
                       )}

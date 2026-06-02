@@ -8,7 +8,9 @@
  * Tab 2 (가계부):    기간 선택 가능한 월별 요약 + 거래 내역
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import Lottie from 'lottie-react'
+import loadingAnimation from '@/assets/loading.json'
 import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon } from '@heroicons/react/24/outline'
 import SummaryCard from '@/components/dashboard/SummaryCard'
 import StockPortfolioCard from '@/components/dashboard/StockPortfolioCard'
@@ -103,7 +105,7 @@ export default function DashboardClient() {
   const [error, setError]             = useState<string | null>(null)
 
   // ── UI state ──
-  const [activeTab, setActiveTab]     = useState<ActiveTab>('wealth')
+  const [activeTab, setActiveTab]     = useState<ActiveTab>('ledger')
   const now = new Date()
   const [summaryYear, setSummaryYear]   = useState(now.getFullYear())
   const [summaryMonth, setSummaryMonth] = useState(now.getMonth() + 1)
@@ -227,6 +229,44 @@ export default function DashboardClient() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { fetchAll() }, [fetchAll])
+
+  // ── tab-switch auto-refresh ───────────────────────────────────────────────
+  const tabMounted = useRef(false)
+  useEffect(() => {
+    if (!tabMounted.current) { tabMounted.current = true; return }
+    if (activeTab === 'life') {
+      Promise.all([
+        apiFetch<Schedule[]>('/api/schedules'),
+        apiFetch<DiaryEntry[]>('/api/diaries'),
+      ]).then(([sch, dia]) => {
+        setSchedules(Array.isArray(sch) ? sch : [])
+        setDiaries(Array.isArray(dia) ? dia : [])
+      }).catch(() => {})
+    } else if (activeTab === 'ledger') {
+      const { startDate, endDate } = buildDateRange(summaryYear, summaryMonth, startDay)
+      Promise.all([
+        apiFetch<Transaction[]>('/api/transactions'),
+        apiFetch<MonthlySummary>(`/api/summary?start_date=${startDate}&end_date=${endDate}`),
+        apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`),
+        apiFetch<FixedExpense[]>('/api/fixed-expenses'),
+      ]).then(([tx, sum, cal, fe]) => {
+        setTransactions(Array.isArray(tx) ? tx : [])
+        setSummary(sum as MonthlySummary)
+        setCalendarData(cal as CalendarSummaryResponse)
+        setFixedExpenses(Array.isArray(fe) ? fe : [])
+      }).catch(() => {})
+    } else if (activeTab === 'wealth') {
+      Promise.all([
+        apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
+        apiFetch<OtherAsset[]>('/api/assets'),
+      ]).then(([port, assets]) => {
+        const p = port as PortfolioResponse
+        if (Array.isArray(p)) { setPortfolio(p); setPortfolioSummary(null) }
+        else { setPortfolio(p?.items ?? []); setPortfolioSummary(p?.summary ?? null) }
+        setOtherAssets(Array.isArray(assets) ? assets : [])
+      }).catch(() => {})
+    }
+  }, [activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── period change handler ─────────────────────────────────────────────────
   const handlePeriodChange = useCallback(
@@ -686,8 +726,8 @@ export default function DashboardClient() {
   // ── loading / error screens ───────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-3">
-        <div className="w-10 h-10 rounded-full border-2 border-indigo-200 border-t-indigo-500 animate-spin" />
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-2">
+        <Lottie animationData={loadingAnimation} loop style={{ width: 180, height: 180 }} />
         <p className="text-sm text-slate-400">불러오는 중...</p>
       </div>
     )
@@ -892,21 +932,6 @@ export default function DashboardClient() {
       <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur-lg border-t border-slate-100 shadow-[0_-1px_12px_rgba(0,0,0,0.06)]">
         <div className="max-w-2xl mx-auto flex">
           <button
-            onClick={() => setActiveTab('wealth')}
-            className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
-              activeTab === 'wealth' ? 'text-indigo-600' : 'text-slate-400 active:text-slate-600'
-            }`}
-          >
-            <div className={`p-1.5 rounded-xl transition-all duration-200 ${
-              activeTab === 'wealth' ? 'bg-indigo-50' : ''
-            }`}>
-              <ChartPieIcon className="h-5 w-5" />
-            </div>
-            <span className={`text-[10px] font-semibold tracking-tight ${
-              activeTab === 'wealth' ? 'text-indigo-600' : 'text-slate-400'
-            }`}>자산 현황</span>
-          </button>
-          <button
             onClick={() => setActiveTab('ledger')}
             className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
               activeTab === 'ledger' ? 'text-indigo-600' : 'text-slate-400 active:text-slate-600'
@@ -935,6 +960,21 @@ export default function DashboardClient() {
             <span className={`text-[10px] font-semibold tracking-tight ${
               activeTab === 'life' ? 'text-indigo-600' : 'text-slate-400'
             }`}>일정/일기</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('wealth')}
+            className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
+              activeTab === 'wealth' ? 'text-indigo-600' : 'text-slate-400 active:text-slate-600'
+            }`}
+          >
+            <div className={`p-1.5 rounded-xl transition-all duration-200 ${
+              activeTab === 'wealth' ? 'bg-indigo-50' : ''
+            }`}>
+              <ChartPieIcon className="h-5 w-5" />
+            </div>
+            <span className={`text-[10px] font-semibold tracking-tight ${
+              activeTab === 'wealth' ? 'text-indigo-600' : 'text-slate-400'
+            }`}>자산 현황</span>
           </button>
         </div>
       </nav>
