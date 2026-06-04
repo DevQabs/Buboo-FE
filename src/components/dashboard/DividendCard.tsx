@@ -5,9 +5,6 @@ import { formatAmountInput } from '@/lib/formatNumber'
 import {
   PlusIcon,
   TrashIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  ArrowDownTrayIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline'
 import type {
@@ -16,6 +13,7 @@ import type {
   CreateDividendRequest,
   StockAssetWithPrice,
   PortfolioSummary,
+  User,
 } from '@/types'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -41,17 +39,17 @@ function fmtDate(iso: string): string {
 interface AddDividendModalProps {
   portfolio: StockAssetWithPrice[]
   portfolioSummary: PortfolioSummary | null
+  users: User[]
   onClose: () => void
   onSave: (data: CreateDividendRequest) => Promise<void>
 }
 
-function AddDividendModal({ portfolio, portfolioSummary, onClose, onSave }: AddDividendModalProps) {
+function AddDividendModal({ portfolio, portfolioSummary, users, onClose, onSave }: AddDividendModalProps) {
   // Step 1: stock selection
   const [selectedId, setSelectedId] = useState('')
   // Step 2: input
   const [amountPerShare, setAmountPerShare] = useState('')
   const [paymentDate, setPaymentDate]       = useState('')
-  const [exDivDate, setExDivDate]           = useState('')
   const [memo, setMemo]                     = useState('')
   const [saving, setSaving]                 = useState(false)
   const [error, setError]                   = useState('')
@@ -75,6 +73,18 @@ function AddDividendModal({ portfolio, portfolioSummary, onClose, onSave }: AddD
     return { aps, qty, total, afterTax, krw, tr }
   }, [amountPerShare, selected, usdKRW])
 
+  // Per-holder breakdown: all portfolio entries with same symbol
+  const holders = useMemo(() => {
+    if (!selected || calc.aps <= 0) return []
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]))
+    return portfolio
+      .filter(s => s.symbol === selected.symbol)
+      .map(s => {
+        const afterTax = calc.aps * s.quantity * (1 - calc.tr)
+        return { stock: s, user: userMap[s.user_id], afterTax, krw: afterTax * usdKRW }
+      })
+  }, [selected, calc, portfolio, users, usdKRW])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selected)           { setError('종목을 선택해주세요'); return }
@@ -93,7 +103,6 @@ function AddDividendModal({ portfolio, portfolioSummary, onClose, onSave }: AddD
         currency:        selected.currency,
         tax_rate:        calc.tr,
         usd_krw_rate:    usdKRW,
-        ex_dividend_date: exDivDate || undefined,
         payment_date:    paymentDate,
         memo,
       })
@@ -179,26 +188,15 @@ function AddDividendModal({ portfolio, portfolioSummary, onClose, onSave }: AddD
                 />
               </div>
 
-              {/* 날짜 2개 */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">지급일 *</label>
-                  <input
-                    type="date"
-                    value={paymentDate}
-                    onChange={e => setPaymentDate(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">배당락일</label>
-                  <input
-                    type="date"
-                    value={exDivDate}
-                    onChange={e => setExDivDate(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  />
-                </div>
+              {/* 지급일 */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 mb-1 block">지급일 *</label>
+                <input
+                  type="date"
+                  value={paymentDate}
+                  onChange={e => setPaymentDate(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
               </div>
 
               {/* 메모 */}
@@ -270,6 +268,33 @@ function AddDividendModal({ portfolio, portfolioSummary, onClose, onSave }: AddD
                     가계부 '수입' 내역으로 등록됩니다
                   </p>
                 </div>
+
+                {/* Per-holder breakdown */}
+                {holders.length > 0 && (
+                  <div className="bg-white/70 rounded-xl p-3 space-y-1.5">
+                    <p className="text-[10px] text-slate-400 font-medium mb-1">담당자별 수령액</p>
+                    {holders.map(h => (
+                      <div key={h.stock.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          {h.user && (
+                            <span
+                              className="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0"
+                              style={{ backgroundColor: h.user.avatar_color }}
+                            >
+                              {h.user.name[0]}
+                            </span>
+                          )}
+                          <span className="text-xs text-slate-600">{h.user?.name ?? h.stock.user_id}</span>
+                          <span className="text-[10px] text-slate-400">{h.stock.quantity}주</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-bold text-emerald-700">{fmtKRW(h.krw)}</span>
+                          <span className="text-[10px] text-slate-400 ml-1">(${fmtUSD(h.afterTax)})</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -306,36 +331,26 @@ interface DividendCardProps {
   summary: DividendYearlySummary | null
   portfolio: StockAssetWithPrice[]
   portfolioSummary: PortfolioSummary | null
+  users: User[]
   year: number
   onAdd: (data: CreateDividendRequest) => Promise<void>
   onDelete: (id: string) => Promise<void>
-  onApply: (id: string) => Promise<void>
 }
 
 export default function DividendCard({
   summary,
   portfolio,
   portfolioSummary,
+  users,
   year,
   onAdd,
   onDelete,
-  onApply,
 }: DividendCardProps) {
-  const [showModal, setShowModal]         = useState(false)
-  const [applyingId, setApplyingId]       = useState<string | null>(null)
-  const [showAll, setShowAll]             = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [showAll, setShowAll]     = useState(false)
 
-  const events = summary?.events ?? []
-  const pending = events.filter(e => !e.is_applied)
-  const applied = events.filter(e => e.is_applied)
-  const visiblePending = showAll ? pending : pending.slice(0, 3)
-  const visibleApplied = showAll ? applied : applied.slice(0, 2)
-
-  const handleApply = async (id: string) => {
-    setApplyingId(id)
-    try { await onApply(id) }
-    finally { setApplyingId(null) }
-  }
+  const events  = summary?.events ?? []
+  const visible = showAll ? events : events.slice(0, 5)
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -358,14 +373,9 @@ export default function DividendCard({
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {summary && summary.pending_count > 0 && (
-              <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-                미반영 {summary.pending_count}건
-              </span>
-            )}
-            {summary && summary.applied_count > 0 && summary.pending_count === 0 && (
+            {summary && summary.applied_count > 0 && (
               <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
-                전체 반영
+                {summary.applied_count}건
               </span>
             )}
             <button
@@ -392,43 +402,11 @@ export default function DividendCard({
           </div>
         ) : (
           <>
-            {/* Pending (미반영) */}
-            {pending.length > 0 && (
-              <>
-                {visiblePending.map(d => (
-                  <DividendRow
-                    key={d.id}
-                    event={d}
-                    applyingId={applyingId}
-                    onApply={handleApply}
-                    onDelete={onDelete}
-                  />
-                ))}
-              </>
-            )}
+            {visible.map(d => (
+              <DividendRow key={d.id} event={d} onDelete={onDelete} />
+            ))}
 
-            {/* Applied (반영 완료) */}
-            {applied.length > 0 && (
-              <>
-                {pending.length > 0 && (
-                  <div className="px-5 py-2 bg-slate-50">
-                    <p className="text-[10px] text-slate-400 font-medium">가계부 반영 완료</p>
-                  </div>
-                )}
-                {visibleApplied.map(d => (
-                  <DividendRow
-                    key={d.id}
-                    event={d}
-                    applyingId={applyingId}
-                    onApply={handleApply}
-                    onDelete={onDelete}
-                  />
-                ))}
-              </>
-            )}
-
-            {/* Show more */}
-            {(pending.length > 3 || applied.length > 2) && (
+            {events.length > 5 && (
               <button
                 onClick={() => setShowAll(v => !v)}
                 className="w-full py-3 text-xs text-slate-400 hover:text-slate-600 flex items-center justify-center gap-1 transition-colors"
@@ -446,6 +424,7 @@ export default function DividendCard({
         <AddDividendModal
           portfolio={portfolio}
           portfolioSummary={portfolioSummary}
+          users={users}
           onClose={() => setShowModal(false)}
           onSave={onAdd}
         />
@@ -458,20 +437,14 @@ export default function DividendCard({
 
 function DividendRow({
   event: d,
-  applyingId,
-  onApply,
   onDelete,
 }: {
   event: DividendEvent
-  applyingId: string | null
-  onApply: (id: string) => void
   onDelete: (id: string) => void
 }) {
-  const isApplying = applyingId === d.id
-
   return (
-    <div className={`flex items-center gap-2 px-4 py-2 ${d.is_applied ? 'opacity-60' : ''}`}>
-      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${d.is_applied ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+    <div className="flex items-center gap-2 px-4 py-2">
+      <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-400" />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
@@ -490,26 +463,9 @@ function DividendRow({
         <p className="text-[10px] text-slate-400">${fmtUSD(d.after_tax_amount)}</p>
       </div>
 
-      <div className="flex items-center gap-0.5 shrink-0">
-        {!d.is_applied ? (
-          <button
-            onClick={() => onApply(d.id)}
-            disabled={isApplying}
-            title="가계부 수입으로 반영"
-            className="flex items-center gap-0.5 text-[10px] bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-1.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-40"
-          >
-            <ArrowDownTrayIcon className="h-3 w-3" />
-            {isApplying ? '...' : '반영'}
-          </button>
-        ) : (
-          <div className="flex items-center gap-0.5 text-[10px] text-emerald-500 px-1.5 py-1">
-            <CheckCircleIcon className="h-3 w-3" />
-          </div>
-        )}
-        <button onClick={() => onDelete(d.id)} title="삭제" className="p-1 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors">
-          <TrashIcon className="h-3 w-3" />
-        </button>
-      </div>
+      <button onClick={() => onDelete(d.id)} title="삭제" className="p-1 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors">
+        <TrashIcon className="h-3 w-3" />
+      </button>
     </div>
   )
 }

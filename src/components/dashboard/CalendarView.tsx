@@ -309,8 +309,10 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
       {divEvents.length > 0 && (
         <span
           title={divEvents.map(e => e.title).join(', ')}
-          className="absolute bottom-0.5 right-1 w-1 h-1 rounded-full bg-teal-400 inline-block"
-        />
+          className={`text-[8px] font-semibold tabular-nums leading-none ${isSelected ? 'text-teal-200' : 'text-teal-500'}`}
+        >
+          💰{fmtCell(divEvents.reduce((s, e) => s + e.amount, 0))}
+        </span>
       )}
     </button>
   )

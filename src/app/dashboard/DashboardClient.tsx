@@ -618,7 +618,6 @@ export default function DashboardClient() {
       ...data,
       couple_id: 'couple-001',
       payment_date: `${data.payment_date}T00:00:00Z`,
-      ex_dividend_date: data.ex_dividend_date ? `${data.ex_dividend_date}T00:00:00Z` : undefined,
     }
     const res = await fetch(`${API_BASE}/api/dividends`, {
       method: 'POST',
@@ -626,26 +625,17 @@ export default function DashboardClient() {
       body: JSON.stringify(body),
     })
     if (!res.ok) throw new Error(`배당 등록 실패: ${res.status}`)
-    await refetchDividends()
+    await Promise.all([
+      refetchDividends(),
+      apiFetch<Transaction[]>('/api/transactions').then(d => setTransactions(Array.isArray(d) ? d : [])),
+      fetchSummary(summaryYear, summaryMonth, startDay),
+    ])
   }
 
   const handleDeleteDividend = async (id: string) => {
     const res = await fetch(`${API_BASE}/api/dividends/${id}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(`배당 삭제 실패: ${res.status}`)
     await refetchDividends()
-  }
-
-  const handleApplyDividend = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/dividends/${id}/apply`, { method: 'POST' })
-    if (!res.ok) throw new Error(`배당 반영 실패: ${res.status}`)
-    // Refresh transactions + dividend summary
-    await Promise.all([
-      refetchDividends(),
-      (async () => {
-        const txData = await apiFetch<Transaction[]>('/api/transactions')
-        setTransactions(Array.isArray(txData) ? txData : [])
-      })(),
-    ])
   }
 
   // ── schedule handlers ─────────────────────────────────────────────────────
@@ -863,10 +853,10 @@ export default function DashboardClient() {
               summary={divSummary}
               portfolio={portfolio}
               portfolioSummary={portfolioSummary}
+              users={users}
               year={summaryYear}
               onAdd={handleAddDividend}
               onDelete={handleDeleteDividend}
-              onApply={handleApplyDividend}
             />
 
             {/* 고정비 관리 + 숨만 쉬어도 나가는 돈 */}

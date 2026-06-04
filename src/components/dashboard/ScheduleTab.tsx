@@ -2,6 +2,7 @@
 
 import { useState, useRef, useMemo } from 'react'
 import { getHolidaysForMonth } from '@/lib/koreanHolidays'
+import { lunarCellDay, lunarFullLabel } from '@/lib/lunar'
 import {
   PlusIcon,
   TrashIcon,
@@ -143,6 +144,9 @@ function MiniCalendar({
                 : col === 6 ? 'text-blue-500'
                 : 'text-slate-700'
               }`}>{day}</span>
+              <span className={`text-[8px] leading-none ${isSelected ? 'text-indigo-200' : 'text-slate-300'}`}>
+                {lunarCellDay(dateStr)}
+              </span>
               <div className="flex gap-0.5 mt-0.5 h-1">
                 {hasSchedule && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-indigo-400'}`} />}
                 {hasDiary    && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-amber-200' : 'bg-amber-400'}`} />}
@@ -185,7 +189,7 @@ function DDayBanner({ schedules }: { schedules: Schedule[] }) {
           <div key={item.id} className={`flex-shrink-0 rounded-2xl px-4 py-3 ${c.bg} min-w-[120px]`}>
             <p className={`text-xs font-medium ${c.text} mb-0.5`}>{item.dday_label || item.title}</p>
             <p className={`text-xl font-black ${c.text} tabular-nums`}>{fmtDDay(item.days)}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">{fmtDate(item.start_date)}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">{fmtDate(item.start_date)} · {lunarFullLabel(item.start_date.slice(0, 10))}</p>
           </div>
         )
       })}
@@ -210,7 +214,7 @@ function ScheduleRow({ s, onEdit, onDelete }: { s: Schedule; onEdit: () => void;
             </span>
           )}
         </div>
-        <p className="text-[11px] text-slate-400">{fmtDate(s.start_date)}{s.end_date ? ` ~ ${fmtDate(s.end_date)}` : ''}</p>
+        <p className="text-[11px] text-slate-400">{fmtDate(s.start_date)}{s.end_date ? ` ~ ${fmtDate(s.end_date)}` : ''} · {lunarFullLabel(s.start_date.slice(0, 10))}</p>
         {s.description && <p className="text-[11px] text-slate-500 truncate">{s.description}</p>}
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
@@ -465,7 +469,7 @@ function DiaryRow({ d, apiBase, onEdit, onDelete }: { d: DiaryEntry; apiBase: st
             <span className="text-base">{MOOD_EMOJI[d.mood] ?? '📝'}</span>
             <div>
               <p className="text-sm font-semibold text-slate-800">{d.date}</p>
-              <p className="text-[11px] text-slate-400">{MOOD_LABEL[d.mood] ?? d.mood} · {d.photos.length > 0 ? `📷 ${d.photos.length}` : '텍스트'}</p>
+              <p className="text-[11px] text-slate-400">{lunarFullLabel(d.date)} · {MOOD_LABEL[d.mood] ?? d.mood} · {d.photos.length > 0 ? `📷 ${d.photos.length}` : '텍스트'}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -702,6 +706,7 @@ function EditDiaryModal({ diary, onClose, onSaved }: {
           <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
             <span className="text-xs text-slate-400">날짜</span>
             <span className="text-sm font-semibold text-slate-700">{diary.date}</span>
+            <span className="text-xs text-slate-400 ml-1">({lunarFullLabel(diary.date)})</span>
           </div>
           <div>
             <label className="text-xs font-medium text-slate-500 mb-1 block">기분</label>
@@ -848,7 +853,7 @@ export default function ScheduleTab({
             </button>
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-xs text-slate-400">{selectedDate}</span>
+            <span className="text-xs text-slate-400">{selectedDate} · {lunarFullLabel(selectedDate)}</span>
             <button
               onClick={() => activeSection === 'schedule' ? setShowAddSchedule(true) : setShowAddDiary(true)}
               className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
