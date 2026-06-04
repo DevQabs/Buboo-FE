@@ -445,6 +445,7 @@ export interface CalendarSummaryResponse {
 
 export interface DividendYearlySummary {
   year: number
+  month: number  // 0 = all year, 1-12 = specific month
   total_usd: number
   total_after_tax_usd: number
   total_krw: number

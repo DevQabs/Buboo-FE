@@ -196,7 +196,7 @@ export default function DashboardClient() {
         apiFetch<OtherAsset[]>('/api/assets'),
         apiFetch<FixedExpense[]>('/api/fixed-expenses'),
         apiFetch<FixedExpenseSummary>(`/api/fixed-expenses/summary?year=${periodYear}&month=${adjMonth}`),
-        apiFetch<DividendYearlySummary>(`/api/dividends/summary?year=${y}`),
+        apiFetch<DividendYearlySummary>(`/api/dividends/summary?year=${y}&month=${m}`),
         apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${y}&month=${m}`),
         apiFetch<Schedule[]>('/api/schedules'),
         apiFetch<DiaryEntry[]>('/api/diaries'),
@@ -608,10 +608,17 @@ export default function DashboardClient() {
   }, [startDay])
 
   // ── dividend handlers ─────────────────────────────────────────────────────
-  const refetchDividends = useCallback(async (y = now.getFullYear()) => {
-    const data = await apiFetch<DividendYearlySummary>(`/api/dividends/summary?year=${y}`)
+  const refetchDividends = useCallback(async (y = now.getFullYear(), m = now.getMonth() + 1) => {
+    const data = await apiFetch<DividendYearlySummary>(`/api/dividends/summary?year=${y}&month=${m}`)
     setDivSummary(data)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-fetch dividends whenever the viewed month changes.
+  const dividendMountRef = useRef(true)
+  useEffect(() => {
+    if (dividendMountRef.current) { dividendMountRef.current = false; return }
+    refetchDividends(calendarYear, calendarMonth)
+  }, [calendarYear, calendarMonth]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddDividend = async (data: CreateDividendRequest) => {
     const body = {
@@ -626,7 +633,7 @@ export default function DashboardClient() {
     })
     if (!res.ok) throw new Error(`배당 등록 실패: ${res.status}`)
     await Promise.all([
-      refetchDividends(),
+      refetchDividends(calendarYear, calendarMonth),
       apiFetch<Transaction[]>('/api/transactions').then(d => setTransactions(Array.isArray(d) ? d : [])),
       fetchSummary(summaryYear, summaryMonth, startDay),
     ])
@@ -635,7 +642,7 @@ export default function DashboardClient() {
   const handleDeleteDividend = async (id: string) => {
     const res = await fetch(`${API_BASE}/api/dividends/${id}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(`배당 삭제 실패: ${res.status}`)
-    await refetchDividends()
+    await refetchDividends(calendarYear, calendarMonth)
   }
 
   // ── schedule handlers ─────────────────────────────────────────────────────
@@ -854,7 +861,8 @@ export default function DashboardClient() {
               portfolio={portfolio}
               portfolioSummary={portfolioSummary}
               users={users}
-              year={summaryYear}
+              year={calendarYear}
+              month={calendarMonth}
               onAdd={handleAddDividend}
               onDelete={handleDeleteDividend}
             />

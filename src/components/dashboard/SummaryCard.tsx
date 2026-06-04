@@ -174,13 +174,7 @@ export default function SummaryCard({
         {/* Stacked progress bar */}
         <div className="relative mb-0">
           <div className="w-full h-3 bg-white/70 rounded-full overflow-hidden flex">
-            {/* 변동 지출 — rose */}
-            <div
-              className="h-full bg-rose-400 transition-all duration-700 cursor-pointer"
-              style={{ width: `${variableBarPct}%` }}
-              onClick={e => { e.stopPropagation(); setTooltip(t => t === 'variable' ? null : 'variable') }}
-            />
-            {/* 고정비 — amber */}
+            {/* 고정비 — amber (좌측) */}
             {fixedBarPct > 0 && (
               <div
                 className="h-full bg-amber-400 transition-all duration-700 cursor-pointer"
@@ -188,22 +182,28 @@ export default function SummaryCard({
                 onClick={e => { e.stopPropagation(); setTooltip(t => t === 'fixed' ? null : 'fixed') }}
               />
             )}
+            {/* 변동 지출 — rose (우측) */}
+            <div
+              className="h-full bg-rose-400 transition-all duration-700 cursor-pointer"
+              style={{ width: `${variableBarPct}%` }}
+              onClick={e => { e.stopPropagation(); setTooltip(t => t === 'variable' ? null : 'variable') }}
+            />
           </div>
 
-          {tooltip === 'variable' && (
-            <div
-              className="absolute top-5 z-20 bg-rose-600 text-white text-[10px] font-semibold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg pointer-events-none"
-              style={{ left: `max(0%, calc(${variableBarPct / 2}% - 2.5rem))` }}
-            >
-              변동 지출 {formatKRW(variableExpense)}
-            </div>
-          )}
           {tooltip === 'fixed' && (
             <div
               className="absolute top-5 z-20 bg-amber-500 text-white text-[10px] font-semibold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg pointer-events-none"
-              style={{ left: `min(calc(100% - 5rem), calc(${variableBarPct + fixedBarPct / 2}% - 2.5rem))` }}
+              style={{ left: `max(0%, calc(${fixedBarPct / 2}% - 2.5rem))` }}
             >
               고정비 {formatKRW(fixedExpenseTotal)}
+            </div>
+          )}
+          {tooltip === 'variable' && (
+            <div
+              className="absolute top-5 z-20 bg-rose-600 text-white text-[10px] font-semibold px-2.5 py-1 rounded-lg whitespace-nowrap shadow-lg pointer-events-none"
+              style={{ left: `min(calc(100% - 5rem), calc(${fixedBarPct + variableBarPct / 2}% - 2.5rem))` }}
+            >
+              변동 지출 {formatKRW(variableExpense)}
             </div>
           )}
         </div>

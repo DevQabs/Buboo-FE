@@ -333,6 +333,7 @@ interface DividendCardProps {
   portfolioSummary: PortfolioSummary | null
   users: User[]
   year: number
+  month: number
   onAdd: (data: CreateDividendRequest) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }
@@ -343,6 +344,7 @@ export default function DividendCard({
   portfolioSummary,
   users,
   year,
+  month,
   onAdd,
   onDelete,
 }: DividendCardProps) {
@@ -371,7 +373,7 @@ export default function DividendCard({
       <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 border-b border-emerald-100">
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-emerald-600 mb-0.5">💰 {year}년 배당 수익 (세후)</p>
+            <p className="text-[10px] font-medium text-emerald-600 mb-0.5">💰 {year}년 {month}월 배당 수익 (세후)</p>
             <div className="flex items-baseline gap-2">
               <p className="text-xl font-extrabold text-slate-900 tabular-nums">
                 {fmtKRW(summary?.total_krw ?? 0)}
