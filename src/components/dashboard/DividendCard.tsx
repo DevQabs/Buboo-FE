@@ -352,13 +352,25 @@ export default function DividendCard({
   const events  = summary?.events ?? []
   const visible = showAll ? events : events.slice(0, 5)
 
+  // Per-user yearly totals from events
+  const userTotals = useMemo(() => {
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]))
+    const totals: Record<string, { user: User; krw: number; usd: number }> = {}
+    for (const e of events) {
+      if (!totals[e.user_id]) totals[e.user_id] = { user: userMap[e.user_id], krw: 0, usd: 0 }
+      totals[e.user_id].krw += e.amount_krw
+      totals[e.user_id].usd += e.after_tax_amount
+    }
+    return Object.values(totals).filter(t => t.user)
+  }, [events, users])
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
 
       {/* ── YTD Summary banner ── */}
       <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 border-b border-emerald-100">
         <div className="flex items-center justify-between gap-3">
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="text-[10px] font-medium text-emerald-600 mb-0.5">💰 {year}년 배당 수익 (세후)</p>
             <div className="flex items-baseline gap-2">
               <p className="text-xl font-extrabold text-slate-900 tabular-nums">
@@ -371,6 +383,22 @@ export default function DividendCard({
                 )}
               </p>
             </div>
+            {/* Per-user totals */}
+            {userTotals.length > 0 && (
+              <div className="flex items-center gap-3 mt-1.5">
+                {userTotals.map(t => (
+                  <div key={t.user.id} className="flex items-center gap-1">
+                    <span
+                      className="w-4 h-4 rounded-full text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: t.user.avatar_color }}
+                    >
+                      {t.user.name[0]}
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-600 tabular-nums">{fmtKRW(t.krw)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {summary && summary.applied_count > 0 && (
@@ -403,7 +431,7 @@ export default function DividendCard({
         ) : (
           <>
             {visible.map(d => (
-              <DividendRow key={d.id} event={d} onDelete={onDelete} />
+              <DividendRow key={d.id} event={d} portfolio={portfolio} users={users} onDelete={onDelete} />
             ))}
 
             {events.length > 5 && (
@@ -437,35 +465,71 @@ export default function DividendCard({
 
 function DividendRow({
   event: d,
+  portfolio,
+  users,
   onDelete,
 }: {
   event: DividendEvent
+  portfolio: StockAssetWithPrice[]
+  users: User[]
   onDelete: (id: string) => void
 }) {
+  const holders = useMemo(() => {
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]))
+    return portfolio
+      .filter(s => s.symbol === d.symbol)
+      .map(s => {
+        const afterTax = d.amount_per_share * s.quantity * (1 - d.tax_rate)
+        const krw = afterTax * d.usd_krw_rate
+        return { stock: s, user: userMap[s.user_id], afterTax, krw }
+      })
+      .filter(h => h.user)
+  }, [d, portfolio, users])
+
   return (
-    <div className="flex items-center gap-2 px-4 py-2">
-      <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-400" />
+    <div className="px-4 py-2.5">
+      <div className="flex items-center gap-2">
+        <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-400" />
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-semibold text-slate-800">{d.symbol}</span>
-          <span className="text-[10px] text-slate-400 truncate">{d.name}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-slate-800">{d.symbol}</span>
+            <span className="text-[10px] text-slate-400 truncate">{d.name}</span>
+          </div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[10px] text-slate-400">{fmtDate(d.payment_date)}</span>
+            <span className="text-[10px] text-slate-300">·</span>
+            <span className="text-[10px] text-slate-400">${fmtUSD(d.amount_per_share)}×{d.quantity}주</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-[10px] text-slate-400">{fmtDate(d.payment_date)}</span>
-          <span className="text-[10px] text-slate-300">·</span>
-          <span className="text-[10px] text-slate-400">${fmtUSD(d.amount_per_share)}×{d.quantity}주</span>
+
+        <div className="text-right shrink-0">
+          <p className="text-xs font-bold text-emerald-700 tabular-nums">{fmtKRW(d.amount_krw)}</p>
+          <p className="text-[10px] text-slate-400">${fmtUSD(d.after_tax_amount)}</p>
         </div>
+
+        <button onClick={() => onDelete(d.id)} title="삭제" className="p-1 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors">
+          <TrashIcon className="h-3 w-3" />
+        </button>
       </div>
 
-      <div className="text-right shrink-0">
-        <p className="text-xs font-bold text-emerald-700 tabular-nums">{fmtKRW(d.amount_krw)}</p>
-        <p className="text-[10px] text-slate-400">${fmtUSD(d.after_tax_amount)}</p>
-      </div>
-
-      <button onClick={() => onDelete(d.id)} title="삭제" className="p-1 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors">
-        <TrashIcon className="h-3 w-3" />
-      </button>
+      {/* Per-holder breakdown */}
+      {holders.length > 0 && (
+        <div className="ml-4 mt-1.5 flex items-center gap-3 flex-wrap">
+          {holders.map(h => (
+            <div key={h.stock.id} className="flex items-center gap-1">
+              <span
+                className="w-4 h-4 rounded-full text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: h.user.avatar_color }}
+              >
+                {h.user.name[0]}
+              </span>
+              <span className="text-[10px] text-slate-500">{h.stock.quantity}주</span>
+              <span className="text-[10px] font-semibold text-emerald-700 tabular-nums">{fmtKRW(h.krw)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
