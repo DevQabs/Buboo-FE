@@ -374,7 +374,6 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
   const handleSubmit = async () => {
     const amt = Number(amount.replace(/,/g, ''))
     if (!amt || amt <= 0) { setFormError('금액을 입력해주세요'); return }
-    if (!title.trim()) { setFormError('내용을 입력해주세요'); return }
     if (txType === 'saving' && !savingLink) { setFormError('저축 자산 정보를 입력해주세요'); return }
     if (!onAddTransaction) return
     setFormError('')
