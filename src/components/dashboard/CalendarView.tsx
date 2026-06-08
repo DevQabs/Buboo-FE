@@ -361,6 +361,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
   const [editCategory, setEditCategory]     = useState('')
   const [editUserId, setEditUserId]         = useState('')
   const [editSaving, setEditSaving]         = useState(false)
+  const [formError, setFormError]           = useState('')
   const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories()
 
   const categories = txType === 'expense' ? expenseCategories : incomeCategories
@@ -372,8 +373,11 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
 
   const handleSubmit = async () => {
     const amt = Number(amount.replace(/,/g, ''))
-    if (!onAddTransaction || isNaN(amt) || amt <= 0 || !title.trim()) return
-    if (txType === 'saving' && !savingLink) return
+    if (!amt || amt <= 0) { setFormError('금액을 입력해주세요'); return }
+    if (!title.trim()) { setFormError('내용을 입력해주세요'); return }
+    if (txType === 'saving' && !savingLink) { setFormError('저축 자산 정보를 입력해주세요'); return }
+    if (!onAddTransaction) return
+    setFormError('')
     setSubmitting(true)
     try {
       await onAddTransaction({
@@ -386,6 +390,8 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
         saving_link: savingLink ?? undefined,
       })
       resetForm()
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : '저장 실패. 다시 시도해주세요.')
     } finally {
       setSubmitting(false)
     }
@@ -533,8 +539,8 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
             />
           )}
 
-          {txType === 'saving' && !savingLink && (
-            <p className="text-xs text-amber-600">저축 자산 정보를 입력해주세요.</p>
+          {formError && (
+            <p className="text-xs text-rose-600 font-medium">{formError}</p>
           )}
 
           {/* Row 6: actions */}
