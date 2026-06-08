@@ -547,7 +547,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
             </button>
             <button
               onClick={handleSubmit}
-              disabled={submitting || !amount || !title.trim() || (txType === 'saving' && !savingLink)}
+              disabled={submitting || (txType === 'saving' && !savingLink)}
               className={`flex-1 py-2 text-sm font-bold text-white rounded-xl transition-colors disabled:opacity-40 ${submitColor}`}
             >
               {submitting ? '저장 중...' : submitLabel}
