@@ -31,6 +31,10 @@ export default function BuySellModal({ asset, mode, onClose, onSubmit }: BuySell
   const realizedPnL = mode === 'sell' ? (prc - asset.average_price) * qty : null
   const isBuy = mode === 'buy'
 
+  const newAvgPrice = isBuy && qty > 0 && prc > 0
+    ? (asset.quantity * asset.average_price + qty * prc) / (asset.quantity + qty)
+    : null
+
   // For sell: quantity cap = current holdings
   const maxQty = mode === 'sell' ? asset.quantity : undefined
 
@@ -136,13 +140,21 @@ export default function BuySellModal({ asset, mode, onClose, onSubmit }: BuySell
             />
           </div>
 
-          {/* 예상 금액 + 실현손익(매도시) */}
+          {/* 예상 금액 + 실현손익(매도시) + 새 평균 매입가(매수시) */}
           {qty > 0 && prc > 0 && (
             <div className={`rounded-xl px-4 py-3 space-y-1 ${isBuy ? 'bg-emerald-50' : 'bg-rose-50'}`}>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500">총 {isBuy ? '매수' : '매도'}금액</span>
                 <span className="font-bold text-slate-800">{formatNum(totalCost, asset.currency)}</span>
               </div>
+              {newAvgPrice !== null && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">새 평균 매입가</span>
+                  <span className="font-bold text-emerald-700">
+                    {formatNum(newAvgPrice, asset.currency)}
+                  </span>
+                </div>
+              )}
               {realizedPnL !== null && (
                 <>
                   <div className="flex justify-between text-sm">

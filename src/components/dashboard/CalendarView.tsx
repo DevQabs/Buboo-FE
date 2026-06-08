@@ -41,8 +41,12 @@ function toDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+function getNowKST(): Date {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }))
+}
+
 function todayKey(): string {
-  return toDateKey(new Date())
+  return toDateKey(getNowKST())
 }
 
 function fmtCell(v: number): string {

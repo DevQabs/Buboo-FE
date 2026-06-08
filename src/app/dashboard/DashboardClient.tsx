@@ -106,7 +106,7 @@ export default function DashboardClient() {
 
   // ── UI state ──
   const [activeTab, setActiveTab]     = useState<ActiveTab>('ledger')
-  const now = new Date()
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }))
   const [summaryYear, setSummaryYear]   = useState(now.getFullYear())
   const [summaryMonth, setSummaryMonth] = useState(now.getMonth() + 1)
   // calendarYear/calendarMonth: what CalendarView displays (always calendar month)
