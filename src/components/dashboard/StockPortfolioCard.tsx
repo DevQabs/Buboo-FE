@@ -52,7 +52,7 @@ function KRWFlashCard({
   const isUp     = pnlKRW >= 0;
 
   return (
-    <div className='absolute inset-0 bg-white z-10 flex flex-col justify-center px-3 py-2 rounded-inherit'>
+    <div className='absolute inset-0 bg-white z-10 flex flex-col justify-center px-3 py-2'>
       {/* 상단: symbol + 환율 + 닫기 */}
       <div className='flex items-center justify-between mb-1'>
         <div className='flex items-center gap-1.5 min-w-0'>
@@ -359,12 +359,12 @@ function GroupedStockRow({
             <path strokeLinecap='round' strokeLinejoin='round' d='M19 9l-7 7-7-7' />
           </svg>
         </div>
-
-        {/* KRW flash card overlay */}
-        {showDetail && (
-          <KRWFlashCard asset={syntheticAsset} onClose={() => setShowDetail(false)} />
-        )}
       </div>
+
+      {/* KRW flash card overlay — positioned relative to <li> to avoid clipping */}
+      {showDetail && (
+        <KRWFlashCard asset={syntheticAsset} onClose={() => setShowDetail(false)} />
+      )}
 
       {/* Expanded: per-user holdings */}
       {expanded && group.assets.map(asset => (

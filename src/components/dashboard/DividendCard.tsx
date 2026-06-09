@@ -403,11 +403,6 @@ export default function DividendCard({
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {summary && summary.applied_count > 0 && (
-              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
-                {summary.applied_count}건
-              </span>
-            )}
             <button
               onClick={() => setShowModal(true)}
               className="flex items-center gap-0.5 text-xs text-emerald-600 hover:text-emerald-700 font-medium"

@@ -155,6 +155,11 @@ export default function DashboardClient() {
     setCalendarData(data)
   }, [])
 
+  const fetchTransactions = useCallback(async (y: number, m: number) => {
+    const data = await apiFetch<Transaction[]>(`/api/transactions?year=${y}&month=${m}`)
+    setTransactions(Array.isArray(data) ? data : [])
+  }, [])
+
   // ── initial load ─────────────────────────────────────────────────────────
   // Step 1: fetch couple first (tiny JSON) to get ledger_start_day from DB.
   // Step 2: fetch everything else in parallel using the correct startDay.
@@ -190,7 +195,7 @@ export default function DashboardClient() {
       // ── Step 2: everything else in parallel ──
       const [usersData, txData, portfolioData, summaryData, assetsData, feData, feSummaryData, divData, calData, schData, diarData] = await Promise.all([
         apiFetch<User[]>('/api/users'),
-        apiFetch<Transaction[]>('/api/transactions'),
+        apiFetch<Transaction[]>(`/api/transactions?year=${periodYear}&month=${adjMonth}`),
         apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
         apiFetch<MonthlySummary>(`/api/summary?start_date=${startDate}&end_date=${endDate}`),
         apiFetch<OtherAsset[]>('/api/assets'),
@@ -245,7 +250,7 @@ export default function DashboardClient() {
     } else if (activeTab === 'ledger') {
       const { startDate, endDate } = buildDateRange(summaryYear, summaryMonth, startDay)
       Promise.all([
-        apiFetch<Transaction[]>('/api/transactions'),
+        apiFetch<Transaction[]>(`/api/transactions?year=${summaryYear}&month=${summaryMonth}`),
         apiFetch<MonthlySummary>(`/api/summary?start_date=${startDate}&end_date=${endDate}`),
         apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`),
         apiFetch<FixedExpense[]>('/api/fixed-expenses'),
@@ -289,8 +294,10 @@ export default function DashboardClient() {
         .catch(() => { /* non-critical, UI already updated */ })
       fetchSummary(year, month, sd)
       fetchCalendar(year, month)
+      fetchTransactions(year, month)
+      refetchDividends(year, month)
     },
-    [fetchSummary, fetchCalendar, couple]
+    [fetchSummary, fetchCalendar, fetchTransactions, couple] // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   // ── calendar month change — calendar display + summary period both update ──
@@ -301,7 +308,9 @@ export default function DashboardClient() {
     setSummaryMonth(month)
     fetchCalendar(year, month)
     fetchSummary(year, month, startDay)
-  }, [fetchCalendar, fetchSummary, startDay])
+    fetchTransactions(year, month)
+    refetchDividends(year, month)
+  }, [fetchCalendar, fetchSummary, fetchTransactions, startDay]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── portfolio refetch ─────────────────────────────────────────────────────
   const refetchPortfolio = async () => {
@@ -326,7 +335,7 @@ export default function DashboardClient() {
     const [feData, feSummaryData, txData] = await Promise.all([
       apiFetch<FixedExpense[]>('/api/fixed-expenses'),
       apiFetch<FixedExpenseSummary>(`/api/fixed-expenses/summary?year=${y}&month=${m}`),
-      apiFetch<Transaction[]>('/api/transactions'),
+      apiFetch<Transaction[]>(`/api/transactions?year=${y}&month=${m}`),
     ])
     setFixedExpenses(Array.isArray(feData) ? feData : [])
     setFeSummary(feSummaryData)
@@ -358,10 +367,7 @@ export default function DashboardClient() {
         throw new Error(body || `저축 등록 실패: ${res.status}`)
       }
       await Promise.all([
-        (async () => {
-          const txData = await apiFetch<Transaction[]>('/api/transactions')
-          setTransactions(Array.isArray(txData) ? txData : [])
-        })(),
+        fetchTransactions(summaryYear, summaryMonth),
         refetchPortfolio(),
         refetchAssets(),
         fetchSummary(summaryYear, summaryMonth, startDay),
@@ -424,13 +430,12 @@ export default function DashboardClient() {
       body: JSON.stringify({ ...existing, ...data }),
     })
     if (!res.ok) throw new Error(`거래 수정 실패: ${res.status}`)
-    const [txData] = await Promise.all([
-      apiFetch<Transaction[]>('/api/transactions'),
+    await Promise.all([
+      fetchTransactions(summaryYear, summaryMonth),
       fetchSummary(summaryYear, summaryMonth, startDay),
       apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`).then(d => setCalendarData(d)),
     ])
-    setTransactions(Array.isArray(txData) ? txData : [])
-  }, [transactions, summaryYear, summaryMonth, startDay, calendarYear, calendarMonth, fetchSummary]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [transactions, summaryYear, summaryMonth, startDay, calendarYear, calendarMonth, fetchSummary, fetchTransactions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDeleteTransaction = useCallback(async (id: string) => {
     await fetch(`${API_BASE}/api/transactions/${id}`, { method: 'DELETE' })
@@ -471,7 +476,7 @@ export default function DashboardClient() {
     if (!res.ok) throw new Error(`거래 추가 실패: ${res.status}`)
 
     const refetches: Promise<unknown>[] = [
-      apiFetch<Transaction[]>('/api/transactions').then(d => setTransactions(Array.isArray(d) ? d : [])),
+      fetchTransactions(summaryYear, summaryMonth),
       apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`).then(d => setCalendarData(d)),
       fetchSummary(summaryYear, summaryMonth, startDay),
     ]
@@ -479,7 +484,7 @@ export default function DashboardClient() {
       refetches.push(refetchPortfolio(), refetchAssets())
     }
     await Promise.all(refetches)
-  }, [calendarYear, calendarMonth, summaryYear, summaryMonth, startDay, fetchSummary, refetchPortfolio, refetchAssets]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [calendarYear, calendarMonth, summaryYear, summaryMonth, startDay, fetchSummary, fetchTransactions, refetchPortfolio, refetchAssets]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── stock handlers ────────────────────────────────────────────────────────
   const handleAddStock = async (data: Parameters<React.ComponentProps<typeof AddStockModal>['onAdd']>[0]) => {
@@ -613,13 +618,6 @@ export default function DashboardClient() {
     setDivSummary(data)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-fetch dividends whenever the viewed month changes.
-  const dividendMountRef = useRef(true)
-  useEffect(() => {
-    if (dividendMountRef.current) { dividendMountRef.current = false; return }
-    refetchDividends(calendarYear, calendarMonth)
-  }, [calendarYear, calendarMonth]) // eslint-disable-line react-hooks/exhaustive-deps
-
   const handleAddDividend = async (data: CreateDividendRequest) => {
     const body = {
       ...data,
@@ -634,7 +632,7 @@ export default function DashboardClient() {
     if (!res.ok) throw new Error(`배당 등록 실패: ${res.status}`)
     await Promise.all([
       refetchDividends(calendarYear, calendarMonth),
-      apiFetch<Transaction[]>('/api/transactions').then(d => setTransactions(Array.isArray(d) ? d : [])),
+      fetchTransactions(summaryYear, summaryMonth),
       fetchSummary(summaryYear, summaryMonth, startDay),
     ])
   }
