@@ -326,6 +326,7 @@ export interface FixedExpense {
   day_of_month: number       // 1-28, 매월 N일
   day_of_week?: number       // 0-6, 매주 N요일
   is_active: boolean
+  deactivated_at?: string
   memo: string
   saving_link?: SavingLink
   created_at: string
