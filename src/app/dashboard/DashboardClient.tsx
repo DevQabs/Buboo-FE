@@ -296,6 +296,7 @@ export default function DashboardClient() {
       fetchCalendar(year, month)
       fetchTransactions(year, month)
       refetchDividends(year, month)
+      refetchFixedExpenses(year, month)
     },
     [fetchSummary, fetchCalendar, fetchTransactions, couple] // eslint-disable-line react-hooks/exhaustive-deps
   )
@@ -310,6 +311,7 @@ export default function DashboardClient() {
     fetchSummary(year, month, startDay)
     fetchTransactions(year, month)
     refetchDividends(year, month)
+    refetchFixedExpenses(year, month)
   }, [fetchCalendar, fetchSummary, fetchTransactions, startDay]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── portfolio refetch ─────────────────────────────────────────────────────
