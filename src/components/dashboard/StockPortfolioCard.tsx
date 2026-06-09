@@ -309,7 +309,7 @@ function GroupedStockRow({
   const longPressHandlers = useLongPress(() => setShowDetail(true));
 
   return (
-    <li className='relative overflow-hidden'>
+    <li className='relative'>
       {/* Main grouped row */}
       <div
         className='relative flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors select-none cursor-pointer overflow-hidden'

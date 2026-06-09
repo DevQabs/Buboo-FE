@@ -88,15 +88,18 @@ export default function SummaryCard({
   }
 
   const startDaySelect = (
-    <select
-      value={startDay}
-      onChange={e => { const v = Number(e.target.value); if (v) onPeriodChange({ year, month, startDay: v }) }}
-      className="text-[10px] text-slate-400 bg-transparent border-none cursor-pointer focus:outline-none"
-    >
-      {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
-        <option key={d} value={d}>{d}일 시작</option>
-      ))}
-    </select>
+    <div className="flex items-center gap-0.5">
+      <span className="text-[10px] font-medium text-slate-500">{month}월</span>
+      <select
+        value={startDay}
+        onChange={e => { const v = Number(e.target.value); if (v) onPeriodChange({ year, month, startDay: v }) }}
+        className="text-[10px] text-slate-400 bg-transparent border-none cursor-pointer focus:outline-none"
+      >
+        {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
+          <option key={d} value={d}>{d}일 시작</option>
+        ))}
+      </select>
+    </div>
   )
 
   if (budgetLimit === 0 && onUpdateBudget && !editingBudget) {
