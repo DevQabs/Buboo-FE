@@ -942,6 +942,7 @@ export default function DashboardClient() {
       {showTradeHistory && (
         <TradeHistoryModal
           transactions={tradeTransactions}
+          users={users}
           exchangeRate={portfolioSummary?.usd_krw ?? 1350}
           onClose={() => setShowTradeHistory(false)}
         />
