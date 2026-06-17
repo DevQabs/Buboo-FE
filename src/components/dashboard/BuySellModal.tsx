@@ -9,8 +9,9 @@ import { formatAmountInput } from '@/lib/formatNumber'
 interface BuySellModalProps {
   asset: StockAssetWithPrice
   mode: 'buy' | 'sell'
+  exchangeRate?: number
   onClose: () => void
-  onSubmit: (mode: 'buy' | 'sell', data: { quantity: number; price: number; memo: string }) => Promise<void>
+  onSubmit: (mode: 'buy' | 'sell', data: { quantity: number; price: number; exchange_rate: number; memo: string }) => Promise<void>
 }
 
 function formatNum(v: number, currency: string) {
@@ -18,7 +19,7 @@ function formatNum(v: number, currency: string) {
   return `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-export default function BuySellModal({ asset, mode, onClose, onSubmit }: BuySellModalProps) {
+export default function BuySellModal({ asset, mode, exchangeRate = 0, onClose, onSubmit }: BuySellModalProps) {
   const [quantity, setQuantity] = useState('')
   const [price, setPrice] = useState(formatAmountInput(String(asset.current_price), true))
   const [memo, setMemo] = useState('')
@@ -27,9 +28,22 @@ export default function BuySellModal({ asset, mode, onClose, onSubmit }: BuySell
 
   const qty = parseFloat(quantity) || 0
   const prc = parseFloat(price.replace(/,/g, '')) || 0
-  const totalCost = qty * prc
-  const realizedPnL = mode === 'sell' ? (prc - asset.average_price) * qty : null
   const isBuy = mode === 'buy'
+  const isUSD = asset.currency === 'USD'
+  const rate = isUSD && exchangeRate > 0 ? exchangeRate : 1
+
+  // Total cost in original currency for display
+  const totalCost = qty * prc
+  // Total cost in KRW
+  const totalCostKRW = isUSD ? totalCost * rate : totalCost
+
+  // Realized P&L in KRW for sell preview
+  const avgKRWPrice = (asset.avg_krw_price && asset.avg_krw_price > 0)
+    ? asset.avg_krw_price
+    : asset.average_price * rate
+  const realizedPnLKRW = mode === 'sell' && qty > 0 && prc > 0
+    ? (prc * rate - avgKRWPrice) * qty
+    : null
 
   const newAvgPrice = isBuy && qty > 0 && prc > 0
     ? (asset.quantity * asset.average_price + qty * prc) / (asset.quantity + qty)
@@ -48,7 +62,7 @@ export default function BuySellModal({ asset, mode, onClose, onSubmit }: BuySell
     }
     setLoading(true)
     try {
-      await onSubmit(mode, { quantity: qty, price: prc, memo })
+      await onSubmit(mode, { quantity: qty, price: prc, exchange_rate: rate, memo })
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : '요청 실패')
@@ -145,7 +159,10 @@ export default function BuySellModal({ asset, mode, onClose, onSubmit }: BuySell
             <div className={`rounded-xl px-4 py-3 space-y-1 ${isBuy ? 'bg-emerald-50' : 'bg-rose-50'}`}>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500">총 {isBuy ? '매수' : '매도'}금액</span>
-                <span className="font-bold text-slate-800">{formatNum(totalCost, asset.currency)}</span>
+                <div className="text-right">
+                  <span className="font-bold text-slate-800">{formatNum(totalCost, asset.currency)}</span>
+                  {isUSD && <p className="text-[10px] text-slate-400">≈ ₩{Math.round(totalCostKRW / 10000).toLocaleString()}만</p>}
+                </div>
               </div>
               {newAvgPrice !== null && (
                 <div className="flex justify-between text-sm">
@@ -155,19 +172,19 @@ export default function BuySellModal({ asset, mode, onClose, onSubmit }: BuySell
                   </span>
                 </div>
               )}
-              {realizedPnL !== null && (
+              {realizedPnLKRW !== null && (
                 <>
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">실현 손익</span>
-                    <span className={`font-bold ${realizedPnL >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                      {realizedPnL >= 0 ? '+' : ''}{formatNum(realizedPnL, asset.currency)}
+                    <span className="text-slate-500">실현 손익 (KRW)</span>
+                    <span className={`font-bold ${realizedPnLKRW >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                      {realizedPnLKRW >= 0 ? '+' : ''}₩{Math.round(Math.abs(realizedPnLKRW) / 10000).toLocaleString()}만
                     </span>
                   </div>
-                  {realizedPnL > 0 && (
+                  {realizedPnLKRW > 0 && (
                     <div className="flex justify-between text-xs text-slate-400">
-                      <span>예상 양도세 (22%)</span>
+                      <span>예상 양도세 (~22%, 250만 공제 전)</span>
                       <span className="text-rose-400 font-medium">
-                        -{formatNum(realizedPnL * 0.22, asset.currency)}
+                        -₩{Math.round(realizedPnLKRW * 0.22 / 10000).toLocaleString()}만
                       </span>
                     </div>
                   )}

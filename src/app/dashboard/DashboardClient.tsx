@@ -522,7 +522,7 @@ export default function DashboardClient() {
 
   const handleBuySellStock = async (
     mode: 'buy' | 'sell',
-    data: { quantity: number; price: number; memo: string }
+    data: { quantity: number; price: number; exchange_rate: number; memo: string }
   ) => {
     if (!buySellTarget) return
     const res = await fetch(`${API_BASE}/api/stocks/${buySellTarget.asset.id}/${mode}`, {
@@ -789,8 +789,6 @@ export default function DashboardClient() {
               assets={portfolio}
               users={users}
               summary={portfolioSummary}
-              tradeTransactions={tradeTransactions}
-              exchangeRate={portfolioSummary?.usd_krw}
               onAddClick={() => setShowAddStock(true)}
               onHistoryClick={() => setShowTradeHistory(true)}
               onEditClick={setEditingStock}
@@ -934,6 +932,7 @@ export default function DashboardClient() {
         <BuySellModal
           asset={buySellTarget.asset}
           mode={buySellTarget.mode}
+          exchangeRate={portfolioSummary?.usd_krw}
           onClose={() => setBuySellTarget(null)}
           onSubmit={handleBuySellStock}
         />

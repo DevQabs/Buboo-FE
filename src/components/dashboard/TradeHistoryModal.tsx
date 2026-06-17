@@ -17,12 +17,19 @@ const TAX_RATE = 0.22;
 
 type YearSummary = { year: number; grossKRW: number; taxKRW: number; afterTaxKRW: number };
 
+function pnlToKRW(tx: StockTransaction, fallbackRate: number): number {
+  // New system: exchange_rate_at_tx > 0 → realized_pnl is already KRW
+  // Legacy: exchange_rate_at_tx === 0 → convert via fallbackRate
+  if (tx.exchange_rate_at_tx > 0) return tx.realized_pnl;
+  return tx.currency === 'USD' ? tx.realized_pnl * fallbackRate : tx.realized_pnl;
+}
+
 function calcAfterTaxByYear(txs: StockTransaction[], exchangeRate: number): YearSummary[] {
   const byYear = new Map<number, number>();
   for (const tx of txs) {
     if (tx.type !== 'sell') continue;
     const year = new Date(tx.executed_at).getFullYear();
-    const krw = tx.currency === 'USD' ? tx.realized_pnl * exchangeRate : tx.realized_pnl;
+    const krw = pnlToKRW(tx, exchangeRate);
     byYear.set(year, (byYear.get(year) ?? 0) + krw);
   }
   return Array.from(byYear.entries())
@@ -41,7 +48,7 @@ function sumAfterTax(summaries: YearSummary[]) {
 function sumGross(txs: StockTransaction[], exchangeRate: number) {
   return txs
     .filter(t => t.type === 'sell')
-    .reduce((s, t) => s + (t.currency === 'USD' ? t.realized_pnl * exchangeRate : t.realized_pnl), 0);
+    .reduce((s, t) => s + pnlToKRW(t, exchangeRate), 0);
 }
 
 function fmtKRW(val: number): string {
@@ -214,7 +221,7 @@ export default function TradeHistoryModal({ transactions, users, exchangeRate, o
             <ul className="divide-y divide-slate-50">
               {filtered.map(tx => {
                 const isBuy = tx.type === 'buy';
-                const pnlKRW = tx.currency === 'USD' ? tx.realized_pnl * exchangeRate : tx.realized_pnl;
+                const pnlKRW = pnlToKRW(tx, exchangeRate);
                 const txUser = userMap[tx.user_id];
 
                 return (
@@ -249,11 +256,13 @@ export default function TradeHistoryModal({ transactions, users, exchangeRate, o
                     {!isBuy && (
                       <div className="text-right shrink-0">
                         <p className={`text-sm font-bold tabular-nums ${pnlKRW >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                          {tx.currency === 'USD'
-                            ? `${tx.realized_pnl >= 0 ? '+' : ''}$${tx.realized_pnl.toFixed(2)}`
-                            : fmtKRW(tx.realized_pnl)}
+                          {fmtKRW(pnlKRW)}
                         </p>
-                        <p className="text-[10px] text-slate-400 tabular-nums">{fmtKRW(pnlKRW)}</p>
+                        {tx.exchange_rate_at_tx > 0 && tx.currency === 'USD' && (
+                          <p className="text-[10px] text-slate-400 tabular-nums">
+                            @{tx.exchange_rate_at_tx.toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원
+                          </p>
+                        )}
                       </div>
                     )}
                   </li>

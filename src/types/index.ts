@@ -80,6 +80,7 @@ export interface StockAsset {
   name_en: string
   quantity: number
   average_price: number
+  avg_krw_price: number    // KRW weighted-average cost (exchange rate at purchase time)
   currency: string
   sector: string
   memo: string
@@ -158,7 +159,8 @@ export interface StockTransaction {
   price: number
   currency: string
   avg_price_at_tx: number
-  realized_pnl: number      // sell only: (price - avg) * qty; 0 for buy
+  realized_pnl: number          // sell only: always KRW; 0 for buy
+  exchange_rate_at_tx: number   // USD/KRW rate at time of tx; 0 = legacy data (use current rate)
   memo: string
   executed_at: string
   created_at: string
