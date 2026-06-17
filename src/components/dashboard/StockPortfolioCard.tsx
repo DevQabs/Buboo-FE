@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
@@ -8,15 +8,39 @@ import {
   TrashIcon,
   ExclamationTriangleIcon,
   XMarkIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import { PlusIcon } from '@heroicons/react/24/solid';
-import type { StockAssetWithPrice, User, PortfolioSummary } from '@/types';
+import type { StockAssetWithPrice, User, PortfolioSummary, StockTransaction } from '@/types';
+
+const BASIC_DEDUCTION_KRW = 2_500_000;
+const TAX_RATE = 0.22;
+
+function calcTotalAfterTaxKRW(transactions: StockTransaction[], exchangeRate: number): number {
+  const sellsByYear = new Map<number, number>();
+  for (const tx of transactions) {
+    if (tx.type !== 'sell') continue;
+    const year = new Date(tx.executed_at).getFullYear();
+    const krw = tx.currency === 'USD' ? tx.realized_pnl * exchangeRate : tx.realized_pnl;
+    sellsByYear.set(year, (sellsByYear.get(year) ?? 0) + krw);
+  }
+  let total = 0;
+  Array.from(sellsByYear.values()).forEach(grossKRW => {
+    if (grossKRW <= 0) { total += grossKRW; return; }
+    const tax = Math.max(0, grossKRW - BASIC_DEDUCTION_KRW) * TAX_RATE;
+    total += grossKRW - tax;
+  });
+  return total;
+}
 
 interface StockPortfolioCardProps {
   assets: StockAssetWithPrice[];
   users: User[];
   summary?: PortfolioSummary | null;
+  tradeTransactions?: StockTransaction[];
+  exchangeRate?: number;
   onAddClick?: () => void;
+  onHistoryClick?: () => void;
   onEditClick?: (asset: StockAssetWithPrice) => void;
   onBuySellClick?: (asset: StockAssetWithPrice, mode: 'buy' | 'sell') => void;
   /** Returns true if deleted (quantity reached 0 or forced), false if only updated */
@@ -485,7 +509,10 @@ export default function StockPortfolioCard({
   assets = [],
   users = [],
   summary,
+  tradeTransactions = [],
+  exchangeRate,
   onAddClick,
+  onHistoryClick,
   onEditClick,
   onBuySellClick,
   onDeleteClick,
@@ -503,6 +530,13 @@ export default function StockPortfolioCard({
   const totalCostKRW = summary?.total_cost_krw ?? 0;
   const totalPnlKRW = totalValueKRW - totalCostKRW;
   const isOverallUp = totalPnlKRW >= 0;
+
+  const fxRate = exchangeRate ?? summary?.usd_krw ?? 1350;
+  const afterTaxRealizedKRW = useMemo(
+    () => calcTotalAfterTaxKRW(tradeTransactions, fxRate),
+    [tradeTransactions, fxRate]
+  );
+  const hasSellHistory = tradeTransactions.some(t => t.type === 'sell');
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -541,15 +575,29 @@ export default function StockPortfolioCard({
                 <p className={`text-xs font-semibold tabular-nums ${isOverallUp ? 'text-emerald-600' : 'text-rose-500'}`}>
                   {isOverallUp ? '+' : ''}₩{Math.abs(Math.round(totalPnlKRW / 10000)).toLocaleString()}만 손익
                 </p>
+                {hasSellHistory && (
+                  <p className={`text-[10px] font-medium tabular-nums mt-0.5 ${afterTaxRealizedKRW >= 0 ? 'text-emerald-500' : 'text-rose-400'}`}>
+                    실현(세후) {afterTaxRealizedKRW >= 0 ? '+' : ''}₩{Math.round(Math.abs(afterTaxRealizedKRW) / 10000).toLocaleString()}만
+                  </p>
+                )}
               </div>
             )}
-            <button
-              onClick={onAddClick}
-              className='w-8 h-8 rounded-xl bg-indigo-50 hover:bg-indigo-100 flex items-center justify-center transition-colors'
-              aria-label='종목 추가'
-            >
-              <PlusIcon className='h-4 w-4 text-indigo-600' />
-            </button>
+            <div className='flex items-center gap-1.5'>
+              <button
+                onClick={onHistoryClick}
+                className='w-8 h-8 rounded-xl bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition-colors'
+                aria-label='매매 이력'
+              >
+                <ClockIcon className='h-4 w-4 text-slate-500' />
+              </button>
+              <button
+                onClick={onAddClick}
+                className='w-8 h-8 rounded-xl bg-indigo-50 hover:bg-indigo-100 flex items-center justify-center transition-colors'
+                aria-label='종목 추가'
+              >
+                <PlusIcon className='h-4 w-4 text-indigo-600' />
+              </button>
+            </div>
           </div>
         </div>
 

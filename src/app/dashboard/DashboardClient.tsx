@@ -17,6 +17,7 @@ import StockPortfolioCard from '@/components/dashboard/StockPortfolioCard'
 import AddStockModal from '@/components/dashboard/AddStockModal'
 import EditStockModal from '@/components/dashboard/EditStockModal'
 import BuySellModal from '@/components/dashboard/BuySellModal'
+import TradeHistoryModal from '@/components/dashboard/TradeHistoryModal'
 import OtherAssetCard from '@/components/dashboard/OtherAssetCard'
 import NetWorthSummaryCard from '@/components/dashboard/NetWorthSummaryCard'
 import FixedExpenseCard from '@/components/dashboard/FixedExpenseCard'
@@ -48,6 +49,7 @@ import type {
   CreateScheduleRequest,
   UpdateScheduleRequest,
   CreateDiaryRequest,
+  StockTransaction,
 } from '@/types'
 
 // 개발: NEXT_PUBLIC_API_URL=http://localhost:8090 으로 직접 호출
@@ -119,6 +121,8 @@ export default function DashboardClient() {
   const [showAddStock, setShowAddStock]   = useState(false)
   const [editingStock, setEditingStock]   = useState<StockAssetWithPrice | null>(null)
   const [buySellTarget, setBuySellTarget] = useState<{ asset: StockAssetWithPrice; mode: 'buy' | 'sell' } | null>(null)
+  const [showTradeHistory, setShowTradeHistory] = useState(false)
+  const [tradeTransactions, setTradeTransactions] = useState<StockTransaction[]>([])
 
   // ── derived: 통합 순자산 ──────────────────────────────────────────────────
   const netWorth = useMemo<NetWorthSummary>(() => {
@@ -193,7 +197,7 @@ export default function DashboardClient() {
       const { startDate, endDate } = buildDateRange(periodYear, adjMonth, dbStartDay)
 
       // ── Step 2: everything else in parallel ──
-      const [usersData, txData, portfolioData, summaryData, assetsData, feData, feSummaryData, divData, calData, schData, diarData] = await Promise.all([
+      const [usersData, txData, portfolioData, summaryData, assetsData, feData, feSummaryData, divData, calData, schData, diarData, stockTxData] = await Promise.all([
         apiFetch<User[]>('/api/users'),
         apiFetch<Transaction[]>(`/api/transactions?year=${periodYear}&month=${adjMonth}`),
         apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
@@ -205,6 +209,7 @@ export default function DashboardClient() {
         apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${y}&month=${m}`),
         apiFetch<Schedule[]>('/api/schedules'),
         apiFetch<DiaryEntry[]>('/api/diaries'),
+        apiFetch<StockTransaction[]>('/api/stocks/transactions'),
       ])
 
       setUsers(Array.isArray(usersData) ? usersData : [])
@@ -226,6 +231,7 @@ export default function DashboardClient() {
       setCalendarData(calData)
       setSchedules(Array.isArray(schData) ? schData : [])
       setDiaries(Array.isArray(diarData) ? diarData : [])
+      setTradeTransactions(Array.isArray(stockTxData) ? stockTxData : [])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error')
     } finally {
@@ -264,11 +270,13 @@ export default function DashboardClient() {
       Promise.all([
         apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
         apiFetch<OtherAsset[]>('/api/assets'),
-      ]).then(([port, assets]) => {
+        apiFetch<StockTransaction[]>('/api/stocks/transactions'),
+      ]).then(([port, assets, stockTx]) => {
         const p = port as PortfolioResponse
         if (Array.isArray(p)) { setPortfolio(p); setPortfolioSummary(null) }
         else { setPortfolio(p?.items ?? []); setPortfolioSummary(p?.summary ?? null) }
         setOtherAssets(Array.isArray(assets) ? assets : [])
+        setTradeTransactions(Array.isArray(stockTx) ? stockTx : [])
       }).catch(() => {})
     }
   }, [activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -781,7 +789,10 @@ export default function DashboardClient() {
               assets={portfolio}
               users={users}
               summary={portfolioSummary}
+              tradeTransactions={tradeTransactions}
+              exchangeRate={portfolioSummary?.usd_krw}
               onAddClick={() => setShowAddStock(true)}
+              onHistoryClick={() => setShowTradeHistory(true)}
               onEditClick={setEditingStock}
               onBuySellClick={(asset, mode) => setBuySellTarget({ asset, mode })}
               onDeleteClick={handleDeleteStock}
@@ -925,6 +936,14 @@ export default function DashboardClient() {
           mode={buySellTarget.mode}
           onClose={() => setBuySellTarget(null)}
           onSubmit={handleBuySellStock}
+        />
+      )}
+
+      {showTradeHistory && (
+        <TradeHistoryModal
+          transactions={tradeTransactions}
+          exchangeRate={portfolioSummary?.usd_krw ?? 1350}
+          onClose={() => setShowTradeHistory(false)}
         />
       )}
 
