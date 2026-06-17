@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/solid';
+import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
 import { ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
 import type { StockTransaction, User } from '@/types';
 
@@ -61,10 +61,10 @@ type FilterType = 'all' | 'buy' | 'sell';
 
 export default function TradeHistoryModal({ transactions, users, exchangeRate, onClose }: TradeHistoryModalProps) {
   const [filter, setFilter] = useState<FilterType>('all');
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set()); // 기본 접힘
 
   const userMap = useMemo(() => Object.fromEntries(users.map(u => [u.id, u])), [users]);
 
-  // Per-user stats (each user gets their own 2.5M deduction per year)
   const userStats = useMemo(() => {
     return users.map(u => {
       const userTxs = transactions.filter(t => t.user_id === u.id);
@@ -91,6 +91,15 @@ export default function TradeHistoryModal({ transactions, users, exchangeRate, o
     return sorted.filter(t => t.type === filter);
   }, [transactions, filter]);
 
+  function toggleUser(userId: string) {
+    setExpandedUsers(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
@@ -106,53 +115,73 @@ export default function TradeHistoryModal({ transactions, users, exchangeRate, o
 
         {/* Summary bar */}
         {hasSells && (
-          <div className="mx-5 mb-3 rounded-2xl bg-slate-50 p-4 shrink-0 space-y-3">
-            {/* Per-user rows */}
-            {userStats.map(({ user, yearSummaries, afterTaxKRW, grossKRW, hasSells: userHasSells }) => (
-              <div key={user.id}>
-                {/* User label */}
-                <div className="flex items-center gap-1.5 mb-1">
-                  <div
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
-                    style={{ backgroundColor: user.avatar_color }}
+          <div className="mx-5 mb-3 rounded-2xl bg-slate-50 p-4 shrink-0 space-y-2">
+            {/* Per-user rows (collapsible) */}
+            {userStats.map(({ user, yearSummaries, afterTaxKRW, grossKRW, hasSells: userHasSells }) => {
+              const isExpanded = expandedUsers.has(user.id);
+              return (
+                <div key={user.id} className="rounded-xl overflow-hidden">
+                  {/* Collapsed header row — always visible */}
+                  <button
+                    type="button"
+                    onClick={() => toggleUser(user.id)}
+                    className="w-full flex items-center justify-between py-2 px-0 group"
                   >
-                    {user.name[0]}
-                  </div>
-                  <span className="text-xs font-semibold text-slate-600">{user.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                        style={{ backgroundColor: user.avatar_color }}
+                      >
+                        {user.name[0]}
+                      </div>
+                      <span className="text-xs font-semibold text-slate-600">{user.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {userHasSells && (
+                        <span className={`text-sm font-bold tabular-nums ${afterTaxKRW >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                          {fmtKRW(afterTaxKRW)}
+                          <span className="text-[10px] font-normal text-slate-400 ml-1">세후</span>
+                        </span>
+                      )}
+                      {!userHasSells && (
+                        <span className="text-xs text-slate-400">매도 없음</span>
+                      )}
+                      <ChevronDownIcon
+                        className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                      />
+                    </div>
+                  </button>
+
+                  {/* Expanded detail */}
+                  {isExpanded && userHasSells && (
+                    <div className="pl-6 pb-2 space-y-1.5">
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-[10px] text-slate-400">세전 실현손익</p>
+                          <p className={`text-sm font-semibold tabular-nums ${grossKRW >= 0 ? 'text-slate-600' : 'text-rose-400'}`}>
+                            {fmtKRW(grossKRW)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] text-slate-400">세후 실현손익</p>
+                          <p className={`text-sm font-bold tabular-nums ${afterTaxKRW >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                            {fmtKRW(afterTaxKRW)}
+                          </p>
+                        </div>
+                      </div>
+                      {yearSummaries.map(ys => (
+                        <p key={ys.year} className="text-[10px] text-slate-400">
+                          {ys.year}년 기본공제 250만 → 세금 {ys.taxKRW > 0 ? fmtKRW(-ys.taxKRW) : '없음'}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {userHasSells ? (
-                  <div className="flex justify-between items-end pl-6">
-                    <div>
-                      <p className="text-xs text-slate-400">세후 실현손익</p>
-                      <p className={`text-base font-bold tabular-nums ${afterTaxKRW >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                        {fmtKRW(afterTaxKRW)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-slate-400">세전</p>
-                      <p className={`text-sm font-semibold tabular-nums ${grossKRW >= 0 ? 'text-slate-500' : 'text-rose-400'}`}>
-                        {fmtKRW(grossKRW)}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="pl-6 text-xs text-slate-400">매도 이력 없음</p>
-                )}
-                {/* Per-year deduction note */}
-                {yearSummaries.length > 0 && (
-                  <div className="pl-6 mt-1 space-y-0.5">
-                    {yearSummaries.map(ys => (
-                      <p key={ys.year} className="text-[10px] text-slate-400">
-                        {ys.year}년 기본공제 250만 → 세금 {ys.taxKRW > 0 ? fmtKRW(-ys.taxKRW) : '없음'}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
 
             {/* Combined total */}
-            <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
+            <div className="pt-2 border-t border-slate-200 flex justify-between items-center">
               <p className="text-xs font-semibold text-slate-500">합산 세후 실현손익</p>
               <p className={`text-lg font-bold tabular-nums ${totalAfterTaxKRW >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
                 {fmtKRW(totalAfterTaxKRW)}
@@ -190,14 +219,12 @@ export default function TradeHistoryModal({ transactions, users, exchangeRate, o
 
                 return (
                   <li key={tx.id} className="px-5 py-3 flex items-center gap-3">
-                    {/* Type icon */}
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${isBuy ? 'bg-emerald-50' : 'bg-rose-50'}`}>
                       {isBuy
                         ? <ArrowTrendingUpIcon className="w-4 h-4 text-emerald-500" />
                         : <ArrowTrendingDownIcon className="w-4 h-4 text-rose-500" />}
                     </div>
 
-                    {/* Symbol + date + user */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-bold text-slate-800">{tx.symbol}</span>
@@ -219,7 +246,6 @@ export default function TradeHistoryModal({ transactions, users, exchangeRate, o
                       </p>
                     </div>
 
-                    {/* P&L (sell only) */}
                     {!isBuy && (
                       <div className="text-right shrink-0">
                         <p className={`text-sm font-bold tabular-nums ${pnlKRW >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
