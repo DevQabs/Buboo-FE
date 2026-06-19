@@ -21,6 +21,7 @@ import TradeHistoryModal from '@/components/dashboard/TradeHistoryModal'
 import OtherAssetCard from '@/components/dashboard/OtherAssetCard'
 import NetWorthSummaryCard from '@/components/dashboard/NetWorthSummaryCard'
 import FixedExpenseCard from '@/components/dashboard/FixedExpenseCard'
+import SamsungPayCard from '@/components/dashboard/SamsungPayCard'
 import DividendCard from '@/components/dashboard/DividendCard'
 import CalendarView from '@/components/dashboard/CalendarView'
 import ScheduleTab from '@/components/dashboard/ScheduleTab'
@@ -812,6 +813,14 @@ export default function DashboardClient() {
         {/* ══ Tab 2: 가계부 ══ */}
         {activeTab === 'ledger' && (
           <>
+            {/* 삼성페이 결제 카드 */}
+            <SamsungPayCard
+              users={users}
+              onAdd={async (data) => {
+                await handleAddTransaction(data)
+              }}
+            />
+
             {/* 예산 현황 + 기간 선택 (맨 위) */}
             {summary && (
               <SummaryCard
