@@ -310,8 +310,7 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
     samsungPayPending.current = false
     close()
     if (openPay) {
-      window.location.href =
-        'intent://pay#Intent;scheme=samsungpay;package=com.samsung.android.spay;end'
+      window.location.href = 'samsungpay://pay'
     }
   }
 
@@ -465,28 +464,27 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
                 <p className="text-xs text-amber-600">저축 자산 정보를 입력해주세요.</p>
               )}
 
-              <div className={`flex gap-2 ${type === 'expense' ? '' : ''}`}>
+              <button
+                type="submit"
+                disabled={loading || (type === 'saving' && !savingLink)}
+                className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-60"
+              >
+                {loading ? '저장 중...' : '저장하기'}
+              </button>
+              {type === 'expense' && (
                 <button
-                  type="submit"
-                  disabled={loading || (type === 'saving' && !savingLink)}
-                  className={`${type === 'expense' ? 'flex-1' : 'w-full'} py-3.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-60`}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    samsungPayPending.current = true
+                    formRef.current?.requestSubmit()
+                  }}
+                  className="w-full py-3.5 bg-blue-500 text-white rounded-xl font-semibold text-sm hover:bg-blue-600 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 >
-                  {loading ? '저장 중...' : '저장하기'}
+                  <span>결제하기</span>
+                  <span className="text-xs opacity-80">Samsung Pay</span>
                 </button>
-                {type === 'expense' && (
-                  <button
-                    type="button"
-                    disabled={loading}
-                    onClick={() => {
-                      samsungPayPending.current = true
-                      formRef.current?.requestSubmit()
-                    }}
-                    className="flex-1 py-3.5 bg-blue-500 text-white rounded-xl font-semibold text-sm hover:bg-blue-600 active:scale-[0.98] transition-all disabled:opacity-60"
-                  >
-                    결제
-                  </button>
-                )}
-              </div>
+              )}
             </form>
           </div>
         </div>

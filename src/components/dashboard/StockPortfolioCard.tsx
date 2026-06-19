@@ -560,8 +560,7 @@ export default function StockPortfolioCard({
   function handleSwipeEnd(x: number) {
     if (swipeStartY.current === null) return;
     const dx = x - swipeStartY.current;
-    if (dx < -30) setShowChart(true);
-    if (dx > 30) setShowChart(false);
+    if (Math.abs(dx) > 30) setShowChart(v => !v);
     swipeStartY.current = null;
   }
 
@@ -668,7 +667,7 @@ export default function StockPortfolioCard({
               <p className='text-xs font-semibold text-slate-400 mb-3 tracking-wide uppercase'>종목별 비중</p>
               {chartData.length > 0 ? (
                 <>
-                  <ResponsiveContainer width='100%' height={240}>
+                  <ResponsiveContainer width='100%' height={240} style={{ outline: 'none' }}>
                     <PieChart>
                       <Pie
                         data={chartData}
