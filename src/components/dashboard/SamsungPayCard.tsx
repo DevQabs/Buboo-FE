@@ -37,7 +37,6 @@ export default function SamsungPayCard({ users, onAdd }: SamsungPayCardProps) {
   const [category, setCategory] = useState('');
   const [payment, setPayment] = useState('카드');
   const [userID, setUserID] = useState(users[0]?.id ?? '');
-  const [loading, setLoading] = useState(false);
   const { expenseCategories } = useCategories();
 
   function resetForm() {
@@ -58,26 +57,22 @@ export default function SamsungPayCard({ users, onAdd }: SamsungPayCardProps) {
     setAmount(raw ? parseInt(raw, 10).toLocaleString() : '');
   }
 
-  async function handleSubmit() {
+  function handleSubmit() {
     const num = parseInt(amount.replace(/,/g, ''), 10);
     if (!num || !title) return;
-    // user gesture 내 동기 호출 — await 전에 실행해야 앱 열림
+    // 즉시 앱 열기 + 모달 닫기 — 저장은 백그라운드
     openNaverPay();
-    setLoading(true);
-    try {
-      await onAdd({
-        user_id: userID,
-        type: 'expense',
-        amount: num,
-        category: category || expenseCategories[0] || '식비',
-        title,
-        payment_method: payment,
-      });
-      setOpen(false);
-      resetForm();
-    } finally {
-      setLoading(false);
-    }
+    setOpen(false);
+    const data = {
+      user_id: userID,
+      type: 'expense' as const,
+      amount: num,
+      category: category || expenseCategories[0] || '식비',
+      title,
+      payment_method: payment,
+    };
+    resetForm();
+    onAdd(data).catch(console.error);
   }
 
   return (
@@ -224,12 +219,12 @@ export default function SamsungPayCard({ users, onAdd }: SamsungPayCardProps) {
 
               <button
                 type="button"
-                disabled={loading || !amount || !title}
+                disabled={!amount || !title}
                 onClick={handleSubmit}
                 className="w-full py-3.5 rounded-xl font-bold text-sm text-white active:scale-[0.98] transition-all disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #03c75a 0%, #018a3c 100%)' }}
               >
-                {loading ? '저장 중...' : '결제하기 → 네이버페이'}
+                결제하기 → 네이버페이
               </button>
             </div>
           </div>
