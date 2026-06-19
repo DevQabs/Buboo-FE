@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/solid'
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
 import type { User, SavingLink, SavingKind, StockAssetWithPrice, OtherAsset, OtherAssetType } from '@/types'
@@ -289,6 +289,8 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
     else setInternalOpen(false)
   }
 
+  const samsungPayPending = useRef(false)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!amount || !title) return
@@ -304,8 +306,16 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
       saving_link: savingLink ?? undefined,
     })
     setLoading(false)
+    const openPay = samsungPayPending.current
+    samsungPayPending.current = false
     close()
+    if (openPay) {
+      window.location.href =
+        'intent://pay#Intent;scheme=samsungpay;package=com.samsung.android.spay;end'
+    }
   }
+
+  const formRef = useRef<HTMLFormElement>(null)
 
   return (
     <>
@@ -347,7 +357,7 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
               {/* Type toggle */}
               <div className="flex gap-1.5 bg-slate-100 rounded-xl p-1">
                 {(['expense', 'income', 'saving'] as TxType[]).map(t => (
@@ -455,13 +465,28 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
                 <p className="text-xs text-amber-600">저축 자산 정보를 입력해주세요.</p>
               )}
 
-              <button
-                type="submit"
-                disabled={loading || (type === 'saving' && !savingLink)}
-                className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-60"
-              >
-                {loading ? '저장 중...' : '저장하기'}
-              </button>
+              <div className={`flex gap-2 ${type === 'expense' ? '' : ''}`}>
+                <button
+                  type="submit"
+                  disabled={loading || (type === 'saving' && !savingLink)}
+                  className={`${type === 'expense' ? 'flex-1' : 'w-full'} py-3.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-60`}
+                >
+                  {loading ? '저장 중...' : '저장하기'}
+                </button>
+                {type === 'expense' && (
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => {
+                      samsungPayPending.current = true
+                      formRef.current?.requestSubmit()
+                    }}
+                    className="flex-1 py-3.5 bg-blue-500 text-white rounded-xl font-semibold text-sm hover:bg-blue-600 active:scale-[0.98] transition-all disabled:opacity-60"
+                  >
+                    결제
+                  </button>
+                )}
+              </div>
             </form>
           </div>
         </div>
