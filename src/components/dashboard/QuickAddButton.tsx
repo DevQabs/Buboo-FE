@@ -310,7 +310,12 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
     samsungPayPending.current = false
     close()
     if (openPay) {
-      window.location.href = 'samsungpay://pay'
+      const a = document.createElement('a');
+      a.href = 'intent://pay#Intent;scheme=samsungpay;package=com.samsung.android.spay;end';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
   }
 

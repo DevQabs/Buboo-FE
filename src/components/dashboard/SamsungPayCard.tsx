@@ -20,9 +20,13 @@ interface SamsungPayCardProps {
 const PAYMENT_METHODS = ['카드', '현금', '이체', '기타'];
 
 function openSamsungPay() {
-  // Android PWA: intent:// is the reliable way to launch a specific app
-  window.location.href =
-    'intent://pay#Intent;scheme=samsungpay;package=com.samsung.android.spay;end';
+  // PWA standalone: anchor click bypasses navigation restrictions on intent:// URLs
+  const a = document.createElement('a');
+  a.href = 'intent://pay#Intent;scheme=samsungpay;package=com.samsung.android.spay;end';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 export default function SamsungPayCard({ users, onAdd }: SamsungPayCardProps) {
