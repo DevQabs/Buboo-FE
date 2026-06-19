@@ -21,7 +21,7 @@ const PAYMENT_METHODS = ['카드', '현금', '이체', '기타'];
 
 // naverpayapp:// 스킴 → user gesture 내 동기 호출 필수
 function openNaverPay() {
-  const url = 'naverpayapp://home';
+  const url = 'naverpayapp://';
   const a = document.createElement('a');
   a.href = url;
   a.style.display = 'none';
