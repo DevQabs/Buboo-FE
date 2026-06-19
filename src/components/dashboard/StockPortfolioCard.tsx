@@ -560,7 +560,8 @@ export default function StockPortfolioCard({
   function handleSwipeEnd(x: number) {
     if (swipeStartY.current === null) return;
     const dx = x - swipeStartY.current;
-    if (Math.abs(dx) > 30) setShowChart(v => !v);
+    if (dx < -30) setShowChart(true);
+    if (dx > 30) setShowChart(false);
     swipeStartY.current = null;
   }
 
