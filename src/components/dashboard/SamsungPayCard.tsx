@@ -186,31 +186,45 @@ export default function SamsungPayCard({ users, onAdd }: SamsungPayCardProps) {
                 />
               </div>
 
-              {/* Category + Payment row */}
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <label className="text-xs text-slate-500 mb-1 block">카테고리</label>
-                  <select
-                    value={category || expenseCategories[0]}
-                    onChange={e => setCategory(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                  >
-                    {expenseCategories.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+              {/* Category */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 mb-2 block">카테고리</label>
+                <div className="flex flex-wrap gap-2">
+                  {expenseCategories.map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setCategory(cat)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        (category || expenseCategories[0]) === cat
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
                 </div>
-                <div className="flex-1">
-                  <label className="text-xs text-slate-500 mb-1 block">결제수단</label>
-                  <select
-                    value={payment}
-                    onChange={e => setPayment(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                  >
-                    {PAYMENT_METHODS.map(m => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
+              </div>
+
+              {/* Payment method */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 mb-2 block">결제수단</label>
+                <div className="flex gap-2">
+                  {PAYMENT_METHODS.map(m => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setPayment(m)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        payment === m
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
                 </div>
               </div>
 
