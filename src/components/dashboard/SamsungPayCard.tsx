@@ -59,7 +59,7 @@ export default function SamsungPayCard({ users, onAdd }: SamsungPayCardProps) {
 
   function handleSubmit() {
     const num = parseInt(amount.replace(/,/g, ''), 10);
-    if (!num || !title) return;
+    if (!num) return;
     // 즉시 앱 열기 + 모달 닫기 — 저장은 백그라운드
     openNaverPay();
     setOpen(false);
@@ -68,7 +68,7 @@ export default function SamsungPayCard({ users, onAdd }: SamsungPayCardProps) {
       type: 'expense' as const,
       amount: num,
       category: category || expenseCategories[0] || '식비',
-      title,
+      title: title || '네이버페이 결제',
       payment_method: payment,
     };
     resetForm();
@@ -219,7 +219,7 @@ export default function SamsungPayCard({ users, onAdd }: SamsungPayCardProps) {
 
               <button
                 type="button"
-                disabled={!amount || !title}
+                disabled={!amount}
                 onClick={handleSubmit}
                 className="w-full py-3.5 rounded-xl font-bold text-sm text-white active:scale-[0.98] transition-all disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #03c75a 0%, #018a3c 100%)' }}
