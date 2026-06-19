@@ -11,6 +11,9 @@ import {
   ClockIcon,
 } from '@heroicons/react/24/outline';
 import { PlusIcon } from '@heroicons/react/24/solid';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+
+const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
 import type { StockAssetWithPrice, User, PortfolioSummary } from '@/types';
 
 
@@ -481,6 +484,41 @@ function TaxWarningConfirm({
   );
 }
 
+// ─── Pie chart custom tooltip ─────────────────────────────────────────────────
+
+function ChartTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; fullName: string; value: number; pct: number; pnlKRW: number; pnlPct: number } }> }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  const isUp = d.pnlKRW >= 0;
+  return (
+    <div className='bg-white border border-slate-100 rounded-2xl shadow-lg px-4 py-3 min-w-[160px]'>
+      <p className='text-xs font-bold text-slate-800 mb-2'>{d.name} <span className='font-normal text-slate-400'>{d.fullName}</span></p>
+      <div className='space-y-1'>
+        <div className='flex justify-between gap-4 text-xs'>
+          <span className='text-slate-400'>비중</span>
+          <span className='font-semibold text-slate-700 tabular-nums'>{d.pct.toFixed(1)}%</span>
+        </div>
+        <div className='flex justify-between gap-4 text-xs'>
+          <span className='text-slate-400'>평가금액</span>
+          <span className='font-semibold text-slate-700 tabular-nums'>₩{Math.round(d.value / 10000).toLocaleString()}만</span>
+        </div>
+        <div className='flex justify-between gap-4 text-xs'>
+          <span className='text-slate-400'>손익</span>
+          <span className={`font-bold tabular-nums ${isUp ? 'text-emerald-600' : 'text-rose-500'}`}>
+            {isUp ? '+' : ''}₩{Math.round(d.pnlKRW / 10000).toLocaleString()}만
+          </span>
+        </div>
+        <div className='flex justify-between gap-4 text-xs'>
+          <span className='text-slate-400'>수익률</span>
+          <span className={`font-bold tabular-nums ${isUp ? 'text-emerald-600' : 'text-rose-500'}`}>
+            {isUp ? '+' : ''}{d.pnlPct.toFixed(2)}%
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main card ────────────────────────────────────────────────────────────────
 
 export default function StockPortfolioCard({
@@ -496,6 +534,8 @@ export default function StockPortfolioCard({
   const [pendingDelete, setPendingDelete] = useState<StockAssetWithPrice | null>(null);
   const [taxWarning, setTaxWarning] = useState<{ asset: StockAssetWithPrice; year: number } | null>(null);
   const [checkingDelete, setCheckingDelete] = useState<string | null>(null); // asset id
+  const [showChart, setShowChart] = useState(false);
+  const swipeStartY = useRef<number | null>(null);
 
   const safeAssets = Array.isArray(assets) ? assets : [];
   const safeUsers = Array.isArray(users) ? users : [];
@@ -506,6 +546,24 @@ export default function StockPortfolioCard({
   const totalCostKRW = summary?.total_cost_krw ?? 0;
   const totalPnlKRW = totalValueKRW - totalCostKRW;
   const isOverallUp = totalPnlKRW >= 0;
+
+  const chartData = groups.map(g => ({
+    name: g.symbol,
+    fullName: g.name,
+    value: g.totalValueKRW,
+    pct: totalValueKRW > 0 ? (g.totalValueKRW / totalValueKRW * 100) : 0,
+    pnlKRW: g.pnlKRW,
+    pnlPct: g.pnlPct,
+  }));
+
+  function handleSwipeStart(x: number) { swipeStartY.current = x; }
+  function handleSwipeEnd(x: number) {
+    if (swipeStartY.current === null) return;
+    const dx = x - swipeStartY.current;
+    if (dx > 30) setShowChart(true);
+    if (dx < -30) setShowChart(false);
+    swipeStartY.current = null;
+  }
 
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -566,31 +624,91 @@ export default function StockPortfolioCard({
           </div>
         </div>
 
-        {/* Grouped rows */}
-        {groups.length === 0 ? (
-          <div className='px-5 py-10 flex flex-col items-center gap-2 text-center'>
-            <p className='text-sm font-medium text-slate-400'>보유 주식이 없습니다</p>
-            <p className='text-xs text-slate-300'>+ 버튼으로 종목을 추가해보세요</p>
-          </div>
-        ) : (
-          <ul className='divide-y divide-slate-50'>
-            {groups.map(group => (
-              <GroupedStockRow
-                key={`${group.symbol}::${group.exchange}`}
-                group={group}
-                userMap={userMap}
-                onEdit={a => onEditClick?.(a)}
-                onBuy={a => onBuySellClick?.(a, 'buy')}
-                onSell={a => onBuySellClick?.(a, 'sell')}
-                onDelete={a => handleDeleteRequest(a)}
-              />
-            ))}
-          </ul>
-        )}
+        {/* Horizontal slider — list panel | chart panel */}
+        <div
+          className='overflow-hidden'
+          onTouchStart={e => handleSwipeStart(e.touches[0].clientX)}
+          onTouchEnd={e => handleSwipeEnd(e.changedTouches[0].clientX)}
+          onMouseDown={e => handleSwipeStart(e.clientX)}
+          onMouseUp={e => handleSwipeEnd(e.clientX)}
+        >
+          <div
+            className='flex transition-transform duration-300 ease-in-out'
+            style={{ transform: showChart ? 'translateX(-50%)' : 'translateX(0)', width: '200%' }}
+          >
+            {/* Panel 1 — stock list */}
+            <div style={{ width: '50%' }}>
+              {groups.length === 0 ? (
+                <div className='px-5 py-10 flex flex-col items-center gap-2 text-center'>
+                  <p className='text-sm font-medium text-slate-400'>보유 주식이 없습니다</p>
+                  <p className='text-xs text-slate-300'>+ 버튼으로 종목을 추가해보세요</p>
+                </div>
+              ) : (
+                <ul className='divide-y divide-slate-50'>
+                  {groups.map(group => (
+                    <GroupedStockRow
+                      key={`${group.symbol}::${group.exchange}`}
+                      group={group}
+                      userMap={userMap}
+                      onEdit={a => onEditClick?.(a)}
+                      onBuy={a => onBuySellClick?.(a, 'buy')}
+                      onSell={a => onBuySellClick?.(a, 'sell')}
+                      onDelete={a => handleDeleteRequest(a)}
+                    />
+                  ))}
+                </ul>
+              )}
+              {checkingDelete && (
+                <div className='px-5 py-2 text-xs text-slate-400 text-center animate-pulse'>삭제 전 세금 이력 확인 중...</div>
+              )}
+            </div>
 
-        {/* Checking indicator */}
-        {checkingDelete && (
-          <div className='px-5 py-2 text-xs text-slate-400 text-center animate-pulse'>삭제 전 세금 이력 확인 중...</div>
+            {/* Panel 2 — chart */}
+            <div style={{ width: '50%' }} className='px-5 py-4'>
+              <p className='text-xs font-semibold text-slate-400 mb-3 tracking-wide uppercase'>종목별 비중</p>
+              {chartData.length > 0 ? (
+                <>
+                  <ResponsiveContainer width='100%' height={240}>
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        dataKey='value'
+                        cx='50%'
+                        cy='50%'
+                        innerRadius={65}
+                        outerRadius={105}
+                        paddingAngle={2}
+                        strokeWidth={0}
+                      >
+                        {chartData.map((_, i) => (
+                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<ChartTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </>
+              ) : (
+                <div className='py-8 text-center text-xs text-slate-300'>데이터 없음</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Panel indicator dots */}
+        {safeAssets.length > 0 && (
+          <div className='flex justify-center gap-2 py-4 border-t border-slate-50'>
+            <button
+              onClick={() => setShowChart(false)}
+              className={`rounded-full transition-all duration-200 ${!showChart ? 'w-6 h-2.5 bg-indigo-400' : 'w-2.5 h-2.5 bg-slate-200'}`}
+              aria-label='목록 보기'
+            />
+            <button
+              onClick={() => setShowChart(true)}
+              className={`rounded-full transition-all duration-200 ${showChart ? 'w-6 h-2.5 bg-indigo-400' : 'w-2.5 h-2.5 bg-slate-200'}`}
+              aria-label='차트 보기'
+            />
+          </div>
         )}
       </div>
 
