@@ -680,7 +680,7 @@ export default function StockPortfolioCard({
                         strokeWidth={0}
                       >
                         {chartData.map((_, i) => (
-                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} stroke="none" />
                         ))}
                       </Pie>
                       <Tooltip content={<ChartTooltip />} />

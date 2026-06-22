@@ -459,10 +459,34 @@ function EditScheduleModal({ schedule, onClose, onSave }: {
 
 // ─── Diary row ────────────────────────────────────────────────────────────────
 
+function PhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-colors"
+      >
+        <XMarkIcon className="h-5 w-5" />
+      </button>
+      <img
+        src={src}
+        alt=""
+        className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      />
+    </div>
+  )
+}
+
 function DiaryRow({ d, apiBase, onEdit, onDelete }: { d: DiaryEntry; apiBase: string; onEdit: () => void; onDelete: () => void }) {
   const [expanded, setExpanded] = useState(false)
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   return (
     <div className="px-4 py-3 border-b border-slate-50 last:border-0">
+      {lightboxSrc && <PhotoLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
       <button className="w-full text-left" onClick={() => setExpanded(v => !v)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -493,7 +517,8 @@ function DiaryRow({ d, apiBase, onEdit, onDelete }: { d: DiaryEntry; apiBase: st
                 const src = p.startsWith('http') ? p : `${apiBase}${p}`
                 return (
                   <img key={p} src={src} alt=""
-                    className="w-20 h-20 object-cover rounded-xl border border-slate-100" />
+                    className="w-20 h-20 object-cover rounded-xl border border-slate-100 cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setLightboxSrc(src)} />
                 )
               })}
             </div>
