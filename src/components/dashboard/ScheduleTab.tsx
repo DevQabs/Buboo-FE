@@ -484,6 +484,7 @@ function PhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
 function DiaryRow({ d, apiBase, onEdit, onDelete }: { d: DiaryEntry; apiBase: string; onEdit: () => void; onDelete: () => void }) {
   const [expanded, setExpanded] = useState(false)
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   return (
     <div className="px-4 py-3 border-b border-slate-50 last:border-0">
       {lightboxSrc && <PhotoLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
@@ -501,10 +502,23 @@ function DiaryRow({ d, apiBase, onEdit, onDelete }: { d: DiaryEntry; apiBase: st
               className="p-1.5 rounded-lg text-slate-300 hover:text-amber-400 hover:bg-amber-50 transition-colors">
               <PencilSquareIcon className="h-3.5 w-3.5" />
             </button>
-            <button onClick={e => { e.stopPropagation(); onDelete() }}
-              className="p-1.5 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors">
-              <TrashIcon className="h-3.5 w-3.5" />
-            </button>
+            {confirmingDelete ? (
+              <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                <button onClick={() => { onDelete(); setConfirmingDelete(false) }}
+                  className="px-2 py-1 rounded-lg text-[11px] font-medium bg-rose-500 text-white hover:bg-rose-600 transition-colors">
+                  삭제
+                </button>
+                <button onClick={() => setConfirmingDelete(false)}
+                  className="px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
+                  취소
+                </button>
+              </div>
+            ) : (
+              <button onClick={e => { e.stopPropagation(); setConfirmingDelete(true) }}
+                className="p-1.5 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors">
+                <TrashIcon className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         </div>
       </button>
