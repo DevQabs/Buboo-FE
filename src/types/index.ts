@@ -531,3 +531,77 @@ export interface UpdateDiaryRequest {
   content?: string
   mood?: DiaryMood
 }
+
+// ─────────────────────────────────────────────
+//  FridgeItem (냉장고 식재료)
+// ─────────────────────────────────────────────
+
+export type FridgeLocation = '냉장' | '냉동' | '실온'
+export type FridgeCategory = '채소' | '육류' | '해산물' | '유제품' | '가공식품' | '기타'
+
+export const FRIDGE_CATEGORIES: FridgeCategory[] = ['채소', '육류', '해산물', '유제품', '가공식품', '기타']
+
+export interface FridgeItem {
+  id: string
+  couple_id: string
+  name: string
+  quantity: string
+  expiry_date: string | null  // ISO timestamp (use date portion only)
+  location: FridgeLocation
+  category: FridgeCategory
+  memo: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateFridgeItemRequest {
+  name: string
+  quantity?: string
+  expiry_date?: string | null  // YYYY-MM-DD
+  location: FridgeLocation
+  category?: FridgeCategory
+  memo?: string
+}
+
+export interface UpdateFridgeItemRequest {
+  name?: string
+  quantity?: string
+  expiry_date?: string | null  // YYYY-MM-DD or "" to clear
+  location?: FridgeLocation
+  category?: FridgeCategory
+  memo?: string
+}
+
+// ─────────────────────────────────────────────
+//  SideDish (반찬)
+// ─────────────────────────────────────────────
+
+export type SideDishLocation = '냉장' | '냉동'
+
+export interface SideDish {
+  id: string
+  couple_id: string
+  name: string
+  made_at: string       // ISO timestamp (use date portion only)
+  expires_at: string | null  // nullable
+  location: SideDishLocation
+  memo: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateSideDishRequest {
+  name: string
+  made_at: string        // YYYY-MM-DD
+  expires_at?: string | null
+  location?: SideDishLocation
+  memo?: string
+}
+
+export interface UpdateSideDishRequest {
+  name?: string
+  made_at?: string
+  expires_at?: string | null  // YYYY-MM-DD or "" to clear
+  location?: SideDishLocation
+  memo?: string
+}

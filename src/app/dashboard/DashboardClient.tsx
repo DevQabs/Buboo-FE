@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Lottie from 'lottie-react'
 import loadingAnimation from '@/assets/loading.json'
-import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon } from '@heroicons/react/24/outline'
+import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline'
 import SummaryCard from '@/components/dashboard/SummaryCard'
 import StockPortfolioCard from '@/components/dashboard/StockPortfolioCard'
 import AddStockModal from '@/components/dashboard/AddStockModal'
@@ -26,6 +26,7 @@ import SamsungPayCard from '@/components/dashboard/SamsungPayCard'
 import DividendCard from '@/components/dashboard/DividendCard'
 import CalendarView from '@/components/dashboard/CalendarView'
 import ScheduleTab from '@/components/dashboard/ScheduleTab'
+import FridgeTab from '@/components/dashboard/FridgeTab'
 import type {
   User,
   Couple,
@@ -52,13 +53,19 @@ import type {
   UpdateScheduleRequest,
   CreateDiaryRequest,
   StockTransaction,
+  FridgeItem,
+  SideDish,
+  CreateFridgeItemRequest,
+  UpdateFridgeItemRequest,
+  CreateSideDishRequest,
+  UpdateSideDishRequest,
 } from '@/types'
 
 // 개발: NEXT_PUBLIC_API_URL=http://localhost:8090 으로 직접 호출
 // 프로덕션: 빈 문자열 → /api/* 경로로 → next.config.mjs rewrite가 백엔드로 프록시
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
 
-type ActiveTab = 'wealth' | 'ledger' | 'life'
+type ActiveTab = 'wealth' | 'ledger' | 'life' | 'fridge'
 
 // ─── fetch helpers ────────────────────────────────────────────────────────────
 
@@ -105,6 +112,8 @@ export default function DashboardClient() {
   const [calendarData, setCalendarData] = useState<CalendarSummaryResponse | null>(null)
   const [schedules, setSchedules]     = useState<Schedule[]>([])
   const [diaries, setDiaries]         = useState<DiaryEntry[]>([])
+  const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([])
+  const [sideDishes, setSideDishes]   = useState<SideDish[]>([])
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState<string | null>(null)
 
@@ -199,7 +208,7 @@ export default function DashboardClient() {
       const { startDate, endDate } = buildDateRange(periodYear, adjMonth, dbStartDay)
 
       // ── Step 2: everything else in parallel ──
-      const [usersData, txData, portfolioData, summaryData, assetsData, feData, feSummaryData, divData, calData, schData, diarData, stockTxData] = await Promise.all([
+      const [usersData, txData, portfolioData, summaryData, assetsData, feData, feSummaryData, divData, calData, schData, diarData, stockTxData, fridgeData, dishData] = await Promise.all([
         apiFetch<User[]>('/api/users'),
         apiFetch<Transaction[]>(`/api/transactions?year=${periodYear}&month=${adjMonth}`),
         apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
@@ -212,6 +221,8 @@ export default function DashboardClient() {
         apiFetch<Schedule[]>('/api/schedules'),
         apiFetch<DiaryEntry[]>('/api/diaries'),
         apiFetch<StockTransaction[]>('/api/stocks/transactions'),
+        apiFetch<FridgeItem[]>('/api/fridge/items'),
+        apiFetch<SideDish[]>('/api/fridge/side-dishes'),
       ])
 
       const AVATAR_COLORS: Record<string, string> = { husband: '#0F4C81', wife: '#059669' }
@@ -240,6 +251,8 @@ export default function DashboardClient() {
       setSchedules(Array.isArray(schData) ? schData : [])
       setDiaries(Array.isArray(diarData) ? diarData : [])
       setTradeTransactions(Array.isArray(stockTxData) ? stockTxData : [])
+      setFridgeItems(Array.isArray(fridgeData) ? fridgeData : [])
+      setSideDishes(Array.isArray(dishData) ? dishData : [])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error')
     } finally {
@@ -253,7 +266,15 @@ export default function DashboardClient() {
   const tabMounted = useRef(false)
   useEffect(() => {
     if (!tabMounted.current) { tabMounted.current = true; return }
-    if (activeTab === 'life') {
+    if (activeTab === 'fridge') {
+      Promise.all([
+        apiFetch<FridgeItem[]>('/api/fridge/items'),
+        apiFetch<SideDish[]>('/api/fridge/side-dishes'),
+      ]).then(([items, dishes]) => {
+        setFridgeItems(Array.isArray(items) ? items : [])
+        setSideDishes(Array.isArray(dishes) ? dishes : [])
+      }).catch(() => {})
+    } else if (activeTab === 'life') {
       Promise.all([
         apiFetch<Schedule[]>('/api/schedules'),
         apiFetch<DiaryEntry[]>('/api/diaries'),
@@ -725,6 +746,68 @@ export default function DashboardClient() {
     setDiaries(d => d.filter(x => x.id !== id))
   }
 
+  // ── fridge handlers ──────────────────────────────────────────────────────
+  const refetchFridge = async () => {
+    const [items, dishes] = await Promise.all([
+      apiFetch<FridgeItem[]>('/api/fridge/items'),
+      apiFetch<SideDish[]>('/api/fridge/side-dishes'),
+    ])
+    setFridgeItems(Array.isArray(items) ? items : [])
+    setSideDishes(Array.isArray(dishes) ? dishes : [])
+  }
+
+  const handleAddFridgeItem = async (data: CreateFridgeItemRequest) => {
+    const res = await fetch(`${API_BASE}/api/fridge/items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error(`식재료 추가 실패: ${res.status}`)
+    await refetchFridge()
+  }
+
+  const handleUpdateFridgeItem = async (id: string, data: UpdateFridgeItemRequest) => {
+    const res = await fetch(`${API_BASE}/api/fridge/items/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error(`식재료 수정 실패: ${res.status}`)
+    await refetchFridge()
+  }
+
+  const handleDeleteFridgeItem = async (id: string) => {
+    const res = await fetch(`${API_BASE}/api/fridge/items/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error(`식재료 삭제 실패: ${res.status}`)
+    setFridgeItems(prev => prev.filter(i => i.id !== id))
+  }
+
+  const handleAddSideDish = async (data: CreateSideDishRequest) => {
+    const res = await fetch(`${API_BASE}/api/fridge/side-dishes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error(`반찬 추가 실패: ${res.status}`)
+    await refetchFridge()
+  }
+
+  const handleUpdateSideDish = async (id: string, data: UpdateSideDishRequest) => {
+    const res = await fetch(`${API_BASE}/api/fridge/side-dishes/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error(`반찬 수정 실패: ${res.status}`)
+    await refetchFridge()
+  }
+
+  const handleDeleteSideDish = async (id: string) => {
+    const res = await fetch(`${API_BASE}/api/fridge/side-dishes/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error(`반찬 삭제 실패: ${res.status}`)
+    setSideDishes(prev => prev.filter(d => d.id !== id))
+  }
+
   // ── loading / error screens ───────────────────────────────────────────────
   if (loading) {
     return (
@@ -939,6 +1022,25 @@ export default function DashboardClient() {
             />
           </motion.div>
         )}
+
+        {/* ══ Tab 4: 냉장고 ══ */}
+        {activeTab === 'fridge' && (
+          <motion.div key="fridge" className="space-y-3"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <FridgeTab
+              fridgeItems={fridgeItems}
+              sideDishes={sideDishes}
+              onAddItem={handleAddFridgeItem}
+              onUpdateItem={handleUpdateFridgeItem}
+              onDeleteItem={handleDeleteFridgeItem}
+              onAddDish={handleAddSideDish}
+              onUpdateDish={handleUpdateSideDish}
+              onDeleteDish={handleDeleteSideDish}
+            />
+          </motion.div>
+        )}
         </AnimatePresence>
 
       </main>
@@ -1012,6 +1114,21 @@ export default function DashboardClient() {
             <span className={`text-[10px] font-semibold tracking-tight ${
               activeTab === 'life' ? 'text-brand-600' : 'text-slate-400'
             }`}>일정/일기</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('fridge')}
+            className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
+              activeTab === 'fridge' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
+            }`}
+          >
+            <div className={`p-1.5 rounded-xl transition-all duration-200 ${
+              activeTab === 'fridge' ? 'bg-brand-50' : ''
+            }`}>
+              <ArchiveBoxIcon className="h-5 w-5" />
+            </div>
+            <span className={`text-[10px] font-semibold tracking-tight ${
+              activeTab === 'fridge' ? 'text-brand-600' : 'text-slate-400'
+            }`}>냉장고</span>
           </button>
           <button
             onClick={() => setActiveTab('wealth')}

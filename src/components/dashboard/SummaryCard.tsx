@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   PencilSquareIcon,
   CheckIcon,
@@ -223,33 +224,43 @@ export default function SummaryCard({
             <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform duration-200 ${showBreakdown ? 'rotate-180' : ''}`} />
           </button>
 
-          {showBreakdown && (
-            <div className="px-4 pb-3 space-y-2">
-              {categoryBreakdown.map(item => {
-                const pct = (item.amount / totalForBreakdown) * 100
-                return (
-                  <div key={item.category}>
-                    <div className="flex items-center justify-between text-xs mb-0.5">
-                      <div className="flex items-center gap-1">
-                        {item.isFixed && <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
-                        <span className="text-slate-600 font-medium">{item.category}</span>
+          <AnimatePresence initial={false}>
+            {showBreakdown && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="px-4 pb-3 space-y-2">
+                  {categoryBreakdown.map(item => {
+                    const pct = (item.amount / totalForBreakdown) * 100
+                    return (
+                      <div key={item.category}>
+                        <div className="flex items-center justify-between text-xs mb-0.5">
+                          <div className="flex items-center gap-1">
+                            {item.isFixed && <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
+                            <span className="text-slate-600 font-medium">{item.category}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-slate-400">{pct.toFixed(0)}%</span>
+                            <span className="font-semibold text-slate-700 tabular-nums">{formatKRW(item.amount)}</span>
+                          </div>
+                        </div>
+                        <div className="w-full bg-white/60 rounded-full h-1">
+                          <div
+                            className={`h-1 rounded-full transition-all duration-500 ${item.isFixed ? 'bg-amber-400' : 'bg-brand-100'}`}
+                            style={{ width: `${Math.min(pct, 100)}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-400">{pct.toFixed(0)}%</span>
-                        <span className="font-semibold text-slate-700 tabular-nums">{formatKRW(item.amount)}</span>
-                      </div>
-                    </div>
-                    <div className="w-full bg-white/60 rounded-full h-1">
-                      <div
-                        className={`h-1 rounded-full transition-all duration-500 ${item.isFixed ? 'bg-amber-400' : 'bg-brand-100'}`}
-                        style={{ width: `${Math.min(pct, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                    )
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </div>
