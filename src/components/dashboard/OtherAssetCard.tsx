@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { PencilSquareIcon, TrashIcon, XMarkIcon, LockClosedIcon } from '@heroicons/react/24/outline'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { formatAmountInput } from '@/lib/formatNumber'
@@ -188,8 +189,13 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 space-y-4 z-10 max-h-[90vh] overflow-y-auto">
+      <motion.div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+      />
+      <motion.div className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 space-y-4 z-10 max-h-[90vh] overflow-y-auto"
+        initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      >
         <div className="flex items-center justify-between">
           <h3 className="text-base font-bold text-slate-800">
             {mode === 'add' ? '자산 추가' : '자산 수정'}
@@ -499,7 +505,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
             {loading ? '저장 중...' : mode === 'add' ? '자산 추가하기' : '수정 저장하기'}
           </button>
         </form>
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -509,8 +515,13 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
 function DeleteConfirm({ asset, onConfirm, onCancel }: { asset: OtherAsset; onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative bg-white rounded-t-3xl p-6 space-y-4 z-10">
+      <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+      />
+      <motion.div className="relative bg-white rounded-t-3xl p-6 space-y-4 z-10"
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      >
         <div className="flex justify-center mb-1"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
         <div className="text-center">
           <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
@@ -523,7 +534,7 @@ function DeleteConfirm({ asset, onConfirm, onCancel }: { asset: OtherAsset; onCo
           <button onClick={onCancel} className="flex-1 py-3 rounded-2xl border border-slate-200 text-sm text-slate-600 font-medium hover:bg-slate-50 transition-colors">취소</button>
           <button onClick={onConfirm} className="flex-1 py-3 rounded-2xl bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 active:scale-[0.98] transition-all">삭제</button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -743,19 +754,25 @@ export default function OtherAssetCard({ assets = [], users = [], fixedExpenseTi
         )}
       </div>
 
-      {showAdd && (
-        <AssetFormModal mode="add" users={safeUsers} onClose={() => setShowAdd(false)} onSubmit={data => onAdd(data as CreateOtherAssetRequest)} />
-      )}
-      {editingAsset && (
-        <AssetFormModal mode="edit" initial={editingAsset} users={safeUsers} onClose={() => setEditingAsset(null)} onSubmit={data => onEdit(editingAsset.id, data as UpdateOtherAssetRequest)} />
-      )}
-      {pendingDelete && (
-        <DeleteConfirm
-          asset={pendingDelete}
-          onConfirm={async () => { await onDelete(pendingDelete.id); setPendingDelete(null) }}
-          onCancel={() => setPendingDelete(null)}
-        />
-      )}
+      <AnimatePresence>
+        {showAdd && (
+          <AssetFormModal mode="add" users={safeUsers} onClose={() => setShowAdd(false)} onSubmit={data => onAdd(data as CreateOtherAssetRequest)} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {editingAsset && (
+          <AssetFormModal mode="edit" initial={editingAsset} users={safeUsers} onClose={() => setEditingAsset(null)} onSubmit={data => onEdit(editingAsset.id, data as UpdateOtherAssetRequest)} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {pendingDelete && (
+          <DeleteConfirm
+            asset={pendingDelete}
+            onConfirm={async () => { await onDelete(pendingDelete.id); setPendingDelete(null) }}
+            onCancel={() => setPendingDelete(null)}
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 }

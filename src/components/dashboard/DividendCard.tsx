@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { formatAmountInput } from '@/lib/formatNumber'
 import {
   PlusIcon,
@@ -115,8 +116,14 @@ function AddDividendModal({ portfolio, portfolioSummary, users, onClose, onSave 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+      />
+      <motion.div className="relative bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[92vh] flex flex-col"
+        initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      >
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
@@ -320,7 +327,7 @@ function AddDividendModal({ portfolio, portfolioSummary, users, onClose, onSave 
             {saving ? '저장 중...' : '배당 등록'}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -446,15 +453,17 @@ export default function DividendCard({
       </div>
 
       {/* ── Modal ── */}
-      {showModal && (
-        <AddDividendModal
-          portfolio={portfolio}
-          portfolioSummary={portfolioSummary}
-          users={users}
-          onClose={() => setShowModal(false)}
-          onSave={onAdd}
-        />
-      )}
+      <AnimatePresence>
+        {showModal && (
+          <AddDividendModal
+            portfolio={portfolio}
+            portfolioSummary={portfolioSummary}
+            users={users}
+            onClose={() => setShowModal(false)}
+            onSave={onAdd}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

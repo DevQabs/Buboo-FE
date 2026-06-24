@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { AnimatePresence, motion } from 'framer-motion';
 import type { User } from '@/types';
 import { useCategories } from '@/hooks/useCategories';
 
@@ -124,10 +125,24 @@ export default function SamsungPayCard({ users, onAdd }: SamsungPayCardProps) {
       </button>
 
       {/* Bottom sheet */}
+      <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <div className="relative bg-white rounded-t-3xl z-10">
+          <motion.div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setOpen(false)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+          <motion.div
+            className="relative bg-white rounded-t-3xl z-10"
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+          >
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 bg-slate-200 rounded-full" />
             </div>
@@ -231,9 +246,10 @@ export default function SamsungPayCard({ users, onAdd }: SamsungPayCardProps) {
                 결제하기 → 네이버페이
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
+      </AnimatePresence>
     </>
   );
 }

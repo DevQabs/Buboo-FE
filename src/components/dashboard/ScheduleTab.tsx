@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useMemo } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { getHolidaysForMonth } from '@/lib/koreanHolidays'
 import { lunarCellDay, lunarFullLabel } from '@/lib/lunar'
 import {
@@ -269,8 +270,14 @@ function AddScheduleModal({ users, onClose, onSave }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+      />
+      <motion.div className="relative bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col"
+        initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <h2 className="text-base font-bold text-slate-800">일정 추가</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">×</button>
@@ -349,7 +356,7 @@ function AddScheduleModal({ users, onClose, onSave }: {
             {saving ? '저장 중...' : '저장'}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -387,8 +394,14 @@ function EditScheduleModal({ schedule, onClose, onSave }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+      />
+      <motion.div className="relative bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col"
+        initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <h2 className="text-base font-bold text-slate-800">일정 수정</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">×</button>
@@ -452,7 +465,7 @@ function EditScheduleModal({ schedule, onClose, onSave }: {
             {saving ? '저장 중...' : '저장'}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -589,8 +602,14 @@ function AddDiaryModal({ users, initialDate, onClose, onSave }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+      />
+      <motion.div className="relative bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[92vh] flex flex-col"
+        initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <h2 className="text-base font-bold text-slate-800">일기 쓰기</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">×</button>
@@ -662,7 +681,7 @@ function AddDiaryModal({ users, initialDate, onClose, onSave }: {
             {saving ? '저장 중...' : '저장'}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -735,8 +754,14 @@ function EditDiaryModal({ diary, onClose, onSaved }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+      />
+      <motion.div className="relative bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[92vh] flex flex-col"
+        initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <h2 className="text-base font-bold text-slate-800">일기 수정</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">×</button>
@@ -800,7 +825,7 @@ function EditDiaryModal({ diary, onClose, onSaved }: {
             {saving ? '저장 중...' : '저장'}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -936,35 +961,43 @@ export default function ScheduleTab({
       </div>
 
       {/* Modals */}
-      {showAddSchedule && (
-        <AddScheduleModal
-          users={users}
-          onClose={() => setShowAddSchedule(false)}
-          onSave={onAddSchedule}
-        />
-      )}
-      {editingSchedule && (
-        <EditScheduleModal
-          schedule={editingSchedule}
-          onClose={() => setEditingSchedule(null)}
-          onSave={onEditSchedule}
-        />
-      )}
-      {showAddDiary && (
-        <AddDiaryModal
-          users={users}
-          initialDate={selectedDate}
-          onClose={() => setShowAddDiary(false)}
-          onSave={onAddDiary}
-        />
-      )}
-      {editingDiary && (
-        <EditDiaryModal
-          diary={editingDiary}
-          onClose={() => setEditingDiary(null)}
-          onSaved={onDiaryEdited}
-        />
-      )}
+      <AnimatePresence>
+        {showAddSchedule && (
+          <AddScheduleModal
+            users={users}
+            onClose={() => setShowAddSchedule(false)}
+            onSave={onAddSchedule}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {editingSchedule && (
+          <EditScheduleModal
+            schedule={editingSchedule}
+            onClose={() => setEditingSchedule(null)}
+            onSave={onEditSchedule}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showAddDiary && (
+          <AddDiaryModal
+            users={users}
+            initialDate={selectedDate}
+            onClose={() => setShowAddDiary(false)}
+            onSave={onAddDiary}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {editingDiary && (
+          <EditDiaryModal
+            diary={editingDiary}
+            onClose={() => setEditingDiary(null)}
+            onSaved={onDiaryEdited}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
   PlusIcon,
   EllipsisVerticalIcon,
@@ -318,8 +319,14 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+      />
+      <motion.div className="relative bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl p-5 space-y-4 max-h-[90vh] overflow-y-auto"
+        initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      >
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-slate-800">
             {editing ? '고정비 수정' : '고정비 추가'}
@@ -482,7 +489,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
             </button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -647,16 +654,18 @@ export default function FixedExpenseCard({
       </div>
 
       {/* ── Modal ── */}
-      {showModal && (
-        <FeModal
-          users={users}
-          stocks={stocks}
-          otherAssets={otherAssets}
-          editing={editingFe}
-          onClose={() => { setShowModal(false); setEditingFe(null) }}
-          onSave={handleSave}
-        />
-      )}
+      <AnimatePresence>
+        {showModal && (
+          <FeModal
+            users={users}
+            stocks={stocks}
+            otherAssets={otherAssets}
+            editing={editingFe}
+            onClose={() => { setShowModal(false); setEditingFe(null) }}
+            onSave={handleSave}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

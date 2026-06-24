@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/solid'
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
 import type { User, SavingLink, SavingKind, StockAssetWithPrice, OtherAsset, OtherAssetType } from '@/types'
@@ -333,11 +334,24 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
         </button>
       )}
 
+      <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={close} />
-
-          <div className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 space-y-5 z-10 max-h-[90vh] overflow-y-auto">
+          <motion.div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={close}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+          <motion.div
+            className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 space-y-5 z-10 max-h-[90vh] overflow-y-auto"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+          >
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-800">내역 추가</h3>
               <div className="flex items-center gap-2">
@@ -491,19 +505,22 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
                 </button>
               )}
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
+      </AnimatePresence>
 
-      {showCatManager && (
-        <CategoryManager
-          expenseCategories={expenseCategories}
-          incomeCategories={incomeCategories}
-          onAdd={addCategory}
-          onRemove={removeCategory}
-          onClose={() => setShowCatManager(false)}
-        />
-      )}
+      <AnimatePresence>
+        {showCatManager && (
+          <CategoryManager
+            expenseCategories={expenseCategories}
+            incomeCategories={incomeCategories}
+            onAdd={addCategory}
+            onRemove={removeCategory}
+            onClose={() => setShowCatManager(false)}
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 }

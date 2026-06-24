@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline'
 import type { StockAssetWithPrice } from '@/types'
@@ -73,8 +74,19 @@ export default function BuySellModal({ asset, mode, exchangeRate = 0, onClose, o
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 space-y-5 z-10">
+      <motion.div
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+        onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+      />
+      <motion.div
+        className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 space-y-5 z-10"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -221,7 +233,7 @@ export default function BuySellModal({ asset, mode, exchangeRate = 0, onClose, o
             {loading ? '처리 중...' : isBuy ? '매수 확정' : '매도 확정'}
           </button>
         </form>
-      </div>
+      </motion.div>
     </div>
   )
 }
