@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import Lottie from 'lottie-react'
 import loadingAnimation from '@/assets/loading.json'
 import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon } from '@heroicons/react/24/outline'
@@ -786,9 +787,13 @@ export default function DashboardClient() {
       {/* ── Main content ── */}
       <main className="max-w-2xl mx-auto px-3 pt-4 pb-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1rem)] space-y-3">
 
+        <AnimatePresence mode="wait">
         {/* ══ Tab 1: 자산 현황 ══ */}
         {activeTab === 'wealth' && (
-          <>
+          <motion.div key="wealth" className="space-y-3"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
             {/* 통합 순자산 요약 */}
             <NetWorthSummaryCard
               netWorth={netWorth}
@@ -817,12 +822,15 @@ export default function DashboardClient() {
               onDelete={handleDeleteAsset}
               onCreateLoanExpense={handleCreateLoanExpense}
             />
-          </>
+          </motion.div>
         )}
 
         {/* ══ Tab 2: 가계부 ══ */}
         {activeTab === 'ledger' && (
-          <>
+          <motion.div key="ledger" className="space-y-3"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
             {/* 삼성페이 결제 카드 */}
             <SamsungPayCard
               users={users}
@@ -909,23 +917,29 @@ export default function DashboardClient() {
               onDelete={handleDeleteFixedExpense}
             />
 
-          </>
+          </motion.div>
         )}
 
         {/* ══ Tab 3: 일정/일기 ══ */}
         {activeTab === 'life' && (
-          <ScheduleTab
-            schedules={schedules}
-            diaries={diaries}
-            users={users}
-            onAddSchedule={handleAddSchedule}
-            onEditSchedule={handleEditSchedule}
-            onDeleteSchedule={handleDeleteSchedule}
-            onAddDiary={handleAddDiary}
-            onDiaryEdited={handleDiaryEdited}
-            onDeleteDiary={handleDeleteDiary}
-          />
+          <motion.div key="life"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <ScheduleTab
+              schedules={schedules}
+              diaries={diaries}
+              users={users}
+              onAddSchedule={handleAddSchedule}
+              onEditSchedule={handleEditSchedule}
+              onDeleteSchedule={handleDeleteSchedule}
+              onAddDiary={handleAddDiary}
+              onDiaryEdited={handleDiaryEdited}
+              onDeleteDiary={handleDeleteDiary}
+            />
+          </motion.div>
         )}
+        </AnimatePresence>
 
       </main>
 
