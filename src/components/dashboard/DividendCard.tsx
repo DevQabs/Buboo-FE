@@ -135,7 +135,7 @@ function AddDividendModal({ portfolio, portfolioSummary, users, onClose, onSave 
               <select
                 value={selectedId}
                 onChange={e => setSelectedId(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 pr-8"
+                className="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 pr-8"
               >
                 <option value="">-- 종목 선택 --</option>
                 {portfolio.map(s => (
@@ -149,18 +149,18 @@ function AddDividendModal({ portfolio, portfolioSummary, users, onClose, onSave 
 
             {/* Auto-filled stock info */}
             {selected && (
-              <div className="mt-2 bg-indigo-50 rounded-xl px-3 py-2.5 grid grid-cols-3 gap-2 text-center">
+              <div className="mt-2 bg-brand-50 rounded-xl px-3 py-2.5 grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <p className="text-[10px] text-indigo-400 font-medium">통화</p>
-                  <p className="text-sm font-bold text-indigo-700">{selected.currency}</p>
+                  <p className="text-[10px] text-brand-500 font-medium">통화</p>
+                  <p className="text-sm font-bold text-brand-700">{selected.currency}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-indigo-400 font-medium">보유 수량</p>
-                  <p className="text-sm font-bold text-indigo-700">{selected.quantity}주</p>
+                  <p className="text-[10px] text-brand-500 font-medium">보유 수량</p>
+                  <p className="text-sm font-bold text-brand-700">{selected.quantity}주</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-indigo-400 font-medium">현재가</p>
-                  <p className="text-sm font-bold text-indigo-700">${selected.current_price.toFixed(2)}</p>
+                  <p className="text-[10px] text-brand-500 font-medium">현재가</p>
+                  <p className="text-sm font-bold text-brand-700">${selected.current_price.toFixed(2)}</p>
                 </div>
               </div>
             )}
@@ -184,7 +184,7 @@ function AddDividendModal({ portfolio, portfolioSummary, users, onClose, onSave 
                   value={amountPerShare}
                   onChange={e => setAmountPerShare(formatAmountInput(e.target.value, true))}
                   placeholder="예: 0.4750"
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
 
@@ -195,7 +195,7 @@ function AddDividendModal({ portfolio, portfolioSummary, users, onClose, onSave 
                   type="date"
                   value={paymentDate}
                   onChange={e => setPaymentDate(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
 
@@ -206,7 +206,7 @@ function AddDividendModal({ portfolio, portfolioSummary, users, onClose, onSave 
                   value={memo}
                   onChange={e => setMemo(e.target.value)}
                   placeholder="분기 배당, 특별 배당 등"
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
             </div>

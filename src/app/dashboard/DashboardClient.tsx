@@ -213,7 +213,13 @@ export default function DashboardClient() {
         apiFetch<StockTransaction[]>('/api/stocks/transactions'),
       ])
 
-      setUsers(Array.isArray(usersData) ? usersData : [])
+      const AVATAR_COLORS: Record<string, string> = { husband: '#0F4C81', wife: '#059669' }
+      setUsers(
+        (Array.isArray(usersData) ? usersData : []).map(u => ({
+          ...u,
+          avatar_color: AVATAR_COLORS[u.role] ?? u.avatar_color,
+        }))
+      )
       setTransactions(Array.isArray(txData) ? txData : [])
 
       if (Array.isArray(portfolioData)) {
@@ -749,7 +755,7 @@ export default function DashboardClient() {
       <header className="bg-white/80 backdrop-blur-md px-5 py-3 sticky top-0 z-40 border-b border-slate-100/60">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center">
               <span className="text-white text-sm font-black">우</span>
             </div>
             <div>
@@ -778,7 +784,7 @@ export default function DashboardClient() {
       </header>
 
       {/* ── Main content ── */}
-      <main className="max-w-2xl mx-auto px-3 pt-4 pb-28 space-y-3">
+      <main className="max-w-2xl mx-auto px-3 pt-4 pb-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1rem)] space-y-3">
 
         {/* ══ Tab 1: 자산 현황 ══ */}
         {activeTab === 'wealth' && (
@@ -961,51 +967,51 @@ export default function DashboardClient() {
       )}
 
       {/* ── Bottom navigation bar ── */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur-lg border-t border-slate-100 shadow-[0_-1px_12px_rgba(0,0,0,0.06)]">
-        <div className="max-w-2xl mx-auto flex">
+      <nav className="fixed bottom-0 inset-x-0 z-50 bg-white/90 backdrop-blur-lg border-t border-slate-100 shadow-[0_-1px_12px_rgba(0,0,0,0.06)]">
+        <div className="max-w-2xl mx-auto flex pb-safe">
           <button
             onClick={() => setActiveTab('ledger')}
             className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
-              activeTab === 'ledger' ? 'text-indigo-600' : 'text-slate-400 active:text-slate-600'
+              activeTab === 'ledger' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
             }`}
           >
             <div className={`p-1.5 rounded-xl transition-all duration-200 ${
-              activeTab === 'ledger' ? 'bg-indigo-50' : ''
+              activeTab === 'ledger' ? 'bg-brand-50' : ''
             }`}>
               <BookOpenIcon className="h-5 w-5" />
             </div>
             <span className={`text-[10px] font-semibold tracking-tight ${
-              activeTab === 'ledger' ? 'text-indigo-600' : 'text-slate-400'
+              activeTab === 'ledger' ? 'text-brand-600' : 'text-slate-400'
             }`}>가계부</span>
           </button>
           <button
             onClick={() => setActiveTab('life')}
             className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
-              activeTab === 'life' ? 'text-indigo-600' : 'text-slate-400 active:text-slate-600'
+              activeTab === 'life' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
             }`}
           >
             <div className={`p-1.5 rounded-xl transition-all duration-200 ${
-              activeTab === 'life' ? 'bg-indigo-50' : ''
+              activeTab === 'life' ? 'bg-brand-50' : ''
             }`}>
               <CalendarDaysIcon className="h-5 w-5" />
             </div>
             <span className={`text-[10px] font-semibold tracking-tight ${
-              activeTab === 'life' ? 'text-indigo-600' : 'text-slate-400'
+              activeTab === 'life' ? 'text-brand-600' : 'text-slate-400'
             }`}>일정/일기</span>
           </button>
           <button
             onClick={() => setActiveTab('wealth')}
             className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
-              activeTab === 'wealth' ? 'text-indigo-600' : 'text-slate-400 active:text-slate-600'
+              activeTab === 'wealth' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
             }`}
           >
             <div className={`p-1.5 rounded-xl transition-all duration-200 ${
-              activeTab === 'wealth' ? 'bg-indigo-50' : ''
+              activeTab === 'wealth' ? 'bg-brand-50' : ''
             }`}>
               <ChartPieIcon className="h-5 w-5" />
             </div>
             <span className={`text-[10px] font-semibold tracking-tight ${
-              activeTab === 'wealth' ? 'text-indigo-600' : 'text-slate-400'
+              activeTab === 'wealth' ? 'text-brand-600' : 'text-slate-400'
             }`}>자산 현황</span>
           </button>
         </div>

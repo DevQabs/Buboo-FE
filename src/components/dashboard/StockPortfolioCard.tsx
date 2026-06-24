@@ -61,7 +61,7 @@ function KRWFlashCard({
       {/* 상단: symbol + 환율 + 닫기 */}
       <div className='flex items-center justify-between mb-1'>
         <div className='flex items-center gap-1.5 min-w-0'>
-          <span className='text-[10px] font-bold text-indigo-600 bg-indigo-50 rounded-lg px-1.5 py-0.5 flex-shrink-0'>
+          <span className='text-[10px] font-bold text-brand-600 bg-brand-50 rounded-lg px-1.5 py-0.5 flex-shrink-0'>
             {asset.symbol}
           </span>
           {asset.currency !== 'KRW' && asset.exchange_rate && (
@@ -229,7 +229,7 @@ function UserHoldingRow({
             <span className='text-xs font-semibold text-slate-700'>{user?.name ?? '알 수 없음'}</span>
             <span className='text-[10px] text-slate-400'>{asset.quantity}주</span>
           </div>
-          <span className='text-[11px] text-slate-400'>
+          <span className='text-xs text-slate-400'>
             평균 {formatCurrency(asset.average_price, asset.currency)}
           </span>
         </div>
@@ -237,7 +237,7 @@ function UserHoldingRow({
           <p className='text-xs font-bold text-slate-700 tabular-nums'>
             {formatCurrency(asset.current_price * asset.quantity, asset.currency)}
           </p>
-          <p className={`text-[11px] tabular-nums font-semibold ${isUp ? 'text-emerald-600' : 'text-rose-500'}`}>
+          <p className={`text-xs tabular-nums font-semibold ${isUp ? 'text-emerald-600' : 'text-rose-500'}`}>
             {isUp ? '+' : ''}{pnlPct.toFixed(2)}%
           </p>
         </div>
@@ -322,8 +322,8 @@ function GroupedStockRow({
         {...longPressHandlers}
       >
         {/* Symbol badge */}
-        <div className='flex-shrink-0 w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center'>
-          <span className='text-[10px] font-bold text-indigo-600 leading-tight text-center px-1'>{group.symbol}</span>
+        <div className='flex-shrink-0 w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center'>
+          <span className='text-[10px] font-bold text-brand-600 leading-tight text-center px-1'>{group.symbol}</span>
         </div>
 
         {/* Name + meta */}
@@ -588,17 +588,17 @@ export default function StockPortfolioCard({
     <>
       <div className='bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden'>
         {/* Header */}
-        <div className='flex items-center justify-between px-5 py-4 border-b border-slate-50'>
+        <div className='flex items-center justify-between px-5 py-4 border-b border-slate-100'>
           <div>
-            <h2 className='text-sm font-semibold text-slate-700'>주식 포트폴리오</h2>
+            <h2 className='text-sm font-bold text-slate-800'>주식 포트폴리오</h2>
             {safeAssets.length > 0 && summary?.usd_krw && (
-              <p className='text-[11px] text-slate-400 mt-0.5'>USD/KRW {summary.usd_krw.toFixed(0)}원 기준</p>
+              <p className='text-xs text-slate-400 mt-0.5'>USD/KRW {summary.usd_krw.toFixed(0)}원 기준</p>
             )}
           </div>
           <div className='flex items-center gap-3'>
             {safeAssets.length > 0 && (
               <div className='text-right'>
-                <p className='text-sm font-bold text-slate-800 tabular-nums'>₩{Math.round(totalValueKRW / 10000).toLocaleString()}만</p>
+                <p className='text-base font-black text-slate-800 tabular-nums'>₩{Math.round(totalValueKRW / 10000).toLocaleString()}만</p>
                 <p className={`text-xs font-semibold tabular-nums ${isOverallUp ? 'text-emerald-600' : 'text-rose-500'}`}>
                   {isOverallUp ? '+' : ''}₩{Math.abs(Math.round(totalPnlKRW / 10000)).toLocaleString()}만 손익
                 </p>
@@ -614,10 +614,10 @@ export default function StockPortfolioCard({
               </button>
               <button
                 onClick={onAddClick}
-                className='w-8 h-8 rounded-xl bg-indigo-50 hover:bg-indigo-100 flex items-center justify-center transition-colors'
+                className='w-8 h-8 rounded-xl bg-brand-50 hover:bg-brand-100 flex items-center justify-center transition-colors'
                 aria-label='종목 추가'
               >
-                <PlusIcon className='h-4 w-4 text-indigo-600' />
+                <PlusIcon className='h-4 w-4 text-brand-600' />
               </button>
             </div>
           </div>
@@ -699,12 +699,12 @@ export default function StockPortfolioCard({
           <div className='flex justify-center gap-2 py-4 border-t border-slate-50'>
             <button
               onClick={() => setShowChart(false)}
-              className={`rounded-full transition-all duration-200 ${!showChart ? 'w-6 h-2.5 bg-indigo-400' : 'w-2.5 h-2.5 bg-slate-200'}`}
+              className={`rounded-full transition-all duration-200 ${!showChart ? 'w-6 h-2.5 bg-brand-500' : 'w-2.5 h-2.5 bg-slate-200'}`}
               aria-label='목록 보기'
             />
             <button
               onClick={() => setShowChart(true)}
-              className={`rounded-full transition-all duration-200 ${showChart ? 'w-6 h-2.5 bg-indigo-400' : 'w-2.5 h-2.5 bg-slate-200'}`}
+              className={`rounded-full transition-all duration-200 ${showChart ? 'w-6 h-2.5 bg-brand-500' : 'w-2.5 h-2.5 bg-slate-200'}`}
               aria-label='차트 보기'
             />
           </div>

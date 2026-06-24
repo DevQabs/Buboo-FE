@@ -24,7 +24,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   // 모바일 상태바 색상 (웹뷰 앱 대비)
-  themeColor: '#4f46e5',
+  themeColor: '#0F4C81',
 }
 
 export default function RootLayout({

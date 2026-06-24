@@ -48,7 +48,7 @@ export default function NetWorthSummaryCard({ netWorth, portfolioSummary }: NetW
   const liabPct     = totalAssets > 0 ? (netWorth.liability_krw / totalAssets) * 100 : 0
 
   return (
-    <div className="rounded-3xl overflow-hidden bg-gradient-to-br from-slate-800 via-slate-900 to-indigo-950 shadow-xl">
+    <div className="rounded-3xl overflow-hidden bg-gradient-to-br from-slate-800 via-slate-900 to-brand-700 shadow-xl">
       {/* ── Header (always visible) ── */}
       <button
         type="button"
@@ -86,7 +86,7 @@ export default function NetWorthSummaryCard({ netWorth, portfolioSummary }: NetW
           {/* 4-stat row */}
           <div className="grid grid-cols-4 gap-1.5 mb-4">
             {[
-              { label: '주식', value: netWorth.stock_value_krw, color: 'text-indigo-300', bg: 'bg-indigo-900/40' },
+              { label: '주식', value: netWorth.stock_value_krw, color: 'text-brand-100', bg: 'bg-brand-700/40' },
               { label: '기타', value: netWorth.asset_value_krw, color: 'text-emerald-300', bg: 'bg-emerald-900/40' },
               { label: '부채', value: netWorth.liability_krw,   color: 'text-rose-300',   bg: 'bg-rose-900/40'   },
               { label: '총자산', value: totalAssets,             color: 'text-slate-200',  bg: 'bg-white/5'       },
@@ -106,7 +106,7 @@ export default function NetWorthSummaryCard({ netWorth, portfolioSummary }: NetW
               <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1.5">
                 <div className="flex items-center gap-2.5">
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block" />주식 {stockPct.toFixed(0)}%
+                    <span className="w-2 h-2 rounded-full bg-brand-500 inline-block" />주식 {stockPct.toFixed(0)}%
                   </span>
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />기타 {otherPct.toFixed(0)}%
@@ -117,7 +117,7 @@ export default function NetWorthSummaryCard({ netWorth, portfolioSummary }: NetW
                 </span>
               </div>
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden flex">
-                <div className="h-full bg-indigo-400 transition-all duration-700" style={{ width: `${stockPct}%` }} />
+                <div className="h-full bg-brand-500 transition-all duration-700" style={{ width: `${stockPct}%` }} />
                 <div className="h-full bg-emerald-400 transition-all duration-700" style={{ width: `${otherPct}%` }} />
               </div>
               <p className="text-right text-[9px] text-slate-600 mt-1.5">

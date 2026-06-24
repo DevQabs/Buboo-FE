@@ -66,7 +66,7 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
                   type="button"
                   onClick={() => setUserID(u.id)}
                   title={u.name}
-                  className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${userID === u.id ? 'ring-2 ring-offset-1 ring-indigo-400 scale-110' : 'opacity-40'}`}
+                  className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${userID === u.id ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-40'}`}
                   style={{ backgroundColor: u.avatar_color }}
                 >
                   {u.name[0]}
@@ -88,7 +88,7 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
               value={name}
               onChange={e => setName(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -104,7 +104,7 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
                 min="0"
                 step="0.0001"
                 required
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300 placeholder:font-normal"
               />
             </div>
             <div>
@@ -118,7 +118,7 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
                 onChange={e => setAvgPrice(formatAmountInput(e.target.value, true))}
                 placeholder="0"
                 required
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300 placeholder:font-normal"
               />
             </div>
           </div>
@@ -143,7 +143,7 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
               value={memo}
               onChange={e => setMemo(e.target.value)}
               placeholder="장기 보유, 배당주..."
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300"
             />
           </div>
 
@@ -151,7 +151,7 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-60"
+            className="w-full py-3.5 bg-brand-600 text-white rounded-xl font-semibold text-sm hover:bg-brand-700 active:scale-[0.98] transition-all disabled:opacity-60"
           >
             {loading ? '저장 중...' : '수정 저장하기'}
           </button>

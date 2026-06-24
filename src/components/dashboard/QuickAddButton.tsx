@@ -106,12 +106,12 @@ function SavingLinkForm({ stocks, otherAssets, onChange }: SavingLinkFormProps) 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, isNew, stockId, addQty, addPrice, newSymbol, newExchange, newName, newQty, newPrice, newCurrency, assetId, newAssetName, newAssetType])
 
-  const inputCls = 'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400'
+  const inputCls = 'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500'
   const chipCls = (active: boolean) =>
-    `px-3 py-1.5 rounded-full text-xs font-medium transition-all ${active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`
+    `px-3 py-1.5 rounded-full text-xs font-medium transition-all ${active ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`
 
   return (
-    <div className="space-y-3 bg-indigo-50/50 rounded-xl p-3 border border-indigo-100">
+    <div className="space-y-3 bg-brand-50/50 rounded-xl p-3 border border-brand-100">
       {/* Kind */}
       <div>
         <label className="text-xs font-medium text-slate-500 mb-1.5 block">저축 종류</label>
@@ -128,11 +128,11 @@ function SavingLinkForm({ stocks, otherAssets, onChange }: SavingLinkFormProps) 
       {/* Existing vs New */}
       <div className="flex gap-2 bg-white rounded-lg p-0.5 border border-slate-100">
         <button type="button" onClick={() => setIsNew(false)}
-          className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${!isNew ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500'}`}>
+          className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${!isNew ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-500'}`}>
           기존 자산에 추가
         </button>
         <button type="button" onClick={() => setIsNew(true)}
-          className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${isNew ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500'}`}>
+          className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${isNew ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-500'}`}>
           신규 자산 등록
         </button>
       </div>
@@ -326,7 +326,7 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
       {!isControlled && (
         <button
           onClick={() => setInternalOpen(true)}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all"
+          className="fixed bottom-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1rem)] right-4 z-50 w-14 h-14 bg-brand-600 text-white rounded-2xl shadow-lg shadow-brand-100 flex items-center justify-center hover:bg-brand-700 active:scale-95 transition-all"
           aria-label="내역 추가"
         >
           <PlusIcon className="h-7 w-7" />
@@ -334,7 +334,7 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
       )}
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={close} />
 
           <div className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 space-y-5 z-10 max-h-[90vh] overflow-y-auto">
@@ -348,7 +348,7 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
                       type="button"
                       onClick={() => setUserID(u.id)}
                       title={u.name}
-                      className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${userID === u.id ? 'ring-2 ring-offset-1 ring-indigo-400 scale-110' : 'opacity-40'}`}
+                      className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${userID === u.id ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-40'}`}
                       style={{ backgroundColor: u.avatar_color }}
                     >
                       {u.name[0]}
@@ -377,7 +377,7 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
                       type === t
                         ? t === 'expense' ? 'bg-rose-500 text-white shadow'
                           : t === 'income' ? 'bg-emerald-500 text-white shadow'
-                          : 'bg-indigo-500 text-white shadow'
+                          : 'bg-brand-500 text-white shadow'
                         : 'text-slate-500'
                     }`}
                   >
@@ -397,7 +397,7 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
                     onChange={e => setAmount(formatAmountInput(e.target.value))}
                     placeholder="0"
                     required
-                    className="w-full px-4 py-3 pr-10 rounded-xl border border-slate-200 text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300"
+                    className="w-full px-4 py-3 pr-10 rounded-xl border border-slate-200 text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">원</span>
                 </div>
@@ -412,7 +412,7 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
                   onChange={e => setTitle(e.target.value)}
                   placeholder={type === 'saving' ? '예: 삼성전자 추가 매수, 적금 납입' : '어디서 사용했나요?'}
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300"
                 />
               </div>
 
@@ -432,7 +432,7 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
                         type="button"
                         onClick={() => setCategory(cat)}
                         className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                          category === cat ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          category === cat ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
                         {cat}
@@ -457,7 +457,7 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
                 <select
                   value={payment}
                   onChange={e => setPayment(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
                 >
                   {PAYMENT_METHODS.map(m => (
                     <option key={m} value={m}>{m}</option>
@@ -472,7 +472,7 @@ export default function QuickAddButton({ users, stocks, otherAssets, onAdd, open
               <button
                 type="submit"
                 disabled={loading || (type === 'saving' && !savingLink)}
-                className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-60"
+                className="w-full py-3.5 bg-brand-600 text-white rounded-xl font-semibold text-sm hover:bg-brand-700 active:scale-[0.98] transition-all disabled:opacity-60"
               >
                 {loading ? '저장 중...' : '저장하기'}
               </button>

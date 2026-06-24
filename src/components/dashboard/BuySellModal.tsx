@@ -119,7 +119,7 @@ export default function BuySellModal({ asset, mode, exchangeRate = 0, onClose, o
                 <button
                   type="button"
                   onClick={() => setQuantity(String(maxQty))}
-                  className="ml-2 text-indigo-500 hover:underline"
+                  className="ml-2 text-brand-500 hover:underline"
                 >
                   전량 ({maxQty})
                 </button>
@@ -134,7 +134,7 @@ export default function BuySellModal({ asset, mode, exchangeRate = 0, onClose, o
               max={maxQty}
               step="0.0001"
               required
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300 placeholder:font-normal"
             />
           </div>
 
@@ -150,7 +150,7 @@ export default function BuySellModal({ asset, mode, exchangeRate = 0, onClose, o
               onChange={e => setPrice(formatAmountInput(e.target.value, true))}
               placeholder="0"
               required
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300 placeholder:font-normal"
             />
           </div>
 
@@ -201,7 +201,7 @@ export default function BuySellModal({ asset, mode, exchangeRate = 0, onClose, o
               value={memo}
               onChange={e => setMemo(e.target.value)}
               placeholder="거래 메모..."
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300"
             />
           </div>
 

@@ -42,7 +42,7 @@ function fmtDate(iso: string): string {
 }
 
 const COLOR_MAP: Record<ScheduleColor, { bg: string; text: string; dot: string }> = {
-  indigo:  { bg: 'bg-indigo-50',  text: 'text-indigo-700',  dot: 'bg-indigo-400' },
+  indigo:  { bg: 'bg-brand-50',  text: 'text-brand-700',  dot: 'bg-brand-500' },
   rose:    { bg: 'bg-rose-50',    text: 'text-rose-700',    dot: 'bg-rose-400' },
   emerald: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-400' },
   amber:   { bg: 'bg-amber-50',   text: 'text-amber-700',   dot: 'bg-amber-400' },
@@ -134,21 +134,21 @@ function MiniCalendar({
               key={i}
               onClick={() => onDayClick(dateStr)}
               className={`flex flex-col items-center py-1 rounded-lg transition-colors ${
-                isSelected ? 'bg-indigo-500' : isToday ? 'bg-indigo-50' : 'hover:bg-slate-50'
+                isSelected ? 'bg-brand-500' : isToday ? 'bg-brand-50' : 'hover:bg-slate-50'
               }`}
             >
               <span className={`text-xs font-medium ${
                 isSelected ? 'text-white'
-                : isToday   ? 'text-indigo-600'
+                : isToday   ? 'text-brand-600'
                 : col === 0 || (col !== 6 && holiday) ? 'text-rose-500'
                 : col === 6 ? 'text-blue-500'
                 : 'text-slate-700'
               }`}>{day}</span>
-              <span className={`text-[8px] leading-none ${isSelected ? 'text-indigo-200' : 'text-slate-300'}`}>
+              <span className={`text-[8px] leading-none ${isSelected ? 'text-brand-100' : 'text-slate-300'}`}>
                 {lunarCellDay(dateStr)}
               </span>
               <div className="flex gap-0.5 mt-0.5 h-1">
-                {hasSchedule && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-indigo-400'}`} />}
+                {hasSchedule && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-brand-500'}`} />}
                 {hasDiary    && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-amber-200' : 'bg-amber-400'}`} />}
               </div>
             </button>
@@ -159,7 +159,7 @@ function MiniCalendar({
       {/* Legend */}
       <div className="flex items-center gap-3 mt-3 justify-center">
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-indigo-400" />
+          <div className="w-2 h-2 rounded-full bg-brand-500" />
           <span className="text-[10px] text-slate-400">일정</span>
         </div>
         <div className="flex items-center gap-1">
@@ -214,13 +214,13 @@ function ScheduleRow({ s, onEdit, onDelete }: { s: Schedule; onEdit: () => void;
             </span>
           )}
         </div>
-        <p className="text-[11px] text-slate-400">{fmtDate(s.start_date)}{s.end_date ? ` ~ ${fmtDate(s.end_date)}` : ''} · {lunarFullLabel(s.start_date.slice(0, 10))}</p>
-        {s.description && <p className="text-[11px] text-slate-500 truncate">{s.description}</p>}
+        <p className="text-xs text-slate-400">{fmtDate(s.start_date)}{s.end_date ? ` ~ ${fmtDate(s.end_date)}` : ''} · {lunarFullLabel(s.start_date.slice(0, 10))}</p>
+        {s.description && <p className="text-xs text-slate-500 truncate">{s.description}</p>}
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
         <button
           onClick={onEdit}
-          className="p-1.5 rounded-lg text-slate-300 hover:text-indigo-400 hover:bg-indigo-50 transition-colors"
+          className="p-1.5 rounded-lg text-slate-300 hover:text-brand-500 hover:bg-brand-50 transition-colors"
         >
           <PencilSquareIcon className="h-3.5 w-3.5" />
         </button>
@@ -279,25 +279,25 @@ function AddScheduleModal({ users, onClose, onSave }: {
           <div>
             <label className="text-xs font-medium text-slate-500 mb-1 block">제목 *</label>
             <input value={title} onChange={e => setTitle(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="일정 제목" />
           </div>
           <div>
             <label className="text-xs font-medium text-slate-500 mb-1 block">메모</label>
             <input value={desc} onChange={e => setDesc(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="선택 사항" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 block">날짜 *</label>
               <input type="date" value={startDate} onChange={e => setStart(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 block">종료일</label>
               <input type="date" value={endDate} onChange={e => setEnd(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
           </div>
 
@@ -317,7 +317,7 @@ function AddScheduleModal({ users, onClose, onSave }: {
             <label className="flex items-center gap-2 cursor-pointer">
               <div
                 onClick={() => setIsDDay(v => !v)}
-                className={`w-10 h-5 rounded-full transition-colors ${isDDay ? 'bg-indigo-500' : 'bg-slate-200'} relative`}
+                className={`w-10 h-5 rounded-full transition-colors ${isDDay ? 'bg-brand-500' : 'bg-slate-200'} relative`}
               >
                 <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isDDay ? 'translate-x-5' : 'translate-x-0.5'}`} />
               </div>
@@ -327,14 +327,14 @@ function AddScheduleModal({ users, onClose, onSave }: {
           {isDDay && (
             <input value={ddayLabel} onChange={e => setLabel(e.target.value)}
               placeholder="D-Day 라벨 (예: 결혼기념일)"
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
           )}
 
           {users.length > 1 && (
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 block">등록자</label>
               <select value={userId} onChange={e => setUserId(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
@@ -345,7 +345,7 @@ function AddScheduleModal({ users, onClose, onSave }: {
         <div className="px-5 py-4 border-t border-slate-100 flex gap-2 shrink-0">
           <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors">취소</button>
           <button onClick={handleSave} disabled={saving}
-            className="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors disabled:opacity-40">
+            className="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 transition-colors disabled:opacity-40">
             {saving ? '저장 중...' : '저장'}
           </button>
         </div>
@@ -397,25 +397,25 @@ function EditScheduleModal({ schedule, onClose, onSave }: {
           <div>
             <label className="text-xs font-medium text-slate-500 mb-1 block">제목 *</label>
             <input value={title} onChange={e => setTitle(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="일정 제목" />
           </div>
           <div>
             <label className="text-xs font-medium text-slate-500 mb-1 block">메모</label>
             <input value={desc} onChange={e => setDesc(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="선택 사항" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 block">날짜 *</label>
               <input type="date" value={startDate} onChange={e => setStart(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 block">종료일</label>
               <input type="date" value={endDate} onChange={e => setEnd(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
           </div>
           <div>
@@ -431,7 +431,7 @@ function EditScheduleModal({ schedule, onClose, onSave }: {
             <label className="flex items-center gap-2 cursor-pointer">
               <div
                 onClick={() => setIsDDay(v => !v)}
-                className={`w-10 h-5 rounded-full transition-colors ${isDDay ? 'bg-indigo-500' : 'bg-slate-200'} relative`}
+                className={`w-10 h-5 rounded-full transition-colors ${isDDay ? 'bg-brand-500' : 'bg-slate-200'} relative`}
               >
                 <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isDDay ? 'translate-x-5' : 'translate-x-0.5'}`} />
               </div>
@@ -441,14 +441,14 @@ function EditScheduleModal({ schedule, onClose, onSave }: {
           {isDDay && (
             <input value={ddayLabel} onChange={e => setLabel(e.target.value)}
               placeholder="D-Day 라벨 (예: 결혼기념일)"
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
           )}
           {error && <p className="text-xs text-rose-500">{error}</p>}
         </div>
         <div className="px-5 py-4 border-t border-slate-100 flex gap-2 shrink-0">
           <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors">취소</button>
           <button onClick={handleSave} disabled={saving}
-            className="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors disabled:opacity-40">
+            className="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 transition-colors disabled:opacity-40">
             {saving ? '저장 중...' : '저장'}
           </button>
         </div>
@@ -494,7 +494,7 @@ function DiaryRow({ d, apiBase, onEdit, onDelete }: { d: DiaryEntry; apiBase: st
             <span className="text-base">{MOOD_EMOJI[d.mood] ?? '📝'}</span>
             <div>
               <p className="text-sm font-semibold text-slate-800">{d.date}</p>
-              <p className="text-[11px] text-slate-400">{lunarFullLabel(d.date)} · {MOOD_LABEL[d.mood] ?? d.mood} · {d.photos.length > 0 ? `📷 ${d.photos.length}` : '텍스트'}</p>
+              <p className="text-xs text-slate-400">{lunarFullLabel(d.date)} · {MOOD_LABEL[d.mood] ?? d.mood} · {d.photos.length > 0 ? `📷 ${d.photos.length}` : '텍스트'}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -505,11 +505,11 @@ function DiaryRow({ d, apiBase, onEdit, onDelete }: { d: DiaryEntry; apiBase: st
             {confirmingDelete ? (
               <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                 <button onClick={() => { onDelete(); setConfirmingDelete(false) }}
-                  className="px-2 py-1 rounded-lg text-[11px] font-medium bg-rose-500 text-white hover:bg-rose-600 transition-colors">
+                  className="px-2 py-1 rounded-lg text-xs font-medium bg-rose-500 text-white hover:bg-rose-600 transition-colors">
                   삭제
                 </button>
                 <button onClick={() => setConfirmingDelete(false)}
-                  className="px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
+                  className="px-2 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
                   취소
                 </button>
               </div>
@@ -880,7 +880,7 @@ export default function ScheduleTab({
           <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
             <button
               onClick={() => setActiveSection('schedule')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeSection === 'schedule' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeSection === 'schedule' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500'}`}
             >
               일정
             </button>
@@ -896,7 +896,7 @@ export default function ScheduleTab({
             <button
               onClick={() => activeSection === 'schedule' ? setShowAddSchedule(true) : setShowAddDiary(true)}
               className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-                activeSection === 'schedule' ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-600' : 'bg-amber-50 hover:bg-amber-100 text-amber-600'
+                activeSection === 'schedule' ? 'bg-brand-50 hover:bg-brand-100 text-brand-600' : 'bg-amber-50 hover:bg-amber-100 text-amber-600'
               }`}
             >
               <PlusIcon className="h-4 w-4" />
@@ -909,7 +909,7 @@ export default function ScheduleTab({
             {dateSchedules.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-sm text-slate-400">이 날 일정이 없어요</p>
-                <button onClick={() => setShowAddSchedule(true)} className="mt-1 text-xs text-indigo-500 hover:underline">일정 추가 →</button>
+                <button onClick={() => setShowAddSchedule(true)} className="mt-1 text-xs text-brand-500 hover:underline">일정 추가 →</button>
               </div>
             ) : (
               <div className="divide-y divide-slate-50">

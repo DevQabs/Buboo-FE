@@ -204,7 +204,7 @@ export default function TradeHistoryModal({ transactions, users, exchangeRate, o
               key={f}
               onClick={() => setFilter(f)}
               className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-                filter === f ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                filter === f ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
               }`}
             >
               {f === 'all' ? '전체' : f === 'buy' ? '매수' : '매도'}

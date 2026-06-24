@@ -69,8 +69,8 @@ export default function TransactionList({ transactions = [], users = [], stocks 
     <>
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
-          <h2 className="text-sm font-semibold text-slate-700">가계부</h2>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h2 className="text-sm font-bold text-slate-800">가계부</h2>
 
           <div className="flex items-center gap-2">
             {/* Filter tabs */}
@@ -93,10 +93,10 @@ export default function TransactionList({ transactions = [], users = [], stocks 
             {onAdd && (
               <button
                 onClick={() => setShowAdd(true)}
-                className="w-8 h-8 rounded-xl bg-indigo-50 hover:bg-indigo-100 flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-xl bg-brand-50 hover:bg-brand-100 flex items-center justify-center transition-colors"
                 aria-label="내역 추가"
               >
-                <PlusIcon className="h-4 w-4 text-indigo-600" />
+                <PlusIcon className="h-4 w-4 text-brand-600" />
               </button>
             )}
           </div>
@@ -110,7 +110,7 @@ export default function TransactionList({ transactions = [], users = [], stocks 
               {onAdd && (
                 <button
                   onClick={() => setShowAdd(true)}
-                  className="mt-1 text-xs text-indigo-500 hover:underline"
+                  className="mt-1 text-xs text-brand-500 hover:underline"
                 >
                   + 첫 내역 추가하기
                 </button>
@@ -122,7 +122,7 @@ export default function TransactionList({ transactions = [], users = [], stocks 
             const emoji = CATEGORY_EMOJI[tx.category] ?? '📦'
             const amountColor =
               tx.type === 'income' ? 'text-emerald-600'
-              : tx.type === 'saving' ? 'text-indigo-600'
+              : tx.type === 'saving' ? 'text-brand-600'
               : 'text-slate-700'
             return (
               <li
@@ -145,10 +145,10 @@ export default function TransactionList({ transactions = [], users = [], stocks 
                     <span className="text-xs text-slate-400 truncate">
                       {user?.name} · {formatDate(tx.date, tx.created_at)}
                       {tx.is_fixed && (
-                        <span className="ml-1 text-xs text-indigo-400 font-medium">고정</span>
+                        <span className="ml-1 text-xs text-brand-500 font-medium">고정</span>
                       )}
                       {tx.type === 'saving' && (
-                        <span className="ml-1 text-xs text-indigo-500 font-medium">저축</span>
+                        <span className="ml-1 text-xs text-brand-500 font-medium">저축</span>
                       )}
                     </span>
                   </div>

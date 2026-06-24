@@ -95,7 +95,7 @@ function SavingLinkInline({ stocks, otherAssets, onChange }: SavingLinkInlinePro
   const [newAssetName, setNewAssetName] = useState('')
   const [newAssetType, setNewAssetType] = useState<OtherAssetType>('예/적금')
 
-  const inputCls = 'w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400'
+  const inputCls = 'w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500'
 
   const notify = (overrides?: Partial<{
     kind: SavingKind; isNew: boolean; stockId: string; addQty: string; addPrice: string
@@ -139,12 +139,12 @@ function SavingLinkInline({ stocks, otherAssets, onChange }: SavingLinkInlinePro
   const setIsNewAndNotify = (v: boolean) => { setIsNew(v); notify({ isNew: v }) }
 
   return (
-    <div className="space-y-2 bg-indigo-50/70 rounded-xl p-3 border border-indigo-100">
+    <div className="space-y-2 bg-brand-50/70 rounded-xl p-3 border border-brand-100">
       {/* Kind chips */}
       <div className="flex gap-1.5">
         {(['stock', 'deposit', 'general'] as SavingKind[]).map(k => (
           <button key={k} type="button" onClick={() => setKindAndNotify(k)}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${kind === k ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
+            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${kind === k ? 'bg-brand-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
             {{ stock: '주식/크립토', deposit: '예적금', general: '기타저축' }[k]}
           </button>
         ))}
@@ -154,7 +154,7 @@ function SavingLinkInline({ stocks, otherAssets, onChange }: SavingLinkInlinePro
       <div className="flex gap-1.5 bg-white rounded-lg p-0.5 border border-slate-100">
         {[false, true].map(v => (
           <button key={String(v)} type="button" onClick={() => setIsNewAndNotify(v)}
-            className={`flex-1 py-1 rounded-md text-xs font-medium transition-all ${isNew === v ? 'bg-indigo-500 text-white' : 'text-slate-500'}`}>
+            className={`flex-1 py-1 rounded-md text-xs font-medium transition-all ${isNew === v ? 'bg-brand-500 text-white' : 'text-slate-500'}`}>
             {v ? '신규 등록' : '기존 추가'}
           </button>
         ))}
@@ -212,7 +212,7 @@ function SavingLinkInline({ stocks, otherAssets, onChange }: SavingLinkInlinePro
           <div className="flex gap-1.5">
             {OTHER_ASSET_TYPES.map(t => (
               <button key={t} type="button" onClick={() => { setNewAssetType(t); notify({ newAssetType: t }) }}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${newAssetType === t ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${newAssetType === t ? 'bg-brand-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
                 {t}
               </button>
             ))}
@@ -262,9 +262,9 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
         h-12 sm:h-14 rounded-lg p-0.5 flex flex-col items-center
         text-left transition-all duration-150 relative
         ${isSelected
-          ? 'bg-indigo-500 shadow-md ring-2 ring-indigo-300'
+          ? 'bg-brand-500 shadow-md ring-2 ring-brand-100'
           : isToday
-            ? 'bg-indigo-50 ring-1 ring-indigo-300'
+            ? 'bg-brand-50 ring-1 ring-brand-100'
             : budgetTint
               ? `${budgetTint} hover:brightness-95`
               : 'hover:bg-slate-50'
@@ -272,9 +272,9 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
         ${isOtherMonth ? 'opacity-25' : ''}
       `}
     >
-      <span className={`text-[11px] font-semibold self-center leading-none mt-0.5 ${
+      <span className={`text-xs font-semibold self-center leading-none mt-0.5 ${
         isSelected ? 'text-white'
-        : isToday   ? 'text-indigo-600'
+        : isToday   ? 'text-brand-600'
         : col === 0 || (col !== 6 && holiday) ? 'text-rose-500'
         : col === 6 ? 'text-blue-500'
         : 'text-slate-600'
@@ -403,7 +403,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
   const submitColor =
     txType === 'expense' ? 'bg-rose-500 hover:bg-rose-600'
     : txType === 'income' ? 'bg-emerald-500 hover:bg-emerald-600'
-    : 'bg-indigo-500 hover:bg-indigo-600'
+    : 'bg-brand-500 hover:bg-brand-600'
 
   const submitLabel =
     txType === 'expense' ? '지출 저장'
@@ -418,13 +418,13 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
           <h3 className="text-sm font-bold text-slate-800">{fmtDateLabel(dateKey)}</h3>
           <div className="flex items-center gap-2 mt-0.5">
             {totalExpense > 0 && (
-              <span className="text-[11px] text-rose-500 font-medium">지출 {totalExpense.toLocaleString()}원</span>
+              <span className="text-xs text-rose-500 font-medium">지출 {totalExpense.toLocaleString()}원</span>
             )}
             {totalIncome > 0 && (
-              <span className="text-[11px] text-emerald-600 font-medium">수입 {totalIncome.toLocaleString()}원</span>
+              <span className="text-xs text-emerald-600 font-medium">수입 {totalIncome.toLocaleString()}원</span>
             )}
             {dayTxns.length === 0 && dayEvents.length === 0 && (
-              <span className="text-[11px] text-slate-400">거래 내역 없음</span>
+              <span className="text-xs text-slate-400">거래 내역 없음</span>
             )}
           </div>
         </div>
@@ -432,7 +432,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
           {onAddTransaction && !showForm && (
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-500 text-white text-xs font-semibold hover:bg-indigo-600 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-brand-500 text-white text-xs font-semibold hover:bg-brand-600 transition-colors"
             >
               <PlusIcon className="h-3 w-3" />추가
             </button>
@@ -445,7 +445,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
 
       {/* ── Inline add-transaction form ── */}
       {showForm && (
-        <div className="px-4 py-3 bg-indigo-50/60 border-b border-indigo-100 space-y-3">
+        <div className="px-4 py-3 bg-brand-50/60 border-b border-brand-100 space-y-3">
 
           {/* Row 1: type toggle + user selector */}
           <div className="flex items-center gap-2">
@@ -460,7 +460,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
               >수입</button>
               <button
                 onClick={() => { setTxType('saving'); setCategory('저축/투자'); setSavingLink(null) }}
-                className={`px-3 py-1.5 transition-colors ${txType === 'saving' ? 'bg-indigo-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                className={`px-3 py-1.5 transition-colors ${txType === 'saving' ? 'bg-brand-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
               >저축</button>
             </div>
 
@@ -470,7 +470,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
                   key={u.id}
                   onClick={() => setUserId(u.id)}
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold transition-all ${
-                    userId === u.id ? 'ring-2 ring-offset-1 ring-indigo-400 scale-110' : 'opacity-50'
+                    userId === u.id ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-50'
                   }`}
                   style={{ backgroundColor: u.avatar_color }}
                   title={u.name}
@@ -489,7 +489,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
               value={amount}
               onChange={e => setAmount(formatAmountInput(e.target.value))}
               placeholder="금액"
-              className="w-full text-right text-lg font-bold border border-slate-200 rounded-xl px-3 py-2.5 pr-10 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 tabular-nums"
+              className="w-full text-right text-lg font-bold border border-slate-200 rounded-xl px-3 py-2.5 pr-10 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 tabular-nums"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-medium">원</span>
           </div>
@@ -501,7 +501,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
             onChange={e => setTitle(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && txType !== 'saving') handleSubmit() }}
             placeholder={txType === 'saving' ? '내용 (예: 적금 납입, 삼성전자 매수)' : '내용 (예: 스타벅스, 편의점)'}
-            className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
 
           {/* Row 4: category chips (income/expense only) */}
@@ -570,7 +570,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
         <div className="px-4 py-2 bg-slate-50 border-b border-slate-100">
           <div className="flex flex-wrap gap-2">
             {dayEvents.map((ev, i) => (
-              <div key={i} className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-lg font-medium ${
+              <div key={i} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg font-medium ${
                 ev.type === 'fixed_expense' ? 'bg-amber-50 text-amber-700' : 'bg-teal-50 text-teal-700'
               }`}>
                 <span>{ev.type === 'fixed_expense' ? '📌' : '💰'}</span>
@@ -595,7 +595,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
             const user = userMap[tx.user_id]
             const isSaving = tx.type === 'saving'
             const isExpense = tx.type === 'expense'
-            const amtColor = isSaving ? 'text-indigo-600' : isExpense ? 'text-rose-500' : 'text-emerald-600'
+            const amtColor = isSaving ? 'text-brand-600' : isExpense ? 'text-rose-500' : 'text-emerald-600'
             const amtPrefix = isExpense ? '-' : '+'
             const isEditing = editingTxId === tx.id
             const editCats = isExpense ? expenseCategories : incomeCategories
@@ -604,14 +604,14 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
               return (
                 <div key={tx.id} className="px-4 py-3 bg-slate-50 space-y-2">
                   <input
-                    className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
                     value={editTitle}
                     onChange={e => setEditTitle(e.target.value)}
                     placeholder="내용"
                   />
                   <input
                     type="number"
-                    className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
                     value={editAmount}
                     onChange={e => setEditAmount(e.target.value)}
                     placeholder="금액"
@@ -620,14 +620,14 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
                     <div className="flex flex-wrap gap-1">
                       {editCats.map(c => (
                         <button key={c} onClick={() => setEditCategory(c)}
-                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${editCategory === c ? 'bg-indigo-500 text-white border-indigo-500' : 'border-slate-200 text-slate-500'}`}>
+                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${editCategory === c ? 'bg-brand-500 text-white border-brand-500' : 'border-slate-200 text-slate-500'}`}>
                           {c}
                         </button>
                       ))}
                     </div>
                   )}
                   <select
-                    className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
                     value={editUserId}
                     onChange={e => setEditUserId(e.target.value)}
                   >
@@ -641,7 +641,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
                         await onUpdateTransaction(tx.id, { title: editTitle.trim(), amount: amt, category: editCategory || tx.category, user_id: editUserId || tx.user_id })
                         setEditingTxId(null)
                       }}
-                      className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-indigo-500 text-white rounded-lg text-xs font-semibold hover:bg-indigo-600"
+                      className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-brand-500 text-white rounded-lg text-xs font-semibold hover:bg-brand-600"
                     >
                       <CheckIcon className="h-3 w-3" /> 저장
                     </button>
@@ -668,7 +668,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-medium text-slate-700 truncate">{tx.title}</span>
                     {tx.is_fixed && <span className="text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-full shrink-0">고정</span>}
-                    {isSaving && <span className="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full shrink-0">저축</span>}
+                    {isSaving && <span className="text-[9px] bg-brand-50 text-brand-600 px-1.5 py-0.5 rounded-full shrink-0">저축</span>}
                     {tx.fixed_expense_id && <span className="text-[9px]">📌</span>}
                     {tx.tags?.includes('배당') && <span className="text-[9px]">💰</span>}
                   </div>
@@ -694,7 +694,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
                           setEditUserId(tx.user_id)
                           setEditSaving(isSaving)
                         }}
-                        className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-500"
+                        className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-brand-500"
                       >
                         <PencilIcon className="h-3.5 w-3.5" />
                       </button>
@@ -810,7 +810,7 @@ export default function CalendarView({
           <button onClick={goPrev} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
-          <div className="flex items-center gap-3 text-[11px]">
+          <div className="flex items-center gap-3 text-xs">
             <span className="text-sm font-bold text-slate-800">{year}년 {month}월</span>
             <span className="text-rose-500 font-medium">↓ {fmtCell(monthTotal.expense)}</span>
             <span className="text-emerald-600 font-medium">↑ {fmtCell(monthTotal.income)}</span>
@@ -818,7 +818,7 @@ export default function CalendarView({
               <span className={`font-semibold ${
                 monthTotal.expense > budgetLimit ? 'text-rose-600' :
                 monthTotal.expense / budgetLimit >= 0.9 ? 'text-amber-500' :
-                'text-indigo-500'
+                'text-brand-500'
               }`}>
                 {Math.round(monthTotal.expense / budgetLimit * 100)}%
               </span>
@@ -833,7 +833,7 @@ export default function CalendarView({
       {/* ── Weekday header ── */}
       <div className="grid grid-cols-7 border-t border-slate-100">
         {WEEKDAYS.map((d, i) => (
-          <div key={d} className={`text-center py-1 text-[11px] font-semibold ${
+          <div key={d} className={`text-center py-1 text-xs font-semibold ${
             i === 0 ? 'text-rose-400' : i === 6 ? 'text-blue-400' : 'text-slate-400'
           }`}>
             {d}

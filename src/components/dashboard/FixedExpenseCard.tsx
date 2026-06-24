@@ -63,7 +63,7 @@ function OwnerBadge({ owner }: { owner: FixedExpenseOwner }) {
 
 function KindBadge({ kind }: { kind: FixedExpenseKind }) {
   return kind === 'saving' ? (
-    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">저축</span>
+    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-700">저축</span>
   ) : null
 }
 
@@ -140,12 +140,12 @@ function SavingLinkForm({ stocks, otherAssets, initial, onChange }: SavingLinkFo
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, isNew, stockId, addQty, addPrice, newSymbol, newExchange, newName, newQty, newPrice, newCurrency, assetId, newAssetName, newAssetType])
 
-  const inputCls = 'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400'
+  const inputCls = 'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500'
   const chipCls = (active: boolean) =>
-    `px-2.5 py-1 rounded-full text-xs font-medium transition-all ${active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`
+    `px-2.5 py-1 rounded-full text-xs font-medium transition-all ${active ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`
 
   return (
-    <div className="space-y-3 bg-indigo-50/50 rounded-xl p-3 border border-indigo-100">
+    <div className="space-y-3 bg-brand-50/50 rounded-xl p-3 border border-brand-100">
       <label className="text-xs font-medium text-slate-600 block">저축 연동 설정</label>
 
       {/* Kind */}
@@ -161,11 +161,11 @@ function SavingLinkForm({ stocks, otherAssets, initial, onChange }: SavingLinkFo
       {/* Existing vs New */}
       <div className="flex gap-2 bg-white rounded-lg p-0.5 border border-slate-100">
         <button type="button" onClick={() => setIsNew(false)}
-          className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${!isNew ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500'}`}>
+          className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${!isNew ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-500'}`}>
           기존 자산에 추가
         </button>
         <button type="button" onClick={() => setIsNew(true)}
-          className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${isNew ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500'}`}>
+          className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${isNew ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-500'}`}>
           신규 자산 등록
         </button>
       </div>
@@ -180,11 +180,11 @@ function SavingLinkForm({ stocks, otherAssets, initial, onChange }: SavingLinkFo
           </select>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">수량</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">수량</label>
               <input type="number" value={addQty} onChange={e => setAddQty(e.target.value)} placeholder="0" className={inputCls} />
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">단가</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">단가</label>
               <input type="text" inputMode="decimal" value={addPrice} onChange={e => setAddPrice(formatAmountInput(e.target.value, true))} placeholder="0" className={inputCls} />
             </div>
           </div>
@@ -195,11 +195,11 @@ function SavingLinkForm({ stocks, otherAssets, initial, onChange }: SavingLinkFo
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">종목 코드 *</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">종목 코드 *</label>
               <input value={newSymbol} onChange={e => setNewSymbol(e.target.value)} placeholder="AAPL" className={inputCls} />
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">거래소 *</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">거래소 *</label>
               <select value={newExchange} onChange={e => setNewExchange(e.target.value)} className={inputCls}>
                 {['NYSE', 'NASDAQ', 'KRX', 'KOSDAQ', 'BINANCE', 'UPBIT'].map(x => <option key={x}>{x}</option>)}
               </select>
@@ -208,16 +208,16 @@ function SavingLinkForm({ stocks, otherAssets, initial, onChange }: SavingLinkFo
           <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="종목명 *" className={inputCls} />
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">수량 *</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">수량 *</label>
               <input type="number" value={newQty} onChange={e => setNewQty(e.target.value)} placeholder="0" className={inputCls} />
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">단가 *</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">단가 *</label>
               <input type="text" inputMode="decimal" value={newPrice} onChange={e => setNewPrice(formatAmountInput(e.target.value, true))} placeholder="0" className={inputCls} />
             </div>
           </div>
           <div>
-            <label className="text-xs text-slate-500 mb-1 block">통화</label>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">통화</label>
             <select value={newCurrency} onChange={e => setNewCurrency(e.target.value as 'USD' | 'KRW')} className={inputCls}>
               <option value="USD">USD</option>
               <option value="KRW">KRW</option>
@@ -331,7 +331,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
                 : ['husband', 'wife', 'joint'] as FixedExpenseOwner[]
               ).map(o => {
                 const user = o === 'husband' ? users[0] : o === 'wife' ? users[1] : null
-                const bgColor = user?.avatar_color ?? (o === 'joint' ? '#8b5cf6' : o === 'husband' ? '#3b82f6' : '#ec4899')
+                const bgColor = user?.avatar_color ?? (o === 'joint' ? '#8b5cf6' : o === 'husband' ? '#0F4C81' : '#059669')
                 const label = o === 'joint' ? '공' : (user?.name[0] ?? (o === 'husband' ? '남' : '여'))
                 return (
                   <button
@@ -339,7 +339,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
                     type="button"
                     onClick={() => setOwner(o)}
                     title={OWNER_LABEL[o]}
-                    className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${owner === o ? 'ring-2 ring-offset-1 ring-indigo-400 scale-110' : 'opacity-40'}`}
+                    className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${owner === o ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-40'}`}
                     style={{ backgroundColor: bgColor }}
                   >
                     {label}
@@ -367,7 +367,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
               <button
                 type="button"
                 onClick={() => { setKind('saving'); if (owner === 'joint') setOwner('husband') }}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${kind === 'saving' ? 'bg-indigo-500 text-white shadow' : 'text-slate-500'}`}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${kind === 'saving' ? 'bg-brand-500 text-white shadow' : 'text-slate-500'}`}
               >
                 🏦 저축 고정비
               </button>
@@ -381,7 +381,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder={kind === 'saving' ? '예: 정기 적금, 삼성전자 자동매수' : '예: 아파트 관리비, 넷플릭스'}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -397,8 +397,8 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
                     onClick={() => setCategory(c)}
                     className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                       category === c
-                        ? 'bg-indigo-500 text-white border-indigo-500'
-                        : 'border-slate-200 text-slate-500 hover:border-indigo-300'
+                        ? 'bg-brand-500 text-white border-brand-500'
+                        : 'border-slate-200 text-slate-500 hover:border-brand-100'
                     }`}
                   >
                     {c}
@@ -417,10 +417,10 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
               value={amount}
               onChange={e => setAmount(formatAmountInput(e.target.value))}
               placeholder="예: 350,000"
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
             {amount && parseInt(amount.replace(/,/g, '')) > 0 && (
-              <p className="text-[11px] text-indigo-500 mt-1">= {formatKRW(parseInt(amount.replace(/,/g, '')))}</p>
+              <p className="text-xs text-brand-500 mt-1">= {formatKRW(parseInt(amount.replace(/,/g, '')))}</p>
             )}
           </div>
 
@@ -442,7 +442,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
               <select
                 value={dayOfMonth}
                 onChange={e => setDayOfMonth(Number(e.target.value))}
-                className="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
                   <option key={d} value={d}>{d}일</option>
@@ -459,7 +459,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
               value={memo}
               onChange={e => setMemo(e.target.value)}
               placeholder="간단한 메모 (선택)"
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -476,7 +476,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors disabled:opacity-50"
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 transition-colors disabled:opacity-50"
             >
               {saving ? '저장 중...' : editing ? '수정 완료' : '추가하기'}
             </button>
@@ -596,12 +596,12 @@ export default function FixedExpenseCard({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-medium text-amber-600 mb-0.5">😮‍💨 {year}년 {month}월 고정비</p>
-            <p className="text-xl font-extrabold text-slate-900 tabular-nums">{formatKRW(totalAmount)}</p>
+            <p className="text-xl font-black text-slate-900 tabular-nums">{formatKRW(totalAmount)}</p>
           </div>
 
           <button
             onClick={() => { setEditingFe(null); setShowModal(true) }}
-            className="flex items-center gap-0.5 text-xs text-indigo-600 hover:text-indigo-700 font-medium shrink-0"
+            className="flex items-center gap-0.5 text-xs text-brand-600 hover:text-brand-700 font-medium shrink-0"
           >
             <PlusIcon className="h-3.5 w-3.5" />추가
           </button>
@@ -615,7 +615,7 @@ export default function FixedExpenseCard({
             <p className="text-sm text-slate-400">등록된 고정비가 없어요</p>
             <button
               onClick={() => { setEditingFe(null); setShowModal(true) }}
-              className="mt-2 text-xs text-indigo-500 hover:underline"
+              className="mt-2 text-xs text-brand-500 hover:underline"
             >
               첫 고정비 추가하기 →
             </button>

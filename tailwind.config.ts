@@ -10,10 +10,10 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: [
-          '-apple-system',
-          'BlinkMacSystemFont',
           '"Pretendard Variable"',
           'Pretendard',
+          '-apple-system',
+          'BlinkMacSystemFont',
           '"Noto Sans KR"',
           'sans-serif',
         ],
@@ -21,13 +21,16 @@ const config: Config = {
       borderRadius: {
         '4xl': '2rem',
       },
+      zIndex: {
+        '60': '60',
+      },
       colors: {
         brand: {
-          50:  '#eef2ff',
-          100: '#e0e7ff',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
+          50:  '#eff6ff',
+          100: '#dbeafe',
+          500: '#0F4C81',
+          600: '#0a3d6e',
+          700: '#082e55',
         },
       },
     },

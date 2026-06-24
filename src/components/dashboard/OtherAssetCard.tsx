@@ -202,7 +202,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                   type="button"
                   onClick={() => setUserID(u.id)}
                   title={u.name}
-                  className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${userID === u.id ? 'ring-2 ring-offset-1 ring-indigo-400 scale-110' : 'opacity-40'}`}
+                  className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${userID === u.id ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-40'}`}
                   style={{ backgroundColor: u.avatar_color }}
                 >
                   {u.name[0]}
@@ -227,7 +227,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                   onClick={() => handleTypeChange(t)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     assetType === t
-                      ? t === '대출' ? 'bg-rose-500 text-white' : 'bg-indigo-600 text-white'
+                      ? t === '대출' ? 'bg-rose-500 text-white' : 'bg-brand-600 text-white'
                       : t === '대출' ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -272,7 +272,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
               onChange={e => setName(e.target.value)}
               placeholder={isLoan ? '예: 주택담보대출, 신용대출' : '예: 해운대 아파트, 카카오뱅크 정기예금'}
               required
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300"
             />
           </div>
 
@@ -287,7 +287,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                     type="button"
                     onClick={() => setCurrency(c)}
                     className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                      currency === c ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      currency === c ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
                     {c === 'KRW' ? '🇰🇷 KRW' : '🇺🇸 USD'}
@@ -295,7 +295,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                 ))}
               </div>
               {isUSD && (
-                <p className="text-[10px] text-indigo-500 mt-1">실시간 환율로 원화 환산됩니다</p>
+                <p className="text-[10px] text-brand-500 mt-1">실시간 환율로 원화 환산됩니다</p>
               )}
             </div>
           )}
@@ -311,7 +311,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                 onChange={e => setValueUSD(formatAmountInput(e.target.value, true))}
                 placeholder="0.00"
                 required
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300 placeholder:font-normal"
               />
             </div>
           ) : (
@@ -327,7 +327,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                   onChange={e => setValueKRW(formatAmountInput(e.target.value))}
                   placeholder="0"
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300 placeholder:font-normal"
                 />
               </div>
               {!isDeposit && !isCash && (
@@ -341,7 +341,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                     value={costKRW}
                     onChange={e => setCostKRW(formatAmountInput(e.target.value))}
                     placeholder="0 (선택)"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300 placeholder:font-normal"
                   />
                 </div>
               )}
@@ -379,7 +379,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                 type="date"
                 value={acquiredAt}
                 onChange={e => setAcquiredAt(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
           )}
@@ -397,7 +397,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                 placeholder={isLoan ? '3.8' : '3.5'}
                 min="0"
                 step="0.01"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300 placeholder:font-normal"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300 placeholder:font-normal"
               />
             </div>
           )}
@@ -412,7 +412,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
                 type="date"
                 value={maturityDate}
                 onChange={e => setMaturityDate(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
           )}
@@ -453,14 +453,14 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
 
           {/* 예/적금 세후 만기 수령액 */}
           {isDeposit && afterTaxMaturity !== null && (
-            <div className="rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3 space-y-1.5">
-              <p className="text-xs font-semibold text-indigo-700">세후 만기 수령액 (예상)</p>
-              <p className="text-lg font-bold text-indigo-900 tabular-nums">{formatKRW(afterTaxMaturity)}</p>
-              <div className="flex items-center justify-between text-[10px] text-indigo-500">
+            <div className="rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 space-y-1.5">
+              <p className="text-xs font-semibold text-brand-700">세후 만기 수령액 (예상)</p>
+              <p className="text-lg font-bold text-brand-700 tabular-nums">{formatKRW(afterTaxMaturity)}</p>
+              <div className="flex items-center justify-between text-[10px] text-brand-500">
                 <span>원금 {formatKRW(parseFloat(valueKRW.replace(/,/g, '')) || 0)}</span>
                 <span>+</span>
                 <span>세후이자 {formatKRW(afterTaxMaturity - (parseFloat(valueKRW.replace(/,/g, '')) || 0))}</span>
-                <span className="text-indigo-400">(세율 15.4%)</span>
+                <span className="text-brand-500">(세율 15.4%)</span>
               </div>
             </div>
           )}
@@ -473,7 +473,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder={isLoan ? '금융기관, 용도...' : '부산 해운대구, 전세 보증금...'}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300"
             />
           </div>
 
@@ -485,7 +485,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
               value={memo}
               onChange={e => setMemo(e.target.value)}
               placeholder="기타 메모..."
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300"
             />
           </div>
 
@@ -493,7 +493,7 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
             type="submit"
             disabled={loading}
             className={`w-full py-3.5 text-white rounded-xl font-semibold text-sm transition-all disabled:opacity-60 active:scale-[0.98] ${
-              isLoan ? 'bg-rose-500 hover:bg-rose-600' : 'bg-indigo-600 hover:bg-indigo-700'
+              isLoan ? 'bg-rose-500 hover:bg-rose-600' : 'bg-brand-600 hover:bg-brand-700'
             }`}
           >
             {loading ? '저장 중...' : mode === 'add' ? '자산 추가하기' : '수정 저장하기'}
@@ -591,7 +591,7 @@ function AssetRow({ asset, user, onEdit, onDelete, onCreateLoanExpense, loanExpe
           </p>
         )}
         {afterTaxMaturity !== null && (
-          <p className="text-[10px] text-indigo-500 font-semibold tabular-nums">만기 {formatKRW(afterTaxMaturity)}</p>
+          <p className="text-[10px] text-brand-500 font-semibold tabular-nums">만기 {formatKRW(afterTaxMaturity)}</p>
         )}
         {pnl !== null && afterTaxMaturity === null && (
           <p className={`text-xs font-semibold tabular-nums ${isUp ? 'text-emerald-600' : 'text-rose-500'}`}>
@@ -664,17 +664,17 @@ export default function OtherAssetCard({ assets = [], users = [], fixedExpenseTi
   return (
     <>
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
-            <h2 className="text-sm font-semibold text-slate-700">기타 자산</h2>
+            <h2 className="text-sm font-bold text-slate-800">기타 자산</h2>
             {safeAssets.length > 0 && (
-              <p className="text-[11px] text-slate-400 mt-0.5">부동산·예/적금·현금·대출 등</p>
+              <p className="text-xs text-slate-400 mt-0.5">부동산·예/적금·현금·대출 등</p>
             )}
           </div>
           <div className="flex items-center gap-3">
             {safeAssets.length > 0 && (
               <div className="text-right">
-                <p className="text-sm font-bold text-slate-800 tabular-nums">{formatKRW(net)}</p>
+                <p className="text-base font-black text-slate-800 tabular-nums">{formatKRW(net)}</p>
                 <div className="flex items-center gap-1.5 justify-end mt-0.5">
                   {totalLocked > 0 && (
                     <span className="text-[10px] text-amber-500 tabular-nums flex items-center gap-0.5">
@@ -689,10 +689,10 @@ export default function OtherAssetCard({ assets = [], users = [], fixedExpenseTi
             )}
             <button
               onClick={() => setShowAdd(true)}
-              className="w-8 h-8 rounded-xl bg-indigo-50 hover:bg-indigo-100 flex items-center justify-center transition-colors"
+              className="w-8 h-8 rounded-xl bg-brand-50 hover:bg-brand-100 flex items-center justify-center transition-colors"
               aria-label="자산 추가"
             >
-              <PlusIcon className="h-4 w-4 text-indigo-600" />
+              <PlusIcon className="h-4 w-4 text-brand-600" />
             </button>
           </div>
         </div>

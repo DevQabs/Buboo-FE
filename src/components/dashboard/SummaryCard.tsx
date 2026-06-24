@@ -111,7 +111,7 @@ export default function SummaryCard({
         </div>
         <button
           onClick={() => { setBudgetInput(''); setEditingBudget(true) }}
-          className="text-xs font-semibold text-indigo-500 hover:text-indigo-700 shrink-0 ml-3 transition-colors"
+          className="text-xs font-semibold text-brand-500 hover:text-brand-700 shrink-0 ml-3 transition-colors"
         >
           + 설정
         </button>
@@ -122,18 +122,18 @@ export default function SummaryCard({
   if (editingBudget) {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-3 flex items-center gap-2">
-        <span className="text-xs font-medium text-indigo-700 shrink-0">예산 설정</span>
+        <span className="text-xs font-medium text-brand-700 shrink-0">예산 설정</span>
         <input
           type="number" min={0} step={10000} value={budgetInput}
           onChange={e => setBudgetInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleSaveBudget(); if (e.key === 'Escape') setEditingBudget(false) }}
           autoFocus
-          className="flex-1 text-sm border border-indigo-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-right tabular-nums"
+          className="flex-1 text-sm border border-brand-100 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 text-right tabular-nums"
           placeholder="월 예산 (원)"
         />
         <span className="text-xs text-slate-400 shrink-0">원</span>
         <button onClick={handleSaveBudget} disabled={saving}
-          className="p-1.5 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 transition-colors">
+          className="p-1.5 rounded-lg bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-50 transition-colors">
           <CheckIcon className="h-3.5 w-3.5" />
         </button>
         <button onClick={() => setEditingBudget(false)}
@@ -158,7 +158,7 @@ export default function SummaryCard({
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             {startDaySelect}
-            <span className="text-[11px] tabular-nums whitespace-nowrap">
+            <span className="text-xs tabular-nums whitespace-nowrap">
               <span className="font-semibold text-slate-700">{formatKRW(committedExpense)}</span>
               <span className="text-slate-300 mx-0.5">/</span>
               <span className="text-slate-400">{formatKRW(budgetLimit)}</span>
@@ -217,7 +217,7 @@ export default function SummaryCard({
         <div className="border-t border-white/50">
           <button
             onClick={e => { e.stopPropagation(); setShowBreakdown(v => !v) }}
-            className="w-full flex items-center justify-between px-4 py-2 text-[11px] text-slate-500 hover:bg-white/30 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-2 text-xs text-slate-500 hover:bg-white/30 transition-colors"
           >
             <span className="font-medium">카테고리별 지출</span>
             <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform duration-200 ${showBreakdown ? 'rotate-180' : ''}`} />
@@ -229,7 +229,7 @@ export default function SummaryCard({
                 const pct = (item.amount / totalForBreakdown) * 100
                 return (
                   <div key={item.category}>
-                    <div className="flex items-center justify-between text-[11px] mb-0.5">
+                    <div className="flex items-center justify-between text-xs mb-0.5">
                       <div className="flex items-center gap-1">
                         {item.isFixed && <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
                         <span className="text-slate-600 font-medium">{item.category}</span>
@@ -241,7 +241,7 @@ export default function SummaryCard({
                     </div>
                     <div className="w-full bg-white/60 rounded-full h-1">
                       <div
-                        className={`h-1 rounded-full transition-all duration-500 ${item.isFixed ? 'bg-amber-400' : 'bg-indigo-300'}`}
+                        className={`h-1 rounded-full transition-all duration-500 ${item.isFixed ? 'bg-amber-400' : 'bg-brand-100'}`}
                         style={{ width: `${Math.min(pct, 100)}%` }}
                       />
                     </div>
