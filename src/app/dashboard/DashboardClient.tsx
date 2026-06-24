@@ -363,7 +363,11 @@ export default function DashboardClient() {
     payment_method: string
     saving_link?: SavingLink
   }) => {
-    const ts = new Date().toISOString()
+    // KST 날짜 기준 noon으로 고정 — UTC toISOString()은 9시 이전 결제를 전날로 집계
+    const now = new Date()
+    const kstDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }))
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const ts = `${kstDate.getFullYear()}-${pad(kstDate.getMonth() + 1)}-${pad(kstDate.getDate())}T12:00:00+09:00`
 
     // Saving transactions have asset side-effects — skip optimistic update,
     // do a real POST then refetch everything that may have changed.

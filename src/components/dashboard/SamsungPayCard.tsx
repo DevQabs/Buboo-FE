@@ -57,12 +57,9 @@ export default function SamsungPayCard({ users, onAdd }: SamsungPayCardProps) {
     setAmount(raw ? parseInt(raw, 10).toLocaleString() : '');
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const num = parseInt(amount.replace(/,/g, ''), 10);
     if (!num) return;
-    // 즉시 앱 열기 + 모달 닫기 — 저장은 백그라운드
-    openNaverPay();
-    setOpen(false);
     const data = {
       user_id: userID,
       type: 'expense' as const,
@@ -71,8 +68,15 @@ export default function SamsungPayCard({ users, onAdd }: SamsungPayCardProps) {
       title: title || '네이버페이 결제',
       payment_method: payment,
     };
+    setOpen(false);
     resetForm();
-    onAdd(data).catch(console.error);
+    try {
+      await onAdd(data);
+    } catch (e) {
+      console.error(e);
+    }
+    // 저장 완료 후 앱 열기 — 브라우저 포커스 손실로 fetch 중단 방지
+    openNaverPay();
   }
 
   return (
