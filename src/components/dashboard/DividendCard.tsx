@@ -405,9 +405,10 @@ export default function DividendCard({
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-0.5 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+              className="w-8 h-8 rounded-xl bg-brand-50 hover:bg-brand-100 flex items-center justify-center transition-colors"
+              aria-label="배당 등록"
             >
-              <PlusIcon className="h-3.5 w-3.5" />등록
+              <PlusIcon className="h-4 w-4 text-brand-600" />
             </button>
           </div>
         </div>

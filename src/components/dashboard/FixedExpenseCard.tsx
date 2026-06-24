@@ -601,9 +601,10 @@ export default function FixedExpenseCard({
 
           <button
             onClick={() => { setEditingFe(null); setShowModal(true) }}
-            className="flex items-center gap-0.5 text-xs text-brand-600 hover:text-brand-700 font-medium shrink-0"
+            className="w-8 h-8 rounded-xl bg-white/60 hover:bg-white/90 flex items-center justify-center transition-colors"
+            aria-label="고정비 추가"
           >
-            <PlusIcon className="h-3.5 w-3.5" />추가
+            <PlusIcon className="h-4 w-4 text-amber-700" />
           </button>
         </div>
       </div>
