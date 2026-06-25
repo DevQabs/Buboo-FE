@@ -20,20 +20,27 @@ import SummaryCard from '@/components/dashboard/SummaryCard'
 import NaverPayCard from '@/components/dashboard/NaverPayCard'
 import CalendarView from '@/components/dashboard/CalendarView'
 
-// ─── 자산 현황 탭 — 첫 방문 시 로드 ────────────────────────────────────────────
-const NetWorthSummaryCard = dynamic(() => import('@/components/dashboard/NetWorthSummaryCard'), { ssr: false })
-const StockPortfolioCard  = dynamic(() => import('@/components/dashboard/StockPortfolioCard'),  { ssr: false })
-const OtherAssetCard      = dynamic(() => import('@/components/dashboard/OtherAssetCard'),      { ssr: false })
+// ─── ChunkSkeleton: dynamic 청크 다운로드 중 표시되는 placeholder ──────────────
+// loading 옵션이 없으면 청크 로드 전까지 아무것도 안 보여 레이아웃이 깜빡임(CLS).
+function ChunkSkeleton({ h = 100 }: { h?: number }) {
+  return <div className="bg-white rounded-3xl animate-pulse w-full" style={{ height: h }} />
+}
+
+// ─── 자산 현황 탭 — 첫 방문 시 로드 + Phase2 .preload() ─────────────────────────
+const NetWorthSummaryCard = dynamic(() => import('@/components/dashboard/NetWorthSummaryCard'), { ssr: false, loading: () => <ChunkSkeleton h={88}  /> })
+const StockPortfolioCard  = dynamic(() => import('@/components/dashboard/StockPortfolioCard'),  { ssr: false, loading: () => <ChunkSkeleton h={260} /> })
+const OtherAssetCard      = dynamic(() => import('@/components/dashboard/OtherAssetCard'),      { ssr: false, loading: () => <ChunkSkeleton h={140} /> })
 
 // ─── 가계부 탭 서브 카드 — 첫 방문 시 로드 ──────────────────────────────────────
-const FixedExpenseCard = dynamic(() => import('@/components/dashboard/FixedExpenseCard'), { ssr: false })
-const DividendCard     = dynamic(() => import('@/components/dashboard/DividendCard'),     { ssr: false })
+const FixedExpenseCard = dynamic(() => import('@/components/dashboard/FixedExpenseCard'), { ssr: false, loading: () => <ChunkSkeleton h={100} /> })
+const DividendCard     = dynamic(() => import('@/components/dashboard/DividendCard'),     { ssr: false, loading: () => <ChunkSkeleton h={100} /> })
 
 // ─── 라이프 / 냉장고 탭 — 첫 방문 시 로드 ──────────────────────────────────────
-const ScheduleTab = dynamic(() => import('@/components/dashboard/ScheduleTab'), { ssr: false })
-const FridgeTab   = dynamic(() => import('@/components/dashboard/FridgeTab'),   { ssr: false })
+const ScheduleTab = dynamic(() => import('@/components/dashboard/ScheduleTab'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
+const FridgeTab   = dynamic(() => import('@/components/dashboard/FridgeTab'),   { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 
-// ─── 모달 — 열릴 때만 로드 ──────────────────────────────────────────────────────
+// ─── 모달 — 열릴 때만 로드, Phase2 .preload() 로 청크 미리 다운로드 ──────────────
+// loading 스켈레톤 없음: 모달은 열리기 전까지 DOM에 없으므로 CLS 무관.
 const AddStockModal     = dynamic(() => import('@/components/dashboard/AddStockModal'),     { ssr: false })
 const EditStockModal    = dynamic(() => import('@/components/dashboard/EditStockModal'),    { ssr: false })
 const BuySellModal      = dynamic(() => import('@/components/dashboard/BuySellModal'),      { ssr: false })
@@ -340,7 +347,21 @@ export default function DashboardClient() {
   // ── Phase 2: UI 표시 직후 나머지 탭 데이터 백그라운드 프리패치 ─────────────────
   // loading=false 가 되는 순간 wealth/life/fridge 를 조용히 병렬 로드.
   // 사용자가 탭을 누를 때 이미 데이터가 준비돼 있으면 스켈레톤 없이 즉시 표시.
+  //
+  // ★ .preload() 란?
+  //   next/dynamic 으로 만든 컴포넌트는 정적 메서드 .preload()를 가진다.
+  //   이를 호출하면 렌더링 없이 해당 JS 청크만 네트워크로 미리 다운로드한다.
+  //   → 탭 전환 시 "청크 다운로드 + 렌더링" 에서 "렌더링만" 으로 단축된다.
   const prefetchAll = useCallback(async () => {
+    // ── JS 청크 미리 다운로드 (렌더링 없이 네트워크만, 병렬) ──
+    ;[
+      NetWorthSummaryCard, StockPortfolioCard, OtherAssetCard,
+      FixedExpenseCard, DividendCard,
+      ScheduleTab, FridgeTab,
+      AddStockModal, EditStockModal, BuySellModal, TradeHistoryModal,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ].forEach(c => (c as any).preload?.())
+
     await Promise.allSettled([
       // ── 자산 현황 탭 ──
       (async () => {
