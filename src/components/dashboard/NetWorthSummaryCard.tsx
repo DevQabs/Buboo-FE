@@ -25,17 +25,10 @@ export default function NetWorthSummaryCard({ netWorth, portfolioSummary }: NetW
 
   const isPositive = netWorth.net_worth_krw >= 0
 
-  const reveal = () => setOpen(true)
-  const hide   = () => setOpen(false)
-
   return (
     <div
-      className="rounded-3xl bg-gradient-to-br from-slate-800 via-slate-900 to-brand-700 shadow-xl px-6 py-5 select-none"
-      onMouseDown={reveal}
-      onMouseUp={hide}
-      onMouseLeave={hide}
-      onTouchStart={reveal}
-      onTouchEnd={hide}
+      className="rounded-3xl bg-gradient-to-br from-slate-800 via-slate-900 to-brand-700 shadow-xl px-6 py-5 select-none cursor-pointer"
+      onClick={() => setOpen(o => !o)}
     >
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">총 자산 현황</p>
