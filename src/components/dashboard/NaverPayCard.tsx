@@ -41,7 +41,9 @@ export default function NaverPayCard({ users, transactions = [], onAdd }: NaverP
         counts[tx.category] = (counts[tx.category] ?? 0) + 1
       }
     }
-    return [...expenseCategories].sort((a, b) => (counts[b] ?? 0) - (counts[a] ?? 0))
+    const others = expenseCategories.filter(c => c !== '기타')
+    others.sort((a, b) => (counts[b] ?? 0) - (counts[a] ?? 0))
+    return expenseCategories.includes('기타') ? ['기타', ...others] : others
   }, [transactions, expenseCategories])
 
   const activeCategory = category || sortedCategories[0] || '식비'
@@ -122,7 +124,7 @@ export default function NaverPayCard({ users, transactions = [], onAdd }: NaverP
       </div>
 
       {/* Category chips */}
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-none px-5 py-3">
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-5 py-3">
         {sortedCategories.map(cat => (
           <button
             key={cat}
