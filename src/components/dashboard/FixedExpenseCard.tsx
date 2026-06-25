@@ -8,6 +8,7 @@ import {
   PencilIcon,
   TrashIcon,
   BoltIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline'
 import { formatAmountInput } from '@/lib/formatNumber'
 import type {
@@ -582,6 +583,7 @@ export default function FixedExpenseCard({
 }: FixedExpenseCardProps) {
   const [showModal, setShowModal] = useState(false)
   const [editingFe, setEditingFe] = useState<FixedExpense | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
 
   const activeItems = fixedExpenses.filter(fe => fe.is_active)
   const inactiveItems = fixedExpenses.filter(fe => !fe.is_active)
@@ -606,18 +608,27 @@ export default function FixedExpenseCard({
             <p className="text-xl font-black text-slate-900 tabular-nums">{formatKRW(totalAmount)}</p>
           </div>
 
-          <button
-            onClick={() => { setEditingFe(null); setShowModal(true) }}
-            className="w-8 h-8 rounded-xl bg-white/60 hover:bg-white/90 flex items-center justify-center transition-colors"
-            aria-label="고정비 추가"
-          >
-            <PlusIcon className="h-4 w-4 text-amber-700" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setEditingFe(null); setShowModal(true) }}
+              className="w-8 h-8 rounded-xl bg-white/60 hover:bg-white/90 flex items-center justify-center transition-colors"
+              aria-label="고정비 추가"
+            >
+              <PlusIcon className="h-4 w-4 text-amber-700" />
+            </button>
+            <button
+              onClick={() => setIsOpen(v => !v)}
+              className="w-8 h-8 rounded-xl bg-amber-100 hover:bg-amber-200 flex items-center justify-center transition-colors"
+              aria-label={isOpen ? '접기' : '펼치기'}
+            >
+              <ChevronDownIcon className={`h-4 w-4 text-amber-700 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ── Fixed expense list ── */}
-      <div className="divide-y divide-slate-50">
+      {isOpen && <div className="divide-y divide-slate-50">
         {activeItems.length === 0 && inactiveItems.length === 0 ? (
           <div className="px-5 py-6 text-center">
             <p className="text-sm text-slate-400">등록된 고정비가 없어요</p>
@@ -651,7 +662,7 @@ export default function FixedExpenseCard({
             )}
           </>
         )}
-      </div>
+      </div>}
 
       {/* ── Modal ── */}
       <AnimatePresence>

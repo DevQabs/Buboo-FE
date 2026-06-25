@@ -22,8 +22,8 @@ import TradeHistoryModal from '@/components/dashboard/TradeHistoryModal'
 import OtherAssetCard from '@/components/dashboard/OtherAssetCard'
 import NetWorthSummaryCard from '@/components/dashboard/NetWorthSummaryCard'
 import FixedExpenseCard from '@/components/dashboard/FixedExpenseCard'
-import SamsungPayCard from '@/components/dashboard/SamsungPayCard'
 import DividendCard from '@/components/dashboard/DividendCard'
+import NaverPayCard from '@/components/dashboard/NaverPayCard'
 import CalendarView from '@/components/dashboard/CalendarView'
 import ScheduleTab from '@/components/dashboard/ScheduleTab'
 import FridgeTab from '@/components/dashboard/FridgeTab'
@@ -982,12 +982,11 @@ export default function DashboardClient() {
             initial="enter" animate="center" exit="exit"
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            {/* 삼성페이 결제 카드 */}
-            <SamsungPayCard
+            {/* 네이버페이 결제 카드 */}
+            <NaverPayCard
               users={users}
-              onAdd={async (data) => {
-                await handleAddTransaction(data)
-              }}
+              transactions={transactions}
+              onAdd={async (data) => { await handleAddTransaction(data) }}
             />
 
             {/* 예산 현황 + 기간 선택 (맨 위) */}

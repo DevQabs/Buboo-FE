@@ -357,6 +357,7 @@ export default function DividendCard({
 }: DividendCardProps) {
   const [showModal, setShowModal] = useState(false)
   const [showAll, setShowAll]     = useState(false)
+  const [isOpen, setIsOpen]       = useState(false)
 
   const events  = summary?.events ?? []
   const visible = showAll ? events : events.slice(0, 5)
@@ -417,12 +418,19 @@ export default function DividendCard({
             >
               <PlusIcon className="h-4 w-4 text-brand-600" />
             </button>
+            <button
+              onClick={() => setIsOpen(v => !v)}
+              className="w-8 h-8 rounded-xl bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors"
+              aria-label={isOpen ? '접기' : '펼치기'}
+            >
+              <ChevronDownIcon className={`h-4 w-4 text-emerald-700 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
           </div>
         </div>
       </div>
 
       {/* ── Event list ── */}
-      <div className="divide-y divide-slate-50">
+      {isOpen && <div className="divide-y divide-slate-50">
         {events.length === 0 ? (
           <div className="px-5 py-6 text-center">
             <p className="text-sm text-slate-400">등록된 배당 이벤트가 없어요</p>
@@ -450,7 +458,7 @@ export default function DividendCard({
             )}
           </>
         )}
-      </div>
+      </div>}
 
       {/* ── Modal ── */}
       <AnimatePresence>

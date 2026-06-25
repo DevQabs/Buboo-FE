@@ -3,21 +3,18 @@
 import { useState } from 'react'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import QuickAddButton from '@/components/dashboard/QuickAddButton'
-import type { Transaction, User, StockAssetWithPrice, OtherAsset, SavingLink } from '@/types'
+import type { Transaction, User } from '@/types'
 
 interface TransactionListProps {
   transactions: Transaction[]
   users: User[]
-  stocks: StockAssetWithPrice[]
-  otherAssets: OtherAsset[]
   onAdd?: (data: {
     user_id: string
-    type: 'income' | 'expense' | 'saving'
+    type: 'expense'
     amount: number
     category: string
     title: string
     payment_method: string
-    saving_link?: SavingLink
   }) => Promise<void>
 }
 
@@ -53,7 +50,7 @@ function formatDate(dateStr: string, createdAt?: string): string {
 
 type FilterType = 'all' | 'income' | 'expense' | 'saving'
 
-export default function TransactionList({ transactions = [], users = [], stocks = [], otherAssets = [], onAdd }: TransactionListProps) {
+export default function TransactionList({ transactions = [], users = [], onAdd }: TransactionListProps) {
   const [filter, setFilter] = useState<FilterType>('all')
   const [showAdd, setShowAdd] = useState(false)
 
@@ -166,8 +163,6 @@ export default function TransactionList({ transactions = [], users = [], stocks 
       {onAdd && (
         <QuickAddButton
           users={safeUsers}
-          stocks={stocks}
-          otherAssets={otherAssets}
           onAdd={onAdd}
           open={showAdd}
           onClose={() => setShowAdd(false)}
