@@ -741,7 +741,7 @@ export default function DashboardClient() {
   }, [transactions, summaryYear, summaryMonth, startDay, calendarYear, calendarMonth, fetchSummary, fetchTransactions, fetchCalendarTransactions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDeleteTransaction = useCallback(async (id: string) => {
-    await fetch(`${API_BASE}/api/transactions/${id}`, { method: 'DELETE' })
+    await apiFetch(`/api/transactions/${id}`, { method: 'DELETE' })
     setTransactions(prev => prev.filter(tx => tx.id !== id))
     await Promise.all([
       fetchSummary(summaryYear, summaryMonth, startDay),
@@ -830,7 +830,7 @@ export default function DashboardClient() {
   }
 
   const handleDeleteStock = async (asset: StockAssetWithPrice) => {
-    const res = await fetch(`${API_BASE}/api/stocks/${asset.id}?force=true`, { method: 'DELETE' })
+    const res = await fetch(`${API_BASE}/api/stocks/${asset.id}?force=true`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
     if (!res.ok) throw new Error(`주식 삭제 실패: ${res.status}`)
     setPortfolio(prev => prev.filter(a => a.id !== asset.id))
     await refetchPortfolio()
@@ -862,13 +862,13 @@ export default function DashboardClient() {
   }
 
   const handleDeleteAsset = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/assets/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_BASE}/api/assets/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
     if (!res.ok) throw new Error(`자산 삭제 실패: ${res.status}`)
     setOtherAssets(prev => prev.filter(a => a.id !== id))
   }
 
   const handleCreateLoanExpense = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/assets/${id}/loan-expense`, { method: 'POST' })
+    const res = await fetch(`${API_BASE}/api/assets/${id}/loan-expense`, { method: 'POST', headers: { Authorization: `Bearer ${_accessToken}` } })
     if (!res.ok) throw new Error(`고정비 생성 실패: ${res.status}`)
     await refetchFixedExpenses()
     await fetchCalendar(calendarYear, calendarMonth)
@@ -899,7 +899,7 @@ export default function DashboardClient() {
   }
 
   const handleDeleteFixedExpense = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/fixed-expenses/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_BASE}/api/fixed-expenses/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
     if (!res.ok) throw new Error(`고정비 삭제 실패: ${res.status}`)
     await refetchFixedExpenses()
   }
@@ -943,7 +943,7 @@ export default function DashboardClient() {
   }
 
   const handleDeleteDividend = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/dividends/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_BASE}/api/dividends/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
     if (!res.ok) throw new Error(`배당 삭제 실패: ${res.status}`)
     await refetchDividends(calendarYear, calendarMonth)
   }
@@ -972,7 +972,7 @@ export default function DashboardClient() {
   }
 
   const handleDeleteSchedule = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/schedules/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_BASE}/api/schedules/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
     if (!res.ok) throw new Error(`일정 삭제 실패: ${res.status}`)
     setSchedules(s => s.filter(x => x.id !== id))
   }
@@ -990,7 +990,7 @@ export default function DashboardClient() {
     for (const photo of photos) {
       const form = new FormData()
       form.append('photo', photo)
-      await fetch(`${API_BASE}/api/diaries/${created.id}/photos`, { method: 'POST', body: form })
+      await fetch(`${API_BASE}/api/diaries/${created.id}/photos`, { method: 'POST', body: form, headers: { Authorization: `Bearer ${_accessToken}` } })
     }
     // Refetch diary to get updated photos
     const updated = await apiFetch<DiaryEntry[]>('/api/diaries')
@@ -1003,7 +1003,7 @@ export default function DashboardClient() {
   }
 
   const handleDeleteDiary = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/diaries/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_BASE}/api/diaries/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
     if (!res.ok) throw new Error(`일기 삭제 실패: ${res.status}`)
     setDiaries(d => d.filter(x => x.id !== id))
   }
@@ -1039,7 +1039,7 @@ export default function DashboardClient() {
   }
 
   const handleDeleteFridgeItem = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/fridge/items/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_BASE}/api/fridge/items/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
     if (!res.ok) throw new Error(`식재료 삭제 실패: ${res.status}`)
     setFridgeItems(prev => prev.filter(i => i.id !== id))
   }
@@ -1065,7 +1065,7 @@ export default function DashboardClient() {
   }
 
   const handleDeleteSideDish = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/fridge/side-dishes/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_BASE}/api/fridge/side-dishes/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
     if (!res.ok) throw new Error(`반찬 삭제 실패: ${res.status}`)
     setSideDishes(prev => prev.filter(d => d.id !== id))
   }
