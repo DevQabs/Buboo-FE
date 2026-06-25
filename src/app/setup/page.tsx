@@ -10,6 +10,7 @@ export default function SetupPage() {
   const { data: session, update } = useSession()
   const router = useRouter()
   const [coupleName, setCoupleName] = useState('')
+  const [nickname, setNickname] = useState('')
   const [role, setRole] = useState<'husband' | 'wife'>('husband')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -28,6 +29,7 @@ export default function SetupPage() {
           google_email: session.user.googleEmail ?? session.user.email,
           google_sub: session.user.googleSub,
           couple_name: coupleName,
+          nickname,
           role,
         }),
       })
@@ -94,6 +96,18 @@ export default function SetupPage() {
           </div>
 
           <div>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">내 닉네임</label>
+            <input
+              type="text"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="예: 김태국"
+              required
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+
+          <div>
             <label className="text-xs font-medium text-slate-500 mb-2 block">내 역할</label>
             <div className="grid grid-cols-2 gap-2">
               {(['husband', 'wife'] as const).map((r) => (
@@ -117,7 +131,7 @@ export default function SetupPage() {
 
           <button
             type="submit"
-            disabled={loading || !coupleName.trim()}
+            disabled={loading || !coupleName.trim() || !nickname.trim()}
             className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 transition-colors disabled:opacity-40"
           >
             {loading ? '생성 중...' : '시작하기'}

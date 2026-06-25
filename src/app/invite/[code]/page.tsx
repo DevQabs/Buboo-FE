@@ -22,6 +22,7 @@ export default function InvitePage() {
   const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null)
   const [inviteError, setInviteError] = useState('')
   const [role, setRole] = useState<'husband' | 'wife'>('wife')
+  const [nickname, setNickname] = useState('')
   const [joining, setJoining] = useState(false)
   const [error, setError] = useState('')
 
@@ -73,6 +74,7 @@ export default function InvitePage() {
           google_email: session.user.googleEmail ?? session.user.email,
           google_sub: session.user.googleSub,
           invite_code: code,
+          nickname,
         }),
       })
       const data = await res.json()
@@ -129,6 +131,19 @@ export default function InvitePage() {
           <span className="font-semibold text-slate-700">{inviteInfo.couple_name}</span>에
           합류하시겠습니까?
         </p>
+
+        {isSignedIn && (
+          <div className="mb-4">
+            <label className="text-xs font-medium text-slate-500 mb-1 block">내 닉네임</label>
+            <input
+              type="text"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="예: 이다현"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+        )}
 
         {inviteInfo.available_roles.length > 1 && (
           <div className="mb-4">
