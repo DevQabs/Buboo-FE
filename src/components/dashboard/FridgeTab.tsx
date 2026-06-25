@@ -176,7 +176,7 @@ function DraggableFoodCard({ item, isDragDisabled, onDelete, onEdit }: Draggable
         {...attributes}
         {...listeners}
         className="cursor-grab active:cursor-grabbing"
-        onClick={() => setShowActions(s => !s)}
+        onClick={() => setShowActions(false)}
       >
         {/* 드래그 인디케이터 (상단 점 3개) */}
         <div className="flex justify-center mb-1 gap-0.5 opacity-30">
@@ -210,31 +210,36 @@ function DraggableFoodCard({ item, isDragDisabled, onDelete, onEdit }: Draggable
         </div>
       </div>
 
-      {/* 항상 보이는 × 삭제 버튼 */}
+      {/* ⋮ 메뉴 버튼 */}
       <button
-        onClick={handleDeleteClick}
-        className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-slate-200/80 hover:bg-rose-400 hover:text-white flex items-center justify-center transition-colors text-slate-500"
-        title="삭제"
+        onClick={e => { e.stopPropagation(); setShowActions(s => !s) }}
+        className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-slate-100/80 flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors"
       >
-        <XMarkIcon className="w-2.5 h-2.5" />
+        <span className="text-[10px] font-black leading-none">⋮</span>
       </button>
 
-      {/* 탭 시 수정 버튼 오버레이 */}
+      {/* 수정/삭제 드롭다운 */}
       <AnimatePresence>
         {showActions && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.9, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute inset-0 rounded-2xl flex items-center justify-center bg-white/90 backdrop-blur-sm z-10"
-            onClick={() => setShowActions(false)}
+            className="absolute top-6 right-1 bg-white rounded-xl shadow-lg border border-slate-100 z-20 overflow-hidden"
+            onClick={e => e.stopPropagation()}
           >
             <button
               onClick={handleEditClick}
-              className="flex items-center gap-1 px-3 py-1.5 bg-brand-500 text-white rounded-xl text-[11px] font-bold shadow hover:bg-brand-600 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 w-full"
             >
               <PencilIcon className="h-3 w-3" /> 수정
+            </button>
+            <button
+              onClick={handleDeleteClick}
+              className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-rose-500 hover:bg-rose-50 w-full border-t border-slate-100"
+            >
+              <XMarkIcon className="h-3 w-3" /> 삭제
             </button>
           </motion.div>
         )}
