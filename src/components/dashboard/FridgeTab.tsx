@@ -178,13 +178,6 @@ function DraggableFoodCard({ item, isDragDisabled, onDelete, onEdit }: Draggable
         className="cursor-grab active:cursor-grabbing"
         onClick={() => setShowActions(false)}
       >
-        {/* 드래그 인디케이터 (상단 점 3개) */}
-        <div className="flex justify-center mb-1 gap-0.5 opacity-30">
-          <span className="w-1 h-1 rounded-full bg-slate-400" />
-          <span className="w-1 h-1 rounded-full bg-slate-400" />
-          <span className="w-1 h-1 rounded-full bg-slate-400" />
-        </div>
-
         {/* 음식명 */}
         <p className="text-xs font-bold text-slate-800 truncate leading-snug pr-4">{item.name}</p>
 
