@@ -17,46 +17,28 @@ import type {
 } from '@/types'
 import { FRIDGE_CATEGORIES } from '@/types'
 
-// ─── Quick tag presets ────────────────────────────────────────────────────────
+// ─── 선반 위치 정의 (상단=냉동, 중단=냉장, 채소칸, 신선실=실온) ──────────────
 
-interface QuickTag {
-  emoji: string
-  name: string
-  defaultDays: number
-  location: FridgeLocation
-  category: FridgeCategory
-}
-
-const QUICK_TAGS: QuickTag[] = [
-  { emoji: '🥬', name: '김치',   defaultDays: 30, location: '냉장', category: '가공식품' },
-  { emoji: '🌿', name: '나물',   defaultDays: 3,  location: '냉장', category: '채소' },
-  { emoji: '🥘', name: '찌개',   defaultDays: 3,  location: '냉장', category: '가공식품' },
-  { emoji: '🥩', name: '고기',   defaultDays: 4,  location: '냉장', category: '육류' },
-  { emoji: '🥦', name: '야채',   defaultDays: 5,  location: '냉장', category: '채소' },
-  { emoji: '🥚', name: '달걀',   defaultDays: 14, location: '냉장', category: '유제품' },
-  { emoji: '🐟', name: '생선',   defaultDays: 2,  location: '냉동', category: '해산물' },
-  { emoji: '🧀', name: '유제품', defaultDays: 7,  location: '냉장', category: '유제품' },
-]
-
-// ─── 선반 위치 정의 (상단=냉동, 중단=냉장, 신선실=실온) ──────────────────────
-
-type ShelfId = '냉동' | '냉장' | '실온'
+type ShelfId = '냉동' | '냉장' | '채소칸' | '실온'
 
 const SHELF_LABEL: Record<ShelfId, string> = {
   냉동: '상단 선반 · 냉동',
   냉장: '중단 선반 · 냉장',
+  채소칸: '채소칸',
   실온: '신선실 · 실온 & 반찬',
 }
 
 const SHELF_ICON: Record<ShelfId, string> = {
   냉동: '❄️',
   냉장: '🥶',
+  채소칸: '🥬',
   실온: '🌿',
 }
 
 const SHELF_COLOR: Record<ShelfId, string> = {
   냉동: 'bg-sky-50/70',
   냉장: 'bg-blue-50/70',
+  채소칸: 'bg-emerald-50/70',
   실온: 'bg-green-50/60',
 }
 
@@ -134,6 +116,8 @@ interface ShelfItem {
   subLabel?: string
   type: 'item' | 'dish'
   currentShelf: ShelfId
+  quantity?: string
+  isPackaged?: boolean
 }
 
 // ─── DraggableFoodCard ────────────────────────────────────────────────────────
@@ -203,12 +187,19 @@ function DraggableFoodCard({ item, isDragDisabled, onDelete, onEdit }: Draggable
         {/* 음식명 */}
         <p className="text-xs font-bold text-slate-800 truncate leading-snug pr-4">{item.name}</p>
 
+        {/* 완제품 수량 뱃지 */}
+        {item.isPackaged && item.quantity && (
+          <span className="mt-0.5 inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700">
+            {item.quantity}개
+          </span>
+        )}
+
         {/* D-Day 배지 */}
         {ddLabel ? (
-          <span className={`mt-1 inline-flex text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${BADGE_COLOR[status]}`}>
+          <span className={`mt-0.5 inline-flex text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${BADGE_COLOR[status]}`}>
             {ddLabel}
           </span>
-        ) : item.subLabel ? (
+        ) : (!item.isPackaged && item.subLabel) ? (
           <p className="text-[10px] text-slate-400 mt-0.5 leading-none">{item.subLabel}</p>
         ) : null}
       </div>
@@ -385,7 +376,9 @@ function ItemFormModal({ initial, onClose, onSave }: ItemFormProps) {
     } finally { setSaving(false) }
   }
 
-  const locations: FridgeLocation[] = ['냉장', '냉동', '실온']
+  const locations: FridgeLocation[] = ['냉장', '냉동', '채소칸', '실온']
+
+  const qtyNum = parseInt(quantity || '1') || 1
 
   return (
     <div className="fixed inset-0 z-60 flex items-end justify-center">
@@ -418,8 +411,25 @@ function ItemFormModal({ initial, onClose, onSave }: ItemFormProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 block">수량</label>
-              <input value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="예: 2개, 300g"
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              {category === '완제품' ? (
+                <div className="flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-2">
+                  <button type="button"
+                    onClick={() => setQuantity(String(Math.max(1, qtyNum - 1)))}
+                    className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 font-bold text-base transition-colors">
+                    −
+                  </button>
+                  <span className="flex-1 text-center text-sm font-bold text-slate-800">{qtyNum}</span>
+                  <button type="button"
+                    onClick={() => setQuantity(String(qtyNum + 1))}
+                    className="w-7 h-7 rounded-full bg-brand-500 hover:bg-brand-600 flex items-center justify-center text-white font-bold text-base transition-colors">
+                    +
+                  </button>
+                  <span className="text-xs text-slate-400">개</span>
+                </div>
+              ) : (
+                <input value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="예: 300g, 1팩"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              )}
             </div>
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 block">유통기한</label>
@@ -442,7 +452,10 @@ function ItemFormModal({ initial, onClose, onSave }: ItemFormProps) {
             <label className="text-xs font-medium text-slate-500 mb-1 block">카테고리</label>
             <div className="flex flex-wrap gap-1.5">
               {FRIDGE_CATEGORIES.map(cat => (
-                <button key={cat} type="button" onClick={() => setCategory(cat)}
+                <button key={cat} type="button" onClick={() => {
+                  setCategory(cat)
+                  if (cat === '완제품' && !quantity) setQuantity('1')
+                }}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                     category === cat ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}>{cat}</button>
@@ -621,24 +634,28 @@ export default function FridgeTab({
     return da - db
   }
 
+  const mapItem = (shelf: ShelfId) => (i: typeof visibleItems[0]): ShelfItem => ({
+    id: i.id, name: i.name, expiryDate: i.expiry_date,
+    type: 'item' as const, currentShelf: shelf,
+    quantity: i.quantity, isPackaged: i.category === '완제품',
+  })
+
   const topShelf: ShelfItem[] = useMemo(() =>       // ❄️ 상단 = 냉동
-    visibleItems
-      .filter(i => i.location === '냉동')
-      .map(i => ({ id: i.id, name: i.name, expiryDate: i.expiry_date, type: 'item' as const, currentShelf: '냉동' as ShelfId }))
-      .sort(sortByExpiry),
+    visibleItems.filter(i => i.location === '냉동').map(mapItem('냉동')).sort(sortByExpiry),
   [visibleItems])
 
   const middleShelf: ShelfItem[] = useMemo(() =>    // 🥶 중단 = 냉장
-    visibleItems
-      .filter(i => i.location === '냉장')
-      .map(i => ({ id: i.id, name: i.name, expiryDate: i.expiry_date, type: 'item' as const, currentShelf: '냉장' as ShelfId }))
-      .sort(sortByExpiry),
+    visibleItems.filter(i => i.location === '냉장').map(mapItem('냉장')).sort(sortByExpiry),
+  [visibleItems])
+
+  const vegShelf: ShelfItem[] = useMemo(() =>       // 🥬 채소칸
+    visibleItems.filter(i => i.location === '채소칸').map(mapItem('채소칸')).sort(sortByExpiry),
   [visibleItems])
 
   const crisperShelf: ShelfItem[] = useMemo(() => { // 🌿 신선실 = 실온 + 반찬
     const roomTemp = visibleItems
       .filter(i => i.location === '실온')
-      .map(i => ({ id: i.id, name: i.name, expiryDate: i.expiry_date, type: 'item' as const, currentShelf: '실온' as ShelfId }))
+      .map(mapItem('실온'))
       .sort(sortByExpiry)
 
     const dishes = visibleDishes
@@ -680,8 +697,8 @@ export default function FridgeTab({
 
     if (newShelf === data.currentShelf) return // 같은 선반이면 무시
 
-    // 반찬은 실온(신선실) 드롭 불가 (반찬은 냉장/냉동만)
-    if (data.type === 'dish' && newShelf === '실온') return
+    // 반찬은 실온/채소칸 드롭 불가 (냉장/냉동만)
+    if (data.type === 'dish' && (newShelf === '실온' || newShelf === '채소칸')) return
 
     try {
       if (data.type === 'item') {
@@ -736,16 +753,6 @@ export default function FridgeTab({
     if (editingDish) await onUpdateDish(editingDish.id, data)
     else             await onAddDish(data)
     setEditingDish(null)
-  }
-
-  // ── 퀵 태그 ──────────────────────────────────────────────────────────────
-
-  const handleQuickTag = async (tag: QuickTag) => {
-    await onAddItem({
-      name: tag.name, quantity: '',
-      expiry_date: addDaysToToday(tag.defaultDays),
-      location: tag.location, category: tag.category, memo: '',
-    })
   }
 
   const handleQuickSubmit = async (e: React.FormEvent) => {
@@ -806,23 +813,6 @@ export default function FridgeTab({
           </button>
         </form>
 
-        {/* 퀵 태그 */}
-        <div className="flex gap-2 overflow-x-auto pb-0.5">
-          {QUICK_TAGS.map(tag => (
-            <button
-              key={tag.name}
-              onClick={() => handleQuickTag(tag)}
-              className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5
-                bg-slate-50 hover:bg-slate-100 active:scale-95
-                border border-slate-200 rounded-full
-                text-xs font-medium text-slate-700 transition-all duration-150"
-            >
-              <span>{tag.emoji}</span>
-              <span>{tag.name}</span>
-              <span className="text-[10px] text-slate-400">{tag.defaultDays}일</span>
-            </button>
-          ))}
-        </div>
       </div>
 
 
@@ -861,6 +851,17 @@ export default function FridgeTab({
             <DroppableShelf
               shelfId="냉장"
               items={middleShelf}
+              pendingDeleteIds={pendingDeleteIds}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+            />
+          </div>
+
+          {/* 채소칸 */}
+          <div className="border-b border-slate-200/50">
+            <DroppableShelf
+              shelfId="채소칸"
+              items={vegShelf}
               pendingDeleteIds={pendingDeleteIds}
               onDelete={handleDelete}
               onEdit={handleEdit}

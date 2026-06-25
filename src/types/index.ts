@@ -536,10 +536,10 @@ export interface UpdateDiaryRequest {
 //  FridgeItem (냉장고 식재료)
 // ─────────────────────────────────────────────
 
-export type FridgeLocation = '냉장' | '냉동' | '실온'
-export type FridgeCategory = '채소' | '육류' | '해산물' | '유제품' | '가공식품' | '기타'
+export type FridgeLocation = '냉장' | '냉동' | '채소칸' | '실온'
+export type FridgeCategory = '채소' | '육류' | '해산물' | '유제품' | '가공식품' | '완제품' | '기타'
 
-export const FRIDGE_CATEGORIES: FridgeCategory[] = ['채소', '육류', '해산물', '유제품', '가공식품', '기타']
+export const FRIDGE_CATEGORIES: FridgeCategory[] = ['채소', '육류', '해산물', '유제품', '가공식품', '완제품', '기타']
 
 export interface FridgeItem {
   id: string
