@@ -131,6 +131,7 @@ export default function DashboardClient() {
   const swipeDir    = useRef<number>(1)
   const touchStartX = useRef<number>(0)
   const touchStartY = useRef<number>(0)
+  const touchStartedOnScrollable = useRef<boolean>(false)
   const mainRef     = useRef<HTMLElement>(null)
   const activeTabRef = useRef<ActiveTab>('ledger')
 
@@ -149,8 +150,18 @@ export default function DashboardClient() {
     const onStart = (e: TouchEvent) => {
       touchStartX.current = e.touches[0].clientX
       touchStartY.current = e.touches[0].clientY
+      let el = e.target as HTMLElement | null
+      touchStartedOnScrollable.current = false
+      while (el && el !== mainRef.current) {
+        if (el.scrollWidth > el.clientWidth) {
+          touchStartedOnScrollable.current = true
+          break
+        }
+        el = el.parentElement
+      }
     }
     const onEnd = (e: TouchEvent) => {
+      if (touchStartedOnScrollable.current) return
       const dx = e.changedTouches[0].clientX - touchStartX.current
       const dy = e.changedTouches[0].clientY - touchStartY.current
       if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return
