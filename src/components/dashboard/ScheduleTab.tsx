@@ -183,7 +183,7 @@ function DDayBanner({ schedules }: { schedules: Schedule[] }) {
   if (ddayItems.length === 0) return null
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
       {ddayItems.map(item => {
         const c = COLOR_MAP[item.color] ?? COLOR_MAP.indigo
         return (
