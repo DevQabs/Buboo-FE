@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import type { User, Transaction } from '@/types'
+import type { Transaction } from '@/types'
 import { useCategories } from '@/hooks/useCategories'
 
 interface NaverPayCardProps {
-  users: User[]
+  currentUserID: string
   transactions?: Transaction[]
   onAdd: (data: {
     user_id: string
@@ -26,11 +26,10 @@ function openNaverPay() {
   document.body.removeChild(a)
 }
 
-export default function NaverPayCard({ users, transactions = [], onAdd }: NaverPayCardProps) {
+export default function NaverPayCard({ currentUserID, transactions = [], onAdd }: NaverPayCardProps) {
   const [amount, setAmount] = useState('')
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('')
-  const [userID, setUserID] = useState(users[0]?.id ?? '')
   const [loading, setLoading] = useState(false)
   const { expenseCategories } = useCategories()
 
@@ -59,7 +58,7 @@ export default function NaverPayCard({ users, transactions = [], onAdd }: NaverP
     setLoading(true)
     try {
       await onAdd({
-        user_id: userID,
+        user_id: currentUserID,
         type: 'expense',
         amount: num,
         category: activeCategory,
@@ -78,28 +77,6 @@ export default function NaverPayCard({ users, transactions = [], onAdd }: NaverP
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-      {/* Header */}
-      <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-        <span className="bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-full tracking-wide">
-          N Pay
-        </span>
-        <div className="flex gap-1">
-          {users.map(u => (
-            <button
-              key={u.id}
-              type="button"
-              onClick={() => setUserID(u.id)}
-              className={`w-6 h-6 rounded-full text-white text-[10px] font-bold transition-all ${
-                userID === u.id ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-40'
-              }`}
-              style={{ backgroundColor: u.avatar_color }}
-            >
-              {u.name[0]}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Amount */}
       <div className="px-5 pt-4 pb-2">
         <div className="flex items-baseline gap-1.5">

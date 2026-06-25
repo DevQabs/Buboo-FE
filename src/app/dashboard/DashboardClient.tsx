@@ -1235,7 +1235,7 @@ export default function DashboardClient() {
           >
             {/* 네이버페이 결제 카드 */}
             <NaverPayCard
-              users={users}
+              currentUserID={session?.user?.backendUser?.id ?? users[0]?.id ?? ''}
               transactions={transactions}
               onAdd={async (data) => { await handleAddTransaction(data) }}
             />
