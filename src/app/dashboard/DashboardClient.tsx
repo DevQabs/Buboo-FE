@@ -10,23 +10,34 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import dynamic from 'next/dynamic'
 import Lottie from 'lottie-react'
 import loadingAnimation from '@/assets/loading.json'
 import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline'
+
+// ─── 가계부 탭 (초기 탭) — 정적 import ────────────────────────────────────────
 import SummaryCard from '@/components/dashboard/SummaryCard'
-import StockPortfolioCard from '@/components/dashboard/StockPortfolioCard'
-import AddStockModal from '@/components/dashboard/AddStockModal'
-import EditStockModal from '@/components/dashboard/EditStockModal'
-import BuySellModal from '@/components/dashboard/BuySellModal'
-import TradeHistoryModal from '@/components/dashboard/TradeHistoryModal'
-import OtherAssetCard from '@/components/dashboard/OtherAssetCard'
-import NetWorthSummaryCard from '@/components/dashboard/NetWorthSummaryCard'
-import FixedExpenseCard from '@/components/dashboard/FixedExpenseCard'
-import DividendCard from '@/components/dashboard/DividendCard'
 import NaverPayCard from '@/components/dashboard/NaverPayCard'
 import CalendarView from '@/components/dashboard/CalendarView'
-import ScheduleTab from '@/components/dashboard/ScheduleTab'
-import FridgeTab from '@/components/dashboard/FridgeTab'
+
+// ─── 자산 현황 탭 — 첫 방문 시 로드 ────────────────────────────────────────────
+const NetWorthSummaryCard = dynamic(() => import('@/components/dashboard/NetWorthSummaryCard'), { ssr: false })
+const StockPortfolioCard  = dynamic(() => import('@/components/dashboard/StockPortfolioCard'),  { ssr: false })
+const OtherAssetCard      = dynamic(() => import('@/components/dashboard/OtherAssetCard'),      { ssr: false })
+
+// ─── 가계부 탭 서브 카드 — 첫 방문 시 로드 ──────────────────────────────────────
+const FixedExpenseCard = dynamic(() => import('@/components/dashboard/FixedExpenseCard'), { ssr: false })
+const DividendCard     = dynamic(() => import('@/components/dashboard/DividendCard'),     { ssr: false })
+
+// ─── 라이프 / 냉장고 탭 — 첫 방문 시 로드 ──────────────────────────────────────
+const ScheduleTab = dynamic(() => import('@/components/dashboard/ScheduleTab'), { ssr: false })
+const FridgeTab   = dynamic(() => import('@/components/dashboard/FridgeTab'),   { ssr: false })
+
+// ─── 모달 — 열릴 때만 로드 ──────────────────────────────────────────────────────
+const AddStockModal     = dynamic(() => import('@/components/dashboard/AddStockModal'),     { ssr: false })
+const EditStockModal    = dynamic(() => import('@/components/dashboard/EditStockModal'),    { ssr: false })
+const BuySellModal      = dynamic(() => import('@/components/dashboard/BuySellModal'),      { ssr: false })
+const TradeHistoryModal = dynamic(() => import('@/components/dashboard/TradeHistoryModal'), { ssr: false })
 import type {
   User,
   Couple,
@@ -103,6 +114,21 @@ function buildDateRange(year: number, month: number, startDay: number): { startD
   }
 }
 
+// ─── 탭 로딩 스켈레톤 ─────────────────────────────────────────────────────────
+function TabSkeleton() {
+  return (
+    <div className="space-y-3 pt-1">
+      {[80, 140, 100].map((h, i) => (
+        <div
+          key={i}
+          className="bg-white rounded-3xl animate-pulse"
+          style={{ height: h }}
+        />
+      ))}
+    </div>
+  )
+}
+
 // ─── component ────────────────────────────────────────────────────────────────
 
 export default function DashboardClient() {
@@ -124,7 +150,9 @@ export default function DashboardClient() {
   const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([])
   const [sideDishes, setSideDishes]   = useState<SideDish[]>([])
   const [loading, setLoading]         = useState(true)
+  const [tabLoading, setTabLoading]   = useState<ActiveTab | null>(null)
   const [error, setError]             = useState<string | null>(null)
+  const loadedTabs = useRef<Set<ActiveTab>>(new Set<ActiveTab>())
 
   // ── UI state ──
   const [activeTab, setActiveTab]     = useState<ActiveTab>('ledger')
@@ -245,29 +273,23 @@ export default function DashboardClient() {
   }, [])
 
   // ── initial load ─────────────────────────────────────────────────────────
-  // Step 1: fetch couple first (tiny JSON) to get ledger_start_day from DB.
-  // Step 2: fetch everything else in parallel using the correct startDay.
+  // Step 1: couple (tiny JSON) → ledger_start_day 확정
+  // Step 2: 가계부 탭 + users 만 (8개) — wealth/life/fridge 탭은 첫 방문 시 로드
   const fetchAll = useCallback(async () => {
     try {
       const y = now.getFullYear()
       const m = now.getMonth() + 1
 
-      // ── Step 1: couple (determines period boundaries) ──
+      // ── Step 1: couple ──
       const coupleData = await apiFetch<Couple>('/api/couple')
       const dbStartDay = (coupleData?.ledger_start_day >= 1 && coupleData?.ledger_start_day <= 28)
         ? coupleData.ledger_start_day
         : 1
       setCouple(coupleData)
       setStartDay(dbStartDay)
-
-      // calendarYear/calendarMonth always = current calendar month (for the grid)
       setCalendarYear(y)
       setCalendarMonth(m)
-      fetchCalendarTransactions(y, m)
 
-      // summaryYear/summaryMonth = period that contains today.
-      // If today >= startDay (and startDay > 1), today is in the NEXT month's period.
-      // e.g. startDay=25, today=May 31 → period is "June" (May 25–Jun 25).
       const todayDate = now.getDate()
       const periodMonth = (dbStartDay > 1 && todayDate >= dbStartDay) ? m + 1 : m
       const periodYear  = periodMonth > 12 ? y + 1 : y
@@ -277,22 +299,15 @@ export default function DashboardClient() {
 
       const { startDate, endDate } = buildDateRange(periodYear, adjMonth, dbStartDay)
 
-      // ── Step 2: everything else in parallel ──
-      const [usersData, txData, portfolioData, summaryData, assetsData, feData, feSummaryData, divData, calData, schData, diarData, stockTxData, fridgeData, dishData] = await Promise.all([
+      // ── Step 2: 가계부 탭 + users (8개 병렬) ──
+      const [usersData, txData, summaryData, feData, feSummaryData, divData, calData] = await Promise.all([
         apiFetch<User[]>('/api/users'),
         apiFetch<Transaction[]>(`/api/transactions?year=${periodYear}&month=${adjMonth}`),
-        apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
         apiFetch<MonthlySummary>(`/api/summary?start_date=${startDate}&end_date=${endDate}`),
-        apiFetch<OtherAsset[]>('/api/assets'),
         apiFetch<FixedExpense[]>('/api/fixed-expenses'),
         apiFetch<FixedExpenseSummary>(`/api/fixed-expenses/summary?year=${periodYear}&month=${adjMonth}`),
         apiFetch<DividendYearlySummary>(`/api/dividends/summary?year=${y}&month=${m}`),
         apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${y}&month=${m}`),
-        apiFetch<Schedule[]>('/api/schedules'),
-        apiFetch<DiaryEntry[]>('/api/diaries'),
-        apiFetch<StockTransaction[]>('/api/stocks/transactions'),
-        apiFetch<FridgeItem[]>('/api/fridge/items'),
-        apiFetch<SideDish[]>('/api/fridge/side-dishes'),
       ])
 
       const AVATAR_COLORS: Record<string, string> = { husband: '#0F4C81', wife: '#059669' }
@@ -302,27 +317,17 @@ export default function DashboardClient() {
           avatar_color: AVATAR_COLORS[u.role] ?? u.avatar_color,
         }))
       )
-      setTransactions(Array.isArray(txData) ? txData : [])
-
-      if (Array.isArray(portfolioData)) {
-        setPortfolio(portfolioData)
-        setPortfolioSummary(null)
-      } else {
-        setPortfolio(portfolioData?.items ?? [])
-        setPortfolioSummary(portfolioData?.summary ?? null)
-      }
-
+      const txList = Array.isArray(txData) ? txData : []
+      setTransactions(txList)
+      setCalendarTransactions(txList) // 초기엔 당월 데이터로 대체
       setSummary(summaryData)
-      setOtherAssets(Array.isArray(assetsData) ? assetsData : [])
       setFixedExpenses(Array.isArray(feData) ? feData : [])
       setFeSummary(feSummaryData)
       setDivSummary(divData)
       setCalendarData(calData)
-      setSchedules(Array.isArray(schData) ? schData : [])
-      setDiaries(Array.isArray(diarData) ? diarData : [])
-      setTradeTransactions(Array.isArray(stockTxData) ? stockTxData : [])
-      setFridgeItems(Array.isArray(fridgeData) ? fridgeData : [])
-      setSideDishes(Array.isArray(dishData) ? dishData : [])
+
+      // 가계부 탭은 이미 로드됨
+      loadedTabs.current.add('ledger')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error')
     } finally {
@@ -332,10 +337,52 @@ export default function DashboardClient() {
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
-  // ── tab-switch auto-refresh ───────────────────────────────────────────────
-  const tabMounted = useRef(false)
+  // ── 탭 최초 진입 시 데이터 로드 ──────────────────────────────────────────────
+  const fetchTabData = useCallback(async (tab: ActiveTab) => {
+    setTabLoading(tab)
+    try {
+      if (tab === 'wealth') {
+        const [port, assets, stockTx] = await Promise.all([
+          apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
+          apiFetch<OtherAsset[]>('/api/assets'),
+          apiFetch<StockTransaction[]>('/api/stocks/transactions'),
+        ])
+        if (Array.isArray(port)) { setPortfolio(port); setPortfolioSummary(null) }
+        else { setPortfolio(port?.items ?? []); setPortfolioSummary(port?.summary ?? null) }
+        setOtherAssets(Array.isArray(assets) ? assets : [])
+        setTradeTransactions(Array.isArray(stockTx) ? stockTx : [])
+      } else if (tab === 'life') {
+        const [sch, dia] = await Promise.all([
+          apiFetch<Schedule[]>('/api/schedules'),
+          apiFetch<DiaryEntry[]>('/api/diaries'),
+        ])
+        setSchedules(Array.isArray(sch) ? sch : [])
+        setDiaries(Array.isArray(dia) ? dia : [])
+      } else if (tab === 'fridge') {
+        const [items, dishes] = await Promise.all([
+          apiFetch<FridgeItem[]>('/api/fridge/items'),
+          apiFetch<SideDish[]>('/api/fridge/side-dishes'),
+        ])
+        setFridgeItems(Array.isArray(items) ? items : [])
+        setSideDishes(Array.isArray(dishes) ? dishes : [])
+      }
+    } catch {
+      // 탭 데이터 실패 → 빈 상태 유지
+    } finally {
+      setTabLoading(null)
+    }
+  }, [])
+
+  // ── 탭 전환: 첫 방문이면 fetch, 재방문이면 refresh ─���─────────────────────────
   useEffect(() => {
-    if (!tabMounted.current) { tabMounted.current = true; return }
+    if (loading) return // 초기 로딩 완료 전 무시
+    if (!loadedTabs.current.has(activeTab)) {
+      // 첫 방문 → 데이터 로드 후 등록
+      loadedTabs.current.add(activeTab)
+      fetchTabData(activeTab)
+      return
+    }
+    // 재방문 → 가벼운 refresh
     if (activeTab === 'fridge') {
       Promise.all([
         apiFetch<FridgeItem[]>('/api/fridge/items'),
@@ -378,7 +425,7 @@ export default function DashboardClient() {
         setTradeTransactions(Array.isArray(stockTx) ? stockTx : [])
       }).catch(() => {})
     }
-  }, [activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab, loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── period change handler ─────────────────────────────────────────────────
   const handlePeriodChange = useCallback(
@@ -958,6 +1005,7 @@ export default function DashboardClient() {
             initial="enter" animate="center" exit="exit"
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
+            {tabLoading === 'wealth' ? <TabSkeleton /> : <>
             {/* 통합 순자산 요약 */}
             <NetWorthSummaryCard
               netWorth={netWorth}
@@ -986,6 +1034,7 @@ export default function DashboardClient() {
               onDelete={handleDeleteAsset}
               onCreateLoanExpense={handleCreateLoanExpense}
             />
+            </>}
           </motion.div>
         )}
 
@@ -1091,17 +1140,19 @@ export default function DashboardClient() {
             initial="enter" animate="center" exit="exit"
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            <ScheduleTab
-              schedules={schedules}
-              diaries={diaries}
-              users={users}
-              onAddSchedule={handleAddSchedule}
-              onEditSchedule={handleEditSchedule}
-              onDeleteSchedule={handleDeleteSchedule}
-              onAddDiary={handleAddDiary}
-              onDiaryEdited={handleDiaryEdited}
-              onDeleteDiary={handleDeleteDiary}
-            />
+            {tabLoading === 'life' ? <TabSkeleton /> : (
+              <ScheduleTab
+                schedules={schedules}
+                diaries={diaries}
+                users={users}
+                onAddSchedule={handleAddSchedule}
+                onEditSchedule={handleEditSchedule}
+                onDeleteSchedule={handleDeleteSchedule}
+                onAddDiary={handleAddDiary}
+                onDiaryEdited={handleDiaryEdited}
+                onDeleteDiary={handleDeleteDiary}
+              />
+            )}
           </motion.div>
         )}
 
@@ -1112,16 +1163,18 @@ export default function DashboardClient() {
             initial="enter" animate="center" exit="exit"
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            <FridgeTab
-              fridgeItems={fridgeItems}
-              sideDishes={sideDishes}
-              onAddItem={handleAddFridgeItem}
-              onUpdateItem={handleUpdateFridgeItem}
-              onDeleteItem={handleDeleteFridgeItem}
-              onAddDish={handleAddSideDish}
-              onUpdateDish={handleUpdateSideDish}
-              onDeleteDish={handleDeleteSideDish}
-            />
+            {tabLoading === 'fridge' ? <TabSkeleton /> : (
+              <FridgeTab
+                fridgeItems={fridgeItems}
+                sideDishes={sideDishes}
+                onAddItem={handleAddFridgeItem}
+                onUpdateItem={handleUpdateFridgeItem}
+                onDeleteItem={handleDeleteFridgeItem}
+                onAddDish={handleAddSideDish}
+                onUpdateDish={handleUpdateSideDish}
+                onDeleteDish={handleDeleteSideDish}
+              />
+            )}
           </motion.div>
         )}
         </AnimatePresence>
