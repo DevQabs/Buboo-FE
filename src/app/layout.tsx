@@ -27,6 +27,8 @@ export const viewport: Viewport = {
   themeColor: '#0F4C81',
 }
 
+import { SessionProvider } from 'next-auth/react'
+
 export default function RootLayout({
   children,
 }: {
@@ -35,7 +37,9 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
-        {children}
+        <SessionProvider>
+          {children}
+        </SessionProvider>
       </body>
     </html>
   )

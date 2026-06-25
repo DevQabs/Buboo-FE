@@ -9,11 +9,12 @@
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useSession, signOut } from 'next-auth/react'
 import { AnimatePresence, motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import Lottie from 'lottie-react'
 import loadingAnimation from '@/assets/loading.json'
-import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline'
+import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, ArchiveBoxIcon, UserPlusIcon, ArrowRightOnRectangleIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 // ─── 가계부 탭 (초기 탭) — 정적 import ────────────────────────────────────────
 import SummaryCard from '@/components/dashboard/SummaryCard'
@@ -95,8 +96,19 @@ const tabVariants = {
 
 // ─── fetch helpers ────────────────────────────────────────────────────────────
 
-async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { cache: 'no-store' })
+// Module-level token set by DashboardClient once session is ready
+let _accessToken = ''
+
+async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    cache: options ? undefined : 'no-store',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${_accessToken}`,
+      ...options?.headers,
+    },
+  })
   if (!res.ok) throw new Error(`API ${path} → ${res.status}`)
   return res.json() as Promise<T>
 }
@@ -139,6 +151,13 @@ function TabSkeleton() {
 // ─── component ────────────────────────────────────────────────────────────────
 
 export default function DashboardClient() {
+  const { data: session, status } = useSession()
+
+  // Set token synchronously so apiFetch picks it up before any fetch runs
+  if (session?.user?.accessToken) {
+    _accessToken = session.user.accessToken
+  }
+
   // ── core data ──
   const [users, setUsers]             = useState<User[]>([])
   const [couple, setCouple]           = useState<Couple | null>(null)
@@ -163,6 +182,14 @@ export default function DashboardClient() {
 
   // ── UI state ──
   const [activeTab, setActiveTab]     = useState<ActiveTab>('ledger')
+
+  // ── profile menu ──
+  const [showMenu, setShowMenu]       = useState(false)
+  const [inviteUrl, setInviteUrl]     = useState<string | null>(null)
+  const [inviteLoading, setInviteLoading] = useState(false)
+  const [copied, setCopied]           = useState(false)
+  const menuRef                       = useRef<HTMLDivElement>(null)
+
   const swipeDir    = useRef<number>(1)
   const touchStartX = useRef<number>(0)
   const touchStartY = useRef<number>(0)
@@ -174,6 +201,38 @@ export default function DashboardClient() {
     swipeDir.current = dir
     setActiveTab(tab)
   }, [])
+
+  const generateInvite = useCallback(async () => {
+    if (inviteLoading) return
+    setInviteLoading(true)
+    try {
+      const res = await apiFetch<{ code: string }>('/api/auth/invite', { method: 'POST' })
+      const origin = window.location.origin
+      setInviteUrl(`${origin}/invite/${res.code}`)
+    } catch {
+      // ignore
+    } finally {
+      setInviteLoading(false)
+    }
+  }, [inviteLoading])
+
+  const copyInvite = useCallback(() => {
+    if (!inviteUrl) return
+    navigator.clipboard.writeText(inviteUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }, [inviteUrl])
+
+  // close menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+    if (showMenu) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showMenu])
 
   useEffect(() => {
     activeTabRef.current = activeTab
@@ -188,7 +247,11 @@ export default function DashboardClient() {
       let el = e.target as HTMLElement | null
       touchStartedOnScrollable.current = false
       while (el && el !== mainRef.current) {
-        if (el.scrollWidth > el.clientWidth) {
+        // computed style 기반으로 실제 가로 스크롤 가능한 요소만 차단.
+        // scrollWidth > clientWidth 만으로는 overflow:visible 인 일반 요소도
+        // 잡혀서 탭 스와이프가 막히는 문제가 있었음.
+        const ox = window.getComputedStyle(el).overflowX
+        if ((ox === 'auto' || ox === 'scroll') && el.scrollWidth > el.clientWidth) {
           touchStartedOnScrollable.current = true
           break
         }
@@ -342,7 +405,9 @@ export default function DashboardClient() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { fetchAll() }, [fetchAll])
+  useEffect(() => {
+    if (status === 'authenticated') fetchAll()
+  }, [fetchAll, status])
 
   // ── Phase 2: UI 표시 직후 나머지 탭 데이터 백그라운드 프리패치 ─────────────────
   // loading=false 가 되는 순간 wealth/life/fridge 를 조용히 병렬 로드.
@@ -510,7 +575,7 @@ export default function DashboardClient() {
       // Fire-and-forget: UI responds immediately, DB update runs in background.
       fetch(`${API_BASE}/api/couple`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
         body: JSON.stringify({
           monthly_budget: couple?.monthly_budget ?? 0,
           ledger_start_day: sd,
@@ -593,8 +658,8 @@ export default function DashboardClient() {
     if (data.type === 'saving') {
       const res = await fetch(`${API_BASE}/api/transactions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, couple_id: 'couple-001', date: ts }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
+        body: JSON.stringify({ ...data, date: ts }),
       })
       if (!res.ok) {
         const body = await res.text()
@@ -611,7 +676,7 @@ export default function DashboardClient() {
 
     const optimistic: Transaction = {
       id: `temp-${Date.now()}`,
-      couple_id: 'couple-001',
+      couple_id: session?.user?.backendUser?.couple_id ?? '',
       user_id: data.user_id,
       type: data.type,
       amount: data.amount,
@@ -644,8 +709,8 @@ export default function DashboardClient() {
     try {
       const created: Transaction = await fetch(`${API_BASE}/api/transactions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, couple_id: 'couple-001', date: ts }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
+        body: JSON.stringify({ ...data, date: ts }),
       }).then(r => r.json())
       setTransactions(prev => prev.map(tx => tx.id === optimistic.id ? created : tx))
       await Promise.all([
@@ -663,7 +728,7 @@ export default function DashboardClient() {
     if (!existing) return
     const res = await fetch(`${API_BASE}/api/transactions/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify({ ...existing, ...data }),
     })
     if (!res.ok) throw new Error(`거래 수정 실패: ${res.status}`)
@@ -698,9 +763,9 @@ export default function DashboardClient() {
     const dateISO = `${payload.date}T12:00:00+09:00`
     const res = await fetch(`${API_BASE}/api/transactions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify({
-        couple_id: 'couple-001',
+        
         user_id: payload.user_id,
         type: payload.type,
         amount: payload.amount,
@@ -730,8 +795,8 @@ export default function DashboardClient() {
   const handleAddStock = async (data: Parameters<React.ComponentProps<typeof AddStockModal>['onAdd']>[0]) => {
     const res = await fetch(`${API_BASE}/api/stocks`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, couple_id: 'couple-001' }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
+      body: JSON.stringify({ ...data }),
     })
     if (!res.ok) throw new Error(`주식 추가 실패: ${res.status}`)
     await refetchPortfolio()
@@ -743,7 +808,7 @@ export default function DashboardClient() {
   }) => {
     const res = await fetch(`${API_BASE}/api/stocks/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error(`주식 수정 실패: ${res.status}`)
@@ -757,7 +822,7 @@ export default function DashboardClient() {
     if (!buySellTarget) return
     const res = await fetch(`${API_BASE}/api/stocks/${buySellTarget.asset.id}/${mode}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error(`${mode === 'buy' ? '매수' : '매도'} 실패: ${res.status}`)
@@ -775,8 +840,8 @@ export default function DashboardClient() {
   const handleAddAsset = async (data: CreateOtherAssetRequest) => {
     const res = await fetch(`${API_BASE}/api/assets`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, couple_id: 'couple-001' }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
+      body: JSON.stringify({ ...data }),
     })
     if (!res.ok) throw new Error(`자산 추가 실패: ${res.status}`)
     await refetchAssets()
@@ -789,7 +854,7 @@ export default function DashboardClient() {
   const handleEditAsset = async (id: string, data: UpdateOtherAssetRequest) => {
     const res = await fetch(`${API_BASE}/api/assets/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error(`자산 수정 실패: ${res.status}`)
@@ -813,8 +878,8 @@ export default function DashboardClient() {
   const handleAddFixedExpense = async (data: CreateFixedExpenseRequest) => {
     const res = await fetch(`${API_BASE}/api/fixed-expenses`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, couple_id: 'couple-001' }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
+      body: JSON.stringify({ ...data }),
     })
     if (!res.ok) {
       const body = await res.json().catch(() => null)
@@ -826,7 +891,7 @@ export default function DashboardClient() {
   const handleEditFixedExpense = async (id: string, data: UpdateFixedExpenseRequest) => {
     const res = await fetch(`${API_BASE}/api/fixed-expenses/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error(`고정비 수정 실패: ${res.status}`)
@@ -843,7 +908,7 @@ export default function DashboardClient() {
   const handleUpdateBudget = useCallback(async (amount: number) => {
     const res = await fetch(`${API_BASE}/api/couple`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       // Always include ledger_start_day so the backend doesn't reset it
       body: JSON.stringify({ monthly_budget: amount, ledger_start_day: startDay }),
     })
@@ -861,12 +926,12 @@ export default function DashboardClient() {
   const handleAddDividend = async (data: CreateDividendRequest) => {
     const body = {
       ...data,
-      couple_id: 'couple-001',
+      
       payment_date: `${data.payment_date}T00:00:00Z`,
     }
     const res = await fetch(`${API_BASE}/api/dividends`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(body),
     })
     if (!res.ok) throw new Error(`배당 등록 실패: ${res.status}`)
@@ -887,7 +952,7 @@ export default function DashboardClient() {
   const handleAddSchedule = async (req: CreateScheduleRequest) => {
     const res = await fetch(`${API_BASE}/api/schedules`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(req),
     })
     if (!res.ok) throw new Error(`일정 저장 실패: ${res.status}`)
@@ -898,7 +963,7 @@ export default function DashboardClient() {
   const handleEditSchedule = async (id: string, req: UpdateScheduleRequest) => {
     const res = await fetch(`${API_BASE}/api/schedules/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(req),
     })
     if (!res.ok) throw new Error(`일정 수정 실패: ${res.status}`)
@@ -916,7 +981,7 @@ export default function DashboardClient() {
   const handleAddDiary = async (req: CreateDiaryRequest, photos: File[]) => {
     const res = await fetch(`${API_BASE}/api/diaries`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(req),
     })
     if (!res.ok) throw new Error(`일기 저장 실패: ${res.status}`)
@@ -956,7 +1021,7 @@ export default function DashboardClient() {
   const handleAddFridgeItem = async (data: CreateFridgeItemRequest) => {
     const res = await fetch(`${API_BASE}/api/fridge/items`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error(`식재료 추가 실패: ${res.status}`)
@@ -966,7 +1031,7 @@ export default function DashboardClient() {
   const handleUpdateFridgeItem = async (id: string, data: UpdateFridgeItemRequest) => {
     const res = await fetch(`${API_BASE}/api/fridge/items/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error(`식재료 수정 실패: ${res.status}`)
@@ -982,7 +1047,7 @@ export default function DashboardClient() {
   const handleAddSideDish = async (data: CreateSideDishRequest) => {
     const res = await fetch(`${API_BASE}/api/fridge/side-dishes`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error(`반찬 추가 실패: ${res.status}`)
@@ -992,7 +1057,7 @@ export default function DashboardClient() {
   const handleUpdateSideDish = async (id: string, data: UpdateSideDishRequest) => {
     const res = await fetch(`${API_BASE}/api/fridge/side-dishes/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error(`반찬 수정 실패: ${res.status}`)
@@ -1049,17 +1114,67 @@ export default function DashboardClient() {
             </div>
           </div>
 
-          <div className="flex -space-x-2">
-            {(users ?? []).map(u => (
-              <div
-                key={u.id}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-white shadow-sm"
-                style={{ backgroundColor: u.avatar_color }}
-                title={u.name}
-              >
-                {u.name[0]}
+          {/* Avatar group + dropdown menu */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setShowMenu(v => !v)}
+              className="flex -space-x-2 focus:outline-none"
+            >
+              {(users ?? []).map(u => (
+                <div
+                  key={u.id}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-white shadow-sm"
+                  style={{ backgroundColor: u.avatar_color }}
+                  title={u.name}
+                >
+                  {u.name[0]}
+                </div>
+              ))}
+            </button>
+
+            {showMenu && (
+              <div className="absolute right-0 top-10 w-64 bg-white rounded-2xl shadow-lg border border-slate-100 py-1.5 z-60">
+                {/* invite section */}
+                {!inviteUrl ? (
+                  <button
+                    onClick={generateInvite}
+                    disabled={inviteLoading}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    <UserPlusIcon className="w-4 h-4 text-brand-500" />
+                    {inviteLoading ? '생성 중...' : '파트너 초대하기'}
+                  </button>
+                ) : (
+                  <div className="px-4 py-3 space-y-2">
+                    <p className="text-xs font-medium text-slate-500">초대 링크 (7일 유효)</p>
+                    <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2">
+                      <span className="text-xs text-slate-600 flex-1 truncate">{inviteUrl}</span>
+                      <button onClick={copyInvite} className="shrink-0 text-brand-500">
+                        {copied
+                          ? <CheckIcon className="w-4 h-4 text-emerald-500" />
+                          : <ClipboardDocumentIcon className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setInviteUrl(null)}
+                      className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                    >
+                      <XMarkIcon className="w-3 h-3" /> 닫기
+                    </button>
+                  </div>
+                )}
+
+                <div className="border-t border-slate-100 mt-1 pt-1">
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-500 hover:bg-rose-50 transition-colors"
+                  >
+                    <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                    로그아웃
+                  </button>
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </header>

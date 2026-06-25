@@ -25,8 +25,10 @@ export interface SavingLink {
 
 export interface User {
   id: string
+  couple_id: string
   name: string
   email: string
+  google_sub?: string
   role: UserRole
   avatar_color: string
   created_at: string

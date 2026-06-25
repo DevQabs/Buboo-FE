@@ -118,6 +118,7 @@ interface ShelfItem {
   currentShelf: ShelfId
   quantity?: string
   isPackaged?: boolean
+  createdAt?: string   // 등록일 표시용
 }
 
 // ─── DraggableFoodCard ────────────────────────────────────────────────────────
@@ -202,6 +203,13 @@ function DraggableFoodCard({ item, isDragDisabled, onDelete, onEdit }: Draggable
         ) : (!item.isPackaged && item.subLabel) ? (
           <p className="text-[10px] text-slate-400 mt-0.5 leading-none">{item.subLabel}</p>
         ) : null}
+
+        {/* 등록일 */}
+        {item.createdAt && (
+          <p className="text-[9px] text-slate-400 mt-1 leading-none">
+            {item.createdAt.slice(5, 10).replace('-', '/')} 등록
+          </p>
+        )}
       </div>
 
       {/* 항상 보이는 × 삭제 버튼 */}
@@ -638,6 +646,7 @@ export default function FridgeTab({
     id: i.id, name: i.name, expiryDate: i.expiry_date,
     type: 'item' as const, currentShelf: shelf,
     quantity: i.quantity, isPackaged: i.category === '완제품',
+    createdAt: i.created_at,
   })
 
   const topShelf: ShelfItem[] = useMemo(() =>       // ❄️ 상단 = 냉동
@@ -666,6 +675,7 @@ export default function FridgeTab({
         subLabel: daysSince(d.made_at) === 0 ? '오늘 만든' : `${daysSince(d.made_at)}일 전`,
         type: 'dish' as const,
         currentShelf: '실온' as ShelfId,
+        createdAt: d.created_at,
       }))
       .sort(sortByExpiry)
 

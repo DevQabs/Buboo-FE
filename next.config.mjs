@@ -7,12 +7,19 @@ const nextConfig = {
   // 개발: API_INTERNAL_URL 미설정 → localhost:8090
   // 프로덕션: API_INTERNAL_URL=http://<backend-private-url>:8090
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.API_INTERNAL_URL ?? 'http://localhost:8090'}/api/:path*`,
-      },
-    ]
+    return {
+      // afterFiles: checked AFTER internal Next.js routes (pages, API routes)
+      // so /api/auth/[...nextauth] is served by Next.js before this rewrite applies
+      beforeFiles: [],
+      afterFiles: [
+        {
+          // Proxy /api/* to Go backend, but NOT /api/auth/* (handled by NextAuth)
+          source: '/api/((?!auth(?:/|$)).*)',
+          destination: `${process.env.API_INTERNAL_URL ?? 'http://localhost:8090'}/api/$1`,
+        },
+      ],
+      fallback: [],
+    }
   },
 }
 
