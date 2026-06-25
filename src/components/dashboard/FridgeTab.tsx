@@ -188,13 +188,6 @@ function DraggableFoodCard({ item, isDragDisabled, onDelete, onEdit }: Draggable
         {/* 음식명 */}
         <p className="text-xs font-bold text-slate-800 truncate leading-snug pr-4">{item.name}</p>
 
-        {/* 수량 뱃지 */}
-        {item.quantity && (
-          <span className="mt-0.5 inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700">
-            {item.isPackaged ? `${item.quantity}개` : item.quantity}
-          </span>
-        )}
-
         {/* D-Day 배지 */}
         {ddLabel ? (
           <span className={`mt-0.5 inline-flex text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${BADGE_COLOR[status]}`}>
@@ -204,12 +197,17 @@ function DraggableFoodCard({ item, isDragDisabled, onDelete, onEdit }: Draggable
           <p className="text-[10px] text-slate-400 mt-0.5 leading-none">{item.subLabel}</p>
         ) : null}
 
-        {/* 등록일 */}
-        {item.createdAt && (
-          <p className="text-[9px] text-slate-400 mt-1 leading-none">
-            {item.createdAt.slice(5, 10).replace('-', '/')} 등록
+        {/* 하단: 수량(좌) + 등록일(우) */}
+        <div className="flex items-end justify-between mt-1.5 gap-1">
+          <p className="text-[10px] text-slate-500 leading-none truncate">
+            {item.quantity ? (item.isPackaged ? `${item.quantity}개` : item.quantity) : ''}
           </p>
-        )}
+          {item.createdAt && (
+            <p className="text-[9px] text-slate-400 leading-none shrink-0">
+              {item.createdAt.slice(5, 10).replace('-', '/')}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* 항상 보이는 × 삭제 버튼 */}
