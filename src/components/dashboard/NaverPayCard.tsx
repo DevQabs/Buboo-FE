@@ -77,26 +77,18 @@ export default function NaverPayCard({ users, transactions = [], onAdd }: NaverP
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between"
-        style={{ background: 'linear-gradient(135deg, #03c75a 0%, #018a3c 100%)' }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-6 rounded bg-white/20 grid grid-cols-2 gap-0.5 p-1">
-            <div className="bg-white/50 rounded-sm" />
-            <div className="bg-white/50 rounded-sm" />
-            <div className="bg-white/50 rounded-sm" />
-            <div className="bg-white/50 rounded-sm" />
-          </div>
-          <span className="text-sm font-bold text-white tracking-wide">Naver Pay</span>
-        </div>
+      <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <span className="bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-full tracking-wide">
+          N Pay
+        </span>
         <div className="flex gap-1">
           {users.map(u => (
             <button
               key={u.id}
               type="button"
               onClick={() => setUserID(u.id)}
-              className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${
-                userID === u.id ? 'ring-2 ring-offset-1 ring-white/60 scale-110' : 'opacity-50'
+              className={`w-6 h-6 rounded-full text-white text-[10px] font-bold transition-all ${
+                userID === u.id ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-40'
               }`}
               style={{ backgroundColor: u.avatar_color }}
             >
@@ -106,59 +98,57 @@ export default function NaverPayCard({ users, transactions = [], onAdd }: NaverP
         </div>
       </div>
 
-      {/* Form */}
-      <div className="px-4 py-3 space-y-3">
-        {/* Amount + Title row */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="금액"
-              value={amount}
-              onChange={handleAmountChange}
-              className="w-full px-3 py-2.5 pr-6 rounded-xl border border-slate-200 text-base font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder:text-slate-300"
-            />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">원</span>
-          </div>
+      {/* Amount */}
+      <div className="px-5 pt-4 pb-2">
+        <div className="flex items-baseline gap-1.5">
           <input
             type="text"
-            placeholder="어디서?"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            className="flex-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder:text-slate-300"
+            inputMode="numeric"
+            placeholder="0"
+            value={amount}
+            onChange={handleAmountChange}
+            className="flex-1 min-w-0 text-3xl font-black tabular-nums text-slate-900 placeholder:text-slate-200 focus:outline-none bg-transparent text-right"
           />
+          <span className="text-base font-semibold text-slate-400 shrink-0">원</span>
         </div>
-
-        {/* Category chips */}
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
-          {sortedCategories.map(cat => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setCategory(cat)}
-              className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                activeCategory === cat
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Submit */}
-        <button
-          type="button"
-          disabled={!amount || loading}
-          onClick={handleSubmit}
-          className="w-full py-3 rounded-xl font-bold text-sm text-white active:scale-[0.98] transition-all disabled:opacity-40"
-          style={{ background: 'linear-gradient(135deg, #03c75a 0%, #018a3c 100%)' }}
-        >
-          {loading ? '등록 중...' : '결제하기 → 네이버페이'}
-        </button>
+        {/* Title */}
+        <input
+          type="text"
+          placeholder="어디서 결제했나요?"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          className="w-full mt-2 pb-2 border-b border-slate-200 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:border-emerald-400 bg-transparent transition-colors"
+        />
       </div>
+
+      {/* Category chips */}
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-none px-5 py-3">
+        {sortedCategories.map(cat => (
+          <button
+            key={cat}
+            type="button"
+            onClick={() => setCategory(cat)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              activeCategory === cat
+                ? 'bg-emerald-500 text-white'
+                : 'bg-slate-100 text-slate-600 active:bg-slate-200'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Submit */}
+      <button
+        type="button"
+        disabled={!amount || loading}
+        onClick={handleSubmit}
+        className="w-full py-3.5 font-bold text-sm text-white active:opacity-90 transition-all disabled:opacity-40"
+        style={{ background: 'linear-gradient(135deg, #03c75a 0%, #018a3c 100%)' }}
+      >
+        {loading ? '등록 중...' : '결제하기 → 네이버페이'}
+      </button>
     </div>
   )
 }
