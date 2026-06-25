@@ -50,7 +50,7 @@
 `DashboardClient.tsx`에서 users 로드 시 role별 자동 주입:
 ```typescript
 husband → '#0F4C81'  (brand-500)
-wife    → '#059669'  (emerald-500)
+wife    → '#FDA4AF'  (rose-300 pastel)
 ```
 컴포넌트에서 `user.avatar_color` 그대로 사용. 별도 처리 불필요.
 

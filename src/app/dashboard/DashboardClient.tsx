@@ -380,7 +380,7 @@ export default function DashboardClient() {
         apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${y}&month=${m}`),
       ])
 
-      const AVATAR_COLORS: Record<string, string> = { husband: '#0F4C81', wife: '#059669' }
+      const AVATAR_COLORS: Record<string, string> = { husband: '#0F4C81', wife: '#FDA4AF' }
       setUsers(
         (Array.isArray(usersData) ? usersData : []).map(u => ({
           ...u,
