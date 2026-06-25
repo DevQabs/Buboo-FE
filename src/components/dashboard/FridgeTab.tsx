@@ -188,10 +188,10 @@ function DraggableFoodCard({ item, isDragDisabled, onDelete, onEdit }: Draggable
         {/* 음식명 */}
         <p className="text-xs font-bold text-slate-800 truncate leading-snug pr-4">{item.name}</p>
 
-        {/* 완제품 수량 뱃지 */}
-        {item.isPackaged && item.quantity && (
+        {/* 수량 뱃지 */}
+        {item.quantity && (
           <span className="mt-0.5 inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700">
-            {item.quantity}개
+            {item.isPackaged ? `${item.quantity}개` : item.quantity}
           </span>
         )}
 
