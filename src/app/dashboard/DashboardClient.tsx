@@ -337,7 +337,59 @@ export default function DashboardClient() {
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
-  // ── 탭 최초 진입 시 데이터 로드 ──────────────────────────────────────────────
+  // ── Phase 2: UI 표시 직후 나머지 탭 데이터 백그라운드 프리패치 ─────────────────
+  // loading=false 가 되는 순간 wealth/life/fridge 를 조용히 병렬 로드.
+  // 사용자가 탭을 누를 때 이미 데이터가 준비돼 있으면 스켈레톤 없이 즉시 표시.
+  const prefetchAll = useCallback(async () => {
+    await Promise.allSettled([
+      // ── 자산 현황 탭 ──
+      (async () => {
+        try {
+          const [port, assets, stockTx] = await Promise.all([
+            apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
+            apiFetch<OtherAsset[]>('/api/assets'),
+            apiFetch<StockTransaction[]>('/api/stocks/transactions'),
+          ])
+          if (Array.isArray(port)) { setPortfolio(port); setPortfolioSummary(null) }
+          else { setPortfolio(port?.items ?? []); setPortfolioSummary(port?.summary ?? null) }
+          setOtherAssets(Array.isArray(assets) ? assets : [])
+          setTradeTransactions(Array.isArray(stockTx) ? stockTx : [])
+          loadedTabs.current.add('wealth')
+        } catch { /* 실패해도 탭 진입 시 fetchTabData 가 다시 시도 */ }
+      })(),
+      // ── 라이프 탭 ──
+      (async () => {
+        try {
+          const [sch, dia] = await Promise.all([
+            apiFetch<Schedule[]>('/api/schedules'),
+            apiFetch<DiaryEntry[]>('/api/diaries'),
+          ])
+          setSchedules(Array.isArray(sch) ? sch : [])
+          setDiaries(Array.isArray(dia) ? dia : [])
+          loadedTabs.current.add('life')
+        } catch {}
+      })(),
+      // ── 냉장고 탭 ──
+      (async () => {
+        try {
+          const [items, dishes] = await Promise.all([
+            apiFetch<FridgeItem[]>('/api/fridge/items'),
+            apiFetch<SideDish[]>('/api/fridge/side-dishes'),
+          ])
+          setFridgeItems(Array.isArray(items) ? items : [])
+          setSideDishes(Array.isArray(dishes) ? dishes : [])
+          loadedTabs.current.add('fridge')
+        } catch {}
+      })(),
+    ])
+  }, [])
+
+  // loading 이 false 로 바뀌는 순간(Phase 1 완료) → Phase 2 백그라운드 시작
+  useEffect(() => {
+    if (!loading) prefetchAll()
+  }, [loading, prefetchAll])
+
+  // ── 탭 최초 진입 시 데이터 로드 (프리패치 미완료 시 폴백) ──────────────────────
   const fetchTabData = useCallback(async (tab: ActiveTab) => {
     setTabLoading(tab)
     try {
