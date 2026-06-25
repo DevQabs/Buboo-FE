@@ -67,6 +67,14 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
 
 type ActiveTab = 'wealth' | 'ledger' | 'life' | 'fridge'
 
+const TAB_ORDER: ActiveTab[] = ['ledger', 'life', 'fridge', 'wealth']
+
+const tabVariants = {
+  enter: (dir: number) => ({ x: dir * 48, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: -dir * 48, opacity: 0 }),
+}
+
 // ─── fetch helpers ────────────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string): Promise<T> {
@@ -102,6 +110,7 @@ export default function DashboardClient() {
   const [users, setUsers]             = useState<User[]>([])
   const [couple, setCouple]           = useState<Couple | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [calendarTransactions, setCalendarTransactions] = useState<Transaction[]>([])
   const [portfolio, setPortfolio]     = useState<StockAssetWithPrice[]>([])
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null)
   const [otherAssets, setOtherAssets] = useState<OtherAsset[]>([])
@@ -119,6 +128,43 @@ export default function DashboardClient() {
 
   // ── UI state ──
   const [activeTab, setActiveTab]     = useState<ActiveTab>('ledger')
+  const swipeDir    = useRef<number>(1)
+  const touchStartX = useRef<number>(0)
+  const touchStartY = useRef<number>(0)
+  const mainRef     = useRef<HTMLElement>(null)
+  const activeTabRef = useRef<ActiveTab>('ledger')
+
+  const navigateTab = useCallback((tab: ActiveTab, dir: number) => {
+    swipeDir.current = dir
+    setActiveTab(tab)
+  }, [])
+
+  useEffect(() => {
+    activeTabRef.current = activeTab
+  }, [activeTab])
+
+  useEffect(() => {
+    const el = mainRef.current
+    if (!el) return
+    const onStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX
+      touchStartY.current = e.touches[0].clientY
+    }
+    const onEnd = (e: TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - touchStartX.current
+      const dy = e.changedTouches[0].clientY - touchStartY.current
+      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return
+      const idx = TAB_ORDER.indexOf(activeTabRef.current)
+      if (dx < 0 && idx < TAB_ORDER.length - 1) navigateTab(TAB_ORDER[idx + 1], 1)
+      else if (dx > 0 && idx > 0) navigateTab(TAB_ORDER[idx - 1], -1)
+    }
+    el.addEventListener('touchstart', onStart, { passive: true })
+    el.addEventListener('touchend', onEnd, { passive: true })
+    return () => {
+      el.removeEventListener('touchstart', onStart)
+      el.removeEventListener('touchend', onEnd)
+    }
+  }, [navigateTab, loading])
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }))
   const [summaryYear, setSummaryYear]   = useState(now.getFullYear())
   const [summaryMonth, setSummaryMonth] = useState(now.getMonth() + 1)
@@ -163,6 +209,18 @@ export default function DashboardClient() {
   }, [])
 
   // ── fetch calendar summary ────────────────────────────────────────────────
+  const fetchCalendarTransactions = useCallback(async (y: number, m: number) => {
+    const nextM = m === 12 ? 1 : m + 1
+    const nextY = m === 12 ? y + 1 : y
+    const [d1, d2] = await Promise.all([
+      apiFetch<Transaction[]>(`/api/transactions?year=${y}&month=${m}`),
+      apiFetch<Transaction[]>(`/api/transactions?year=${nextY}&month=${nextM}`),
+    ])
+    const all = [...(Array.isArray(d1) ? d1 : []), ...(Array.isArray(d2) ? d2 : [])]
+    const seen = new Set<string>()
+    setCalendarTransactions(all.filter(tx => { if (seen.has(tx.id)) return false; seen.add(tx.id); return true }))
+  }, [])
+
   const fetchCalendar = useCallback(async (y: number, m: number) => {
     const data = await apiFetch<CalendarSummaryResponse>(
       `/api/transactions/calendar-summary?year=${y}&month=${m}`
@@ -194,6 +252,7 @@ export default function DashboardClient() {
       // calendarYear/calendarMonth always = current calendar month (for the grid)
       setCalendarYear(y)
       setCalendarMonth(m)
+      fetchCalendarTransactions(y, m)
 
       // summaryYear/summaryMonth = period that contains today.
       // If today >= startDay (and startDay > 1), today is in the NEXT month's period.
@@ -347,9 +406,10 @@ export default function DashboardClient() {
     fetchCalendar(year, month)
     fetchSummary(year, month, startDay)
     fetchTransactions(year, month)
+    fetchCalendarTransactions(year, month)
     refetchDividends(year, month)
     refetchFixedExpenses(year, month)
-  }, [fetchCalendar, fetchSummary, fetchTransactions, startDay]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchCalendar, fetchSummary, fetchTransactions, fetchCalendarTransactions, startDay]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── portfolio refetch ─────────────────────────────────────────────────────
   const refetchPortfolio = async () => {
@@ -477,8 +537,9 @@ export default function DashboardClient() {
       fetchTransactions(summaryYear, summaryMonth),
       fetchSummary(summaryYear, summaryMonth, startDay),
       apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`).then(d => setCalendarData(d)),
+      fetchCalendarTransactions(calendarYear, calendarMonth),
     ])
-  }, [transactions, summaryYear, summaryMonth, startDay, calendarYear, calendarMonth, fetchSummary, fetchTransactions]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [transactions, summaryYear, summaryMonth, startDay, calendarYear, calendarMonth, fetchSummary, fetchTransactions, fetchCalendarTransactions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDeleteTransaction = useCallback(async (id: string) => {
     await fetch(`${API_BASE}/api/transactions/${id}`, { method: 'DELETE' })
@@ -486,8 +547,9 @@ export default function DashboardClient() {
     await Promise.all([
       fetchSummary(summaryYear, summaryMonth, startDay),
       apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`).then(d => setCalendarData(d)),
+      fetchCalendarTransactions(calendarYear, calendarMonth),
     ])
-  }, [summaryYear, summaryMonth, startDay, calendarYear, calendarMonth, fetchSummary]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [summaryYear, summaryMonth, startDay, calendarYear, calendarMonth, fetchSummary, fetchCalendarTransactions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── add transaction from calendar (specific date, refetches calendar + summary) ──
   const handleAddTransactionOnDate = useCallback(async (payload: {
@@ -522,12 +584,13 @@ export default function DashboardClient() {
       fetchTransactions(summaryYear, summaryMonth),
       apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`).then(d => setCalendarData(d)),
       fetchSummary(summaryYear, summaryMonth, startDay),
+      fetchCalendarTransactions(calendarYear, calendarMonth),
     ]
     if (payload.type === 'saving') {
       refetches.push(refetchPortfolio(), refetchAssets())
     }
     await Promise.all(refetches)
-  }, [calendarYear, calendarMonth, summaryYear, summaryMonth, startDay, fetchSummary, fetchTransactions, refetchPortfolio, refetchAssets]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [calendarYear, calendarMonth, summaryYear, summaryMonth, startDay, fetchSummary, fetchTransactions, fetchCalendarTransactions, refetchPortfolio, refetchAssets]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── stock handlers ────────────────────────────────────────────────────────
   const handleAddStock = async (data: Parameters<React.ComponentProps<typeof AddStockModal>['onAdd']>[0]) => {
@@ -868,14 +931,18 @@ export default function DashboardClient() {
       </header>
 
       {/* ── Main content ── */}
-      <main className="max-w-2xl mx-auto px-3 pt-4 pb-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1rem)] space-y-3">
+      <main
+        ref={mainRef}
+        className="max-w-2xl mx-auto px-3 pt-4 pb-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1rem)] space-y-3"
+      >
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={swipeDir.current}>
         {/* ══ Tab 1: 자산 현황 ══ */}
         {activeTab === 'wealth' && (
           <motion.div key="wealth" className="space-y-3"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            custom={swipeDir.current} variants={tabVariants}
+            initial="enter" animate="center" exit="exit"
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
             {/* 통합 순자산 요약 */}
             <NetWorthSummaryCard
@@ -911,8 +978,9 @@ export default function DashboardClient() {
         {/* ══ Tab 2: 가계부 ══ */}
         {activeTab === 'ledger' && (
           <motion.div key="ledger" className="space-y-3"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            custom={swipeDir.current} variants={tabVariants}
+            initial="enter" animate="center" exit="exit"
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
             {/* 삼성페이 결제 카드 */}
             <SamsungPayCard
@@ -963,7 +1031,7 @@ export default function DashboardClient() {
               year={calendarYear}
               month={calendarMonth}
               calendarData={calendarData}
-              transactions={transactions}
+              transactions={calendarTransactions}
               users={users}
               stocks={portfolio}
               otherAssets={otherAssets}
@@ -1006,8 +1074,9 @@ export default function DashboardClient() {
         {/* ══ Tab 3: 일정/일기 ══ */}
         {activeTab === 'life' && (
           <motion.div key="life"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            custom={swipeDir.current} variants={tabVariants}
+            initial="enter" animate="center" exit="exit"
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
             <ScheduleTab
               schedules={schedules}
@@ -1026,8 +1095,9 @@ export default function DashboardClient() {
         {/* ══ Tab 4: 냉장고 ══ */}
         {activeTab === 'fridge' && (
           <motion.div key="fridge" className="space-y-3"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            custom={swipeDir.current} variants={tabVariants}
+            initial="enter" animate="center" exit="exit"
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
             <FridgeTab
               fridgeItems={fridgeItems}
@@ -1086,7 +1156,7 @@ export default function DashboardClient() {
       <nav className="fixed bottom-0 inset-x-0 z-50 bg-white/90 backdrop-blur-lg border-t border-slate-100 shadow-[0_-1px_12px_rgba(0,0,0,0.06)]">
         <div className="max-w-2xl mx-auto flex pb-safe">
           <button
-            onClick={() => setActiveTab('ledger')}
+            onClick={() => navigateTab('ledger', TAB_ORDER.indexOf('ledger') > TAB_ORDER.indexOf(activeTab) ? 1 : -1)}
             className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
               activeTab === 'ledger' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
             }`}
@@ -1101,7 +1171,7 @@ export default function DashboardClient() {
             }`}>가계부</span>
           </button>
           <button
-            onClick={() => setActiveTab('life')}
+            onClick={() => navigateTab('life', TAB_ORDER.indexOf('life') > TAB_ORDER.indexOf(activeTab) ? 1 : -1)}
             className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
               activeTab === 'life' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
             }`}
@@ -1116,7 +1186,7 @@ export default function DashboardClient() {
             }`}>일정/일기</span>
           </button>
           <button
-            onClick={() => setActiveTab('fridge')}
+            onClick={() => navigateTab('fridge', TAB_ORDER.indexOf('fridge') > TAB_ORDER.indexOf(activeTab) ? 1 : -1)}
             className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
               activeTab === 'fridge' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
             }`}
@@ -1131,7 +1201,7 @@ export default function DashboardClient() {
             }`}>냉장고</span>
           </button>
           <button
-            onClick={() => setActiveTab('wealth')}
+            onClick={() => navigateTab('wealth', TAB_ORDER.indexOf('wealth') > TAB_ORDER.indexOf(activeTab) ? 1 : -1)}
             className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
               activeTab === 'wealth' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
             }`}
