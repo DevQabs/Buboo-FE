@@ -668,7 +668,7 @@ export default function StockPortfolioCard({
               {chartData.length > 0 ? (
                 <>
                   <ResponsiveContainer width='100%' height={240} style={{ outline: 'none' }}>
-                    <PieChart>
+                    <PieChart style={{ outline: 'none' }}>
                       <Pie
                         data={chartData}
                         dataKey='value'
@@ -678,6 +678,7 @@ export default function StockPortfolioCard({
                         outerRadius={105}
                         paddingAngle={2}
                         strokeWidth={0}
+                        focusable={false}
                       >
                         {chartData.map((_, i) => (
                           <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} stroke="none" />
