@@ -731,7 +731,7 @@ export default function DashboardClient() {
 
   // ── update/delete transaction ─────────────────────────────────────────────────
   const handleUpdateTransaction = useCallback(async (id: string, data: { title: string; amount: number; category: string; user_id: string }) => {
-    const existing = transactions.find(tx => tx.id === id)
+    const existing = transactions.find(tx => tx.id === id) ?? calendarTransactions.find(tx => tx.id === id)
     if (!existing) return
     const res = await fetch(`${API_BASE}/api/transactions/${id}`, {
       method: 'PUT',

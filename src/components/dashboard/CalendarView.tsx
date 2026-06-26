@@ -610,10 +610,11 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
                     placeholder="내용"
                   />
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
                     value={editAmount}
-                    onChange={e => setEditAmount(e.target.value)}
+                    onChange={e => setEditAmount(formatAmountInput(e.target.value))}
                     placeholder="금액"
                   />
                   {!isSaving && (
@@ -636,7 +637,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
                   <div className="flex gap-2">
                     <button
                       onClick={async () => {
-                        const amt = Number(editAmount)
+                        const amt = Number(editAmount.replace(/,/g, ''))
                         if (!onUpdateTransaction || isNaN(amt) || amt <= 0 || !editTitle.trim()) return
                         await onUpdateTransaction(tx.id, { title: editTitle.trim(), amount: amt, category: editCategory || tx.category, user_id: editUserId || tx.user_id })
                         setEditingTxId(null)
@@ -689,7 +690,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
                         onClick={() => {
                           setEditingTxId(tx.id)
                           setEditTitle(tx.title)
-                          setEditAmount(String(tx.amount))
+                          setEditAmount(tx.amount.toLocaleString())
                           setEditCategory(tx.category)
                           setEditUserId(tx.user_id)
                           setEditSaving(isSaving)
