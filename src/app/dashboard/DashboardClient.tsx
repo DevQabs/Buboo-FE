@@ -110,6 +110,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     },
   })
   if (!res.ok) throw new Error(`API ${path} → ${res.status}`)
+  if (res.status === 204 || res.headers.get('content-length') === '0') return undefined as T
   return res.json() as Promise<T>
 }
 
@@ -369,8 +370,10 @@ export default function DashboardClient() {
 
       const { startDate, endDate } = buildDateRange(periodYear, adjMonth, dbStartDay)
 
-      // ── Step 2: 가계부 탭 + users (8개 병렬) ──
-      const [usersData, txData, summaryData, feData, feSummaryData, divData, calData] = await Promise.all([
+      // ── Step 2: 가계부 탭 + users (9개 병렬) ──
+      const nextCalM = m === 12 ? 1 : m + 1
+      const nextCalY = m === 12 ? y + 1 : y
+      const [usersData, txData, summaryData, feData, feSummaryData, divData, calData, calTxCur, calTxNext] = await Promise.all([
         apiFetch<User[]>('/api/users'),
         apiFetch<Transaction[]>(`/api/transactions?year=${periodYear}&month=${adjMonth}`),
         apiFetch<MonthlySummary>(`/api/summary?start_date=${startDate}&end_date=${endDate}`),
@@ -378,6 +381,8 @@ export default function DashboardClient() {
         apiFetch<FixedExpenseSummary>(`/api/fixed-expenses/summary?year=${periodYear}&month=${adjMonth}`),
         apiFetch<DividendYearlySummary>(`/api/dividends/summary?year=${y}&month=${m}`),
         apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${y}&month=${m}`),
+        apiFetch<Transaction[]>(`/api/transactions?year=${y}&month=${m}`),
+        apiFetch<Transaction[]>(`/api/transactions?year=${nextCalY}&month=${nextCalM}`),
       ])
 
       const AVATAR_COLORS: Record<string, string> = { husband: '#0F4C81', wife: '#FDA4AF' }
@@ -389,7 +394,9 @@ export default function DashboardClient() {
       )
       const txList = Array.isArray(txData) ? txData : []
       setTransactions(txList)
-      setCalendarTransactions(txList) // 초기엔 당월 데이터로 대체
+      const calTxAll = [...(Array.isArray(calTxCur) ? calTxCur : []), ...(Array.isArray(calTxNext) ? calTxNext : [])]
+      const calTxSeen = new Set<string>()
+      setCalendarTransactions(calTxAll.filter(tx => { if (calTxSeen.has(tx.id)) return false; calTxSeen.add(tx.id); return true }))
       setSummary(summaryData)
       setFixedExpenses(Array.isArray(feData) ? feData : [])
       setFeSummary(feSummaryData)
