@@ -188,7 +188,7 @@ function AssetFormModal({ mode, initial, currentUserID, onClose, onSubmit }: Ass
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center">
       <motion.div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose}
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
       />
@@ -498,7 +498,7 @@ function AssetFormModal({ mode, initial, currentUserID, onClose, onSubmit }: Ass
 
 function DeleteConfirm({ asset, onConfirm, onCancel }: { asset: OtherAsset; onConfirm: () => void; onCancel: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div className="fixed inset-0 z-60 flex flex-col justify-end">
       <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel}
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
       />

@@ -320,7 +320,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center">
       <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
       />

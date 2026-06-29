@@ -58,7 +58,7 @@ export default function AddStockModal({ currentUserID, onClose, onAdd }: AddStoc
   };
 
   return (
-    <div className='fixed inset-0 z-50 flex items-end sm:items-center justify-center'>
+    <div className='fixed inset-0 z-60 flex items-end sm:items-center justify-center'>
       {/* Backdrop */}
       <motion.div
         className='absolute inset-0 bg-black/30 backdrop-blur-sm'

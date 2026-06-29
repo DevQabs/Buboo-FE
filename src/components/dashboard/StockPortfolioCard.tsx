@@ -399,7 +399,7 @@ function DeleteConfirm({
   onCancel: () => void;
 }) {
   return (
-    <div className='fixed inset-0 z-50 flex flex-col justify-end'>
+    <div className='fixed inset-0 z-60 flex flex-col justify-end'>
       <div className='absolute inset-0 bg-black/40 backdrop-blur-sm' onClick={onCancel} />
       <div className='relative bg-white rounded-t-3xl p-6 space-y-4 z-10'>
         <div className='flex justify-center mb-1'><div className='w-10 h-1 bg-slate-200 rounded-full' /></div>
@@ -447,7 +447,7 @@ function TaxWarningConfirm({
   onCancel: () => void;
 }) {
   return (
-    <div className='fixed inset-0 z-50 flex flex-col justify-end'>
+    <div className='fixed inset-0 z-60 flex flex-col justify-end'>
       <div className='absolute inset-0 bg-black/40 backdrop-blur-sm' onClick={onCancel} />
       <div className='relative bg-white rounded-t-3xl p-6 space-y-4 z-10'>
         <div className='flex justify-center mb-1'><div className='w-10 h-1 bg-slate-200 rounded-full' /></div>
