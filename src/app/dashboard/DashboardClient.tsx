@@ -1043,6 +1043,8 @@ export default function DashboardClient() {
   }
 
   // ── render ────────────────────────────────────────────────────────────────
+  const currentUserID = session?.user?.backendUser?.id ?? users[0]?.id ?? ''
+
   return (
     <div className="min-h-screen bg-gray-50">
 
@@ -1159,6 +1161,7 @@ export default function DashboardClient() {
             <OtherAssetCard
               assets={otherAssets}
               users={users}
+              currentUserID={currentUserID}
               fixedExpenseTitles={fixedExpenses.map(fe => fe.title)}
               onAdd={handleAddAsset}
               onEdit={handleEditAsset}
@@ -1223,6 +1226,7 @@ export default function DashboardClient() {
               calendarData={calendarData}
               transactions={calendarTransactions}
               users={users}
+              currentUserID={currentUserID}
               stocks={portfolio}
               otherAssets={otherAssets}
               budgetLimit={couple?.monthly_budget ?? 0}
@@ -1269,7 +1273,7 @@ export default function DashboardClient() {
               <ScheduleTab
                 schedules={schedules}
                 diaries={diaries}
-                users={users}
+                currentUserID={currentUserID}
                 onAddSchedule={handleAddSchedule}
                 onEditSchedule={handleEditSchedule}
                 onDeleteSchedule={handleDeleteSchedule}
@@ -1304,7 +1308,7 @@ export default function DashboardClient() {
       {/* ── Modals ── */}
       {showAddStock && (
         <AddStockModal
-          users={users}
+          currentUserID={currentUserID}
           onClose={() => setShowAddStock(false)}
           onAdd={handleAddStock}
         />
@@ -1313,7 +1317,6 @@ export default function DashboardClient() {
       {editingStock && (
         <EditStockModal
           asset={editingStock}
-          users={users}
           onClose={() => setEditingStock(null)}
           onEdit={handleEditStock}
         />

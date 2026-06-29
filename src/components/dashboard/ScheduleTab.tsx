@@ -238,8 +238,8 @@ function ScheduleRow({ s, onEdit, onDelete }: { s: Schedule; onEdit: () => void;
 
 // ─── Add Schedule Modal ───────────────────────────────────────────────────────
 
-function AddScheduleModal({ users, onClose, onSave }: {
-  users: User[]
+function AddScheduleModal({ currentUserID, onClose, onSave }: {
+  currentUserID: string
   onClose: () => void
   onSave: (req: CreateScheduleRequest) => Promise<void>
 }) {
@@ -250,7 +250,6 @@ function AddScheduleModal({ users, onClose, onSave }: {
   const [isDDay, setIsDDay]     = useState(false)
   const [ddayLabel, setLabel]   = useState('')
   const [color, setColor]       = useState<ScheduleColor>('indigo')
-  const [userId, setUserId]     = useState(users[0]?.id ?? '')
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState('')
 
@@ -259,7 +258,7 @@ function AddScheduleModal({ users, onClose, onSave }: {
     setSaving(true); setError('')
     try {
       await onSave({
-        user_id: userId, title, description: desc,
+        user_id: currentUserID, title, description: desc,
         start_date: startDate, end_date: endDate || undefined,
         all_day: true, is_dday: isDDay, dday_label: ddayLabel, color,
       })
@@ -335,16 +334,6 @@ function AddScheduleModal({ users, onClose, onSave }: {
             <input value={ddayLabel} onChange={e => setLabel(e.target.value)}
               placeholder="D-Day 라벨 (예: 결혼기념일)"
               className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          )}
-
-          {users.length > 1 && (
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">등록자</label>
-              <select value={userId} onChange={e => setUserId(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </div>
           )}
 
           {error && <p className="text-xs text-rose-500">{error}</p>}
@@ -558,8 +547,8 @@ function DiaryRow({ d, apiBase, onEdit, onDelete }: { d: DiaryEntry; apiBase: st
 
 // ─── Add Diary Modal ──────────────────────────────────────────────────────────
 
-function AddDiaryModal({ users, initialDate, onClose, onSave }: {
-  users: User[]
+function AddDiaryModal({ currentUserID, initialDate, onClose, onSave }: {
+  currentUserID: string
   initialDate: string
   onClose: () => void
   onSave: (req: CreateDiaryRequest, photos: File[]) => Promise<void>
@@ -567,7 +556,6 @@ function AddDiaryModal({ users, initialDate, onClose, onSave }: {
   const [date, setDate]       = useState(initialDate)
   const [content, setContent] = useState('')
   const [mood, setMood]       = useState<DiaryMood>('normal')
-  const [userId, setUserId]   = useState(users[0]?.id ?? '')
   const [photos, setPhotos]   = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [saving, setSaving]   = useState(false)
@@ -594,7 +582,7 @@ function AddDiaryModal({ users, initialDate, onClose, onSave }: {
     if (!content.trim()) { setError('내용을 입력해주세요'); return }
     setSaving(true); setError('')
     try {
-      await onSave({ user_id: userId, date, content, mood }, photos)
+      await onSave({ user_id: currentUserID, date, content, mood }, photos)
       onClose()
     } catch (e) {
       setError(e instanceof Error ? e.message : '저장 실패')
@@ -661,16 +649,6 @@ function AddDiaryModal({ users, initialDate, onClose, onSave }: {
                 onChange={e => handleFiles(e.target.files)} />
             </div>
           </div>
-
-          {users.length > 1 && (
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">작성자</label>
-              <select value={userId} onChange={e => setUserId(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
-                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </div>
-          )}
 
           {error && <p className="text-xs text-rose-500">{error}</p>}
         </div>
@@ -835,7 +813,7 @@ function EditDiaryModal({ diary, onClose, onSaved }: {
 interface ScheduleTabProps {
   schedules: Schedule[]
   diaries: DiaryEntry[]
-  users: User[]
+  currentUserID: string
   onAddSchedule: (req: CreateScheduleRequest) => Promise<void>
   onEditSchedule: (id: string, req: UpdateScheduleRequest) => Promise<void>
   onDeleteSchedule: (id: string) => Promise<void>
@@ -845,7 +823,7 @@ interface ScheduleTabProps {
 }
 
 export default function ScheduleTab({
-  schedules, diaries, users,
+  schedules, diaries, currentUserID,
   onAddSchedule, onEditSchedule, onDeleteSchedule,
   onAddDiary, onDiaryEdited, onDeleteDiary,
 }: ScheduleTabProps) {
@@ -964,7 +942,7 @@ export default function ScheduleTab({
       <AnimatePresence>
         {showAddSchedule && (
           <AddScheduleModal
-            users={users}
+            currentUserID={currentUserID}
             onClose={() => setShowAddSchedule(false)}
             onSave={onAddSchedule}
           />
@@ -982,7 +960,7 @@ export default function ScheduleTab({
       <AnimatePresence>
         {showAddDiary && (
           <AddDiaryModal
-            users={users}
+            currentUserID={currentUserID}
             initialDate={selectedDate}
             onClose={() => setShowAddDiary(false)}
             onSave={onAddDiary}

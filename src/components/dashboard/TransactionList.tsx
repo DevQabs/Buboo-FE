@@ -8,6 +8,7 @@ import type { Transaction, User } from '@/types'
 interface TransactionListProps {
   transactions: Transaction[]
   users: User[]
+  currentUserID?: string
   onAdd?: (data: {
     user_id: string
     type: 'expense'
@@ -50,7 +51,7 @@ function formatDate(dateStr: string, createdAt?: string): string {
 
 type FilterType = 'all' | 'income' | 'expense' | 'saving'
 
-export default function TransactionList({ transactions = [], users = [], onAdd }: TransactionListProps) {
+export default function TransactionList({ transactions = [], users = [], currentUserID = '', onAdd }: TransactionListProps) {
   const [filter, setFilter] = useState<FilterType>('all')
   const [showAdd, setShowAdd] = useState(false)
 
@@ -162,7 +163,7 @@ export default function TransactionList({ transactions = [], users = [], onAdd }
 
       {onAdd && (
         <QuickAddButton
-          users={safeUsers}
+          currentUserID={currentUserID}
           onAdd={onAdd}
           open={showAdd}
           onClose={() => setShowAdd(false)}

@@ -18,6 +18,7 @@ import { OTHER_ASSET_TYPES, ASSET_TYPE_EMOJI } from '@/types'
 interface OtherAssetCardProps {
   assets: OtherAsset[]
   users: User[]
+  currentUserID: string
   fixedExpenseTitles?: string[]
   onAdd: (data: CreateOtherAssetRequest) => Promise<void>
   onEdit: (id: string, data: UpdateOtherAssetRequest) => Promise<void>
@@ -98,14 +99,13 @@ const LOAN_TYPES: LoanType[] = ['원리금균등상환', '원금균등상환', '
 interface AssetFormModalProps {
   mode: 'add' | 'edit'
   initial?: OtherAsset
-  users: User[]
+  currentUserID: string
   onClose: () => void
   onSubmit: (data: CreateOtherAssetRequest | UpdateOtherAssetRequest) => Promise<void>
 }
 
-function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormModalProps) {
-  const safeUsers = Array.isArray(users) ? users : []
-  const [userID, setUserID] = useState(initial?.user_id ?? safeUsers[0]?.id ?? '')
+function AssetFormModal({ mode, initial, currentUserID, onClose, onSubmit }: AssetFormModalProps) {
+  const userID = initial?.user_id ?? currentUserID
   const [assetType, setAssetType] = useState<OtherAssetType>(initial?.asset_type ?? '기타')
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
@@ -200,25 +200,9 @@ function AssetFormModal({ mode, initial, users, onClose, onSubmit }: AssetFormMo
           <h3 className="text-base font-bold text-slate-800">
             {mode === 'add' ? '자산 추가' : '자산 수정'}
           </h3>
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              {safeUsers.map(u => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => setUserID(u.id)}
-                  title={u.name}
-                  className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${userID === u.id ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-40'}`}
-                  style={{ backgroundColor: u.avatar_color }}
-                >
-                  {u.name[0]}
-                </button>
-              ))}
-            </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
-              <XMarkIcon className="h-5 w-5" />
-            </button>
-          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+            <XMarkIcon className="h-5 w-5" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -654,7 +638,7 @@ function AssetRow({ asset, user, onEdit, onDelete, onCreateLoanExpense, loanExpe
 
 // ─── Main card ────────────────────────────────────────────────────────────────
 
-export default function OtherAssetCard({ assets = [], users = [], fixedExpenseTitles = [], onAdd, onEdit, onDelete, onCreateLoanExpense }: OtherAssetCardProps) {
+export default function OtherAssetCard({ assets = [], users = [], currentUserID, fixedExpenseTitles = [], onAdd, onEdit, onDelete, onCreateLoanExpense }: OtherAssetCardProps) {
   const [showAdd, setShowAdd] = useState(false)
   const [editingAsset, setEditingAsset] = useState<OtherAsset | null>(null)
   const [pendingDelete, setPendingDelete] = useState<OtherAsset | null>(null)
@@ -756,12 +740,12 @@ export default function OtherAssetCard({ assets = [], users = [], fixedExpenseTi
 
       <AnimatePresence>
         {showAdd && (
-          <AssetFormModal mode="add" users={safeUsers} onClose={() => setShowAdd(false)} onSubmit={data => onAdd(data as CreateOtherAssetRequest)} />
+          <AssetFormModal mode="add" currentUserID={currentUserID} onClose={() => setShowAdd(false)} onSubmit={data => onAdd(data as CreateOtherAssetRequest)} />
         )}
       </AnimatePresence>
       <AnimatePresence>
         {editingAsset && (
-          <AssetFormModal mode="edit" initial={editingAsset} users={safeUsers} onClose={() => setEditingAsset(null)} onSubmit={data => onEdit(editingAsset.id, data as UpdateOtherAssetRequest)} />
+          <AssetFormModal mode="edit" initial={editingAsset} currentUserID={currentUserID} onClose={() => setEditingAsset(null)} onSubmit={data => onEdit(editingAsset.id, data as UpdateOtherAssetRequest)} />
         )}
       </AnimatePresence>
       <AnimatePresence>

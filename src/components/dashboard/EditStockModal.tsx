@@ -2,12 +2,11 @@
 
 import { useState } from 'react'
 import { XMarkIcon } from '@heroicons/react/24/solid'
-import type { StockAssetWithPrice, User } from '@/types'
+import type { StockAssetWithPrice } from '@/types'
 import { formatAmountInput } from '@/lib/formatNumber'
 
 interface EditStockModalProps {
   asset: StockAssetWithPrice
-  users: User[]
   onClose: () => void
   onEdit: (id: string, data: {
     user_id?: string
@@ -18,9 +17,7 @@ interface EditStockModalProps {
   }) => Promise<void>
 }
 
-export default function EditStockModal({ asset, users, onClose, onEdit }: EditStockModalProps) {
-  const safeUsers = Array.isArray(users) ? users : []
-  const [userID, setUserID] = useState(asset.user_id)
+export default function EditStockModal({ asset, onClose, onEdit }: EditStockModalProps) {
   const [name, setName] = useState(asset.name)
   const [quantity, setQuantity] = useState(String(asset.quantity))
   const [avgPrice, setAvgPrice] = useState(formatAmountInput(String(asset.average_price), true))
@@ -33,7 +30,7 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
     setLoading(true)
     try {
       await onEdit(asset.id, {
-        user_id: userID,
+        user_id: asset.user_id,
         name: name.trim(),
         quantity: parseFloat(quantity),
         average_price: parseFloat(avgPrice.replace(/,/g, '')),
@@ -58,25 +55,9 @@ export default function EditStockModal({ asset, users, onClose, onEdit }: EditSt
             <h3 className="text-base font-bold text-slate-800">주식 수정</h3>
             <p className="text-xs text-slate-400 mt-0.5 font-mono">{asset.symbol} · {asset.exchange}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              {safeUsers.map(u => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => setUserID(u.id)}
-                  title={u.name}
-                  className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${userID === u.id ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-40'}`}
-                  style={{ backgroundColor: u.avatar_color }}
-                >
-                  {u.name[0]}
-                </button>
-              ))}
-            </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
-              <XMarkIcon className="h-5 w-5" />
-            </button>
-          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+            <XMarkIcon className="h-5 w-5" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

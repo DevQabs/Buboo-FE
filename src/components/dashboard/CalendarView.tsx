@@ -329,6 +329,7 @@ interface DetailPanelProps {
   transactions: Transaction[]
   calendarEvents: CalendarEvent[]
   users: User[]
+  currentUserID: string
   stocks: StockAssetWithPrice[]
   otherAssets: OtherAsset[]
   accessToken?: string
@@ -338,7 +339,7 @@ interface DetailPanelProps {
   onDeleteTransaction?: (id: string) => Promise<void>
 }
 
-function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, otherAssets, accessToken, onClose, onAddTransaction, onUpdateTransaction, onDeleteTransaction }: DetailPanelProps) {
+function DetailPanel({ dateKey, transactions, calendarEvents, users, currentUserID, stocks, otherAssets, accessToken, onClose, onAddTransaction, onUpdateTransaction, onDeleteTransaction }: DetailPanelProps) {
   const dayTxns = useMemo(() =>
     transactions
       .filter(tx => toDateKey(new Date(tx.date)) === dateKey)
@@ -353,7 +354,6 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
 
   const [showForm, setShowForm]     = useState(false)
   const [txType, setTxType]         = useState<'expense' | 'income' | 'saving'>('expense')
-  const [userId, setUserId]         = useState(users[0]?.id ?? '')
   const [amount, setAmount]         = useState('')
   const [category, setCategory]     = useState('')
   const [title, setTitle]           = useState('')
@@ -364,7 +364,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
   const [editTitle, setEditTitle]           = useState('')
   const [editAmount, setEditAmount]         = useState('')
   const [editCategory, setEditCategory]     = useState('')
-  const [editUserId, setEditUserId]         = useState('')
+  const [editTxUserId, setEditTxUserId]     = useState('')
   const [editSaving, setEditSaving]         = useState(false)
   const [formError, setFormError]           = useState('')
   const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories(accessToken)
@@ -373,7 +373,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
 
   const resetForm = () => {
     setShowForm(false); setAmount(''); setCategory(''); setTitle('')
-    setTxType('expense'); setUserId(users[0]?.id ?? ''); setSavingLink(null)
+    setTxType('expense'); setSavingLink(null)
   }
 
   const handleSubmit = async () => {
@@ -385,7 +385,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
     setSubmitting(true)
     try {
       await onAddTransaction({
-        user_id: userId,
+        user_id: currentUserID,
         type: txType,
         amount: amt,
         category: txType === 'saving' ? '저축/투자' : (category || '기타'),
@@ -465,21 +465,6 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
               >저축</button>
             </div>
 
-            <div className="flex gap-1 ml-auto">
-              {users.map(u => (
-                <button
-                  key={u.id}
-                  onClick={() => setUserId(u.id)}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold transition-all ${
-                    userId === u.id ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-50'
-                  }`}
-                  style={{ backgroundColor: u.avatar_color }}
-                  title={u.name}
-                >
-                  {u.name[0]}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Row 2: amount */}
@@ -628,19 +613,12 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
                       ))}
                     </div>
                   )}
-                  <select
-                    className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
-                    value={editUserId}
-                    onChange={e => setEditUserId(e.target.value)}
-                  >
-                    {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                  </select>
                   <div className="flex gap-2">
                     <button
                       onClick={async () => {
                         const amt = Number(editAmount.replace(/,/g, ''))
                         if (!onUpdateTransaction || isNaN(amt) || amt <= 0 || !editTitle.trim()) return
-                        await onUpdateTransaction(tx.id, { title: editTitle.trim(), amount: amt, category: editCategory || tx.category, user_id: editUserId || tx.user_id })
+                        await onUpdateTransaction(tx.id, { title: editTitle.trim(), amount: amt, category: editCategory || tx.category, user_id: editTxUserId || tx.user_id })
                         setEditingTxId(null)
                       }}
                       className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-brand-500 text-white rounded-lg text-xs font-semibold hover:bg-brand-600"
@@ -693,7 +671,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
                           setEditTitle(tx.title)
                           setEditAmount(tx.amount.toLocaleString())
                           setEditCategory(tx.category)
-                          setEditUserId(tx.user_id)
+                          setEditTxUserId(tx.user_id)
                           setEditSaving(isSaving)
                         }}
                         className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-brand-500"
@@ -733,6 +711,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
 // ─── Main CalendarView ────────────────────────────────────────────────────────
 
 interface CalendarViewProps {
+  currentUserID: string
   year: number
   month: number
   calendarData: CalendarSummaryResponse | null
@@ -754,6 +733,7 @@ export default function CalendarView({
   calendarData,
   transactions,
   users,
+  currentUserID,
   stocks,
   otherAssets,
   budgetLimit = 0,
@@ -878,6 +858,7 @@ export default function CalendarView({
             transactions={transactions}
             calendarEvents={calendarData?.events ?? []}
             users={users}
+            currentUserID={currentUserID}
             stocks={stocks}
             otherAssets={otherAssets}
             accessToken={accessToken}

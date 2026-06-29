@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/solid'
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
-import type { User } from '@/types'
 import { useCategories } from '@/hooks/useCategories'
 import CategoryManager from '@/components/dashboard/CategoryManager'
 import { formatAmountInput } from '@/lib/formatNumber'
@@ -19,21 +18,19 @@ type AddData = {
 }
 
 interface QuickAddButtonProps {
-  users: User[]
+  currentUserID: string
   onAdd: (data: AddData) => Promise<void>
   open?: boolean
   onClose?: () => void
   accessToken?: string
 }
 
-export default function QuickAddButton({ users, onAdd, open: controlledOpen, onClose, accessToken }: QuickAddButtonProps) {
+export default function QuickAddButton({ currentUserID, onAdd, open: controlledOpen, onClose, accessToken }: QuickAddButtonProps) {
   const isControlled = controlledOpen !== undefined
 
   const [internalOpen, setInternalOpen] = useState(false)
   const isOpen = isControlled ? controlledOpen : internalOpen
 
-  const safeUsers = Array.isArray(users) ? users : []
-  const [userID, setUserID] = useState(safeUsers[0]?.id ?? '')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState('식비')
   const [title, setTitle] = useState('')
@@ -46,7 +43,6 @@ export default function QuickAddButton({ users, onAdd, open: controlledOpen, onC
       setCategory('식비')
       setAmount('')
       setTitle('')
-      setUserID(safeUsers[0]?.id ?? '')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
@@ -57,7 +53,7 @@ export default function QuickAddButton({ users, onAdd, open: controlledOpen, onC
   }
 
   const buildPayload = (paymentMethod: string): AddData => ({
-    user_id: userID,
+    user_id: currentUserID,
     type: 'expense',
     amount: parseInt(amount.replace(/,/g, ''), 10),
     category,
@@ -120,25 +116,9 @@ export default function QuickAddButton({ users, onAdd, open: controlledOpen, onC
           >
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-800">지출 추가</h3>
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1">
-                  {safeUsers.map(u => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => setUserID(u.id)}
-                      title={u.name}
-                      className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${userID === u.id ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-40'}`}
-                      style={{ backgroundColor: u.avatar_color }}
-                    >
-                      {u.name[0]}
-                    </button>
-                  ))}
-                </div>
-                <button onClick={close} className="text-slate-400 hover:text-slate-600 transition-colors">
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
-              </div>
+              <button onClick={close} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">

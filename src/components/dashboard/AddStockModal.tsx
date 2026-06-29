@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { XMarkIcon } from '@heroicons/react/24/solid';
-import type { User } from '@/types';
 import { formatAmountInput } from '@/lib/formatNumber';
 
 interface AddStockModalProps {
-  users: User[];
+  currentUserID: string;
   onClose: () => void;
   onAdd: (data: {
     user_id: string;
@@ -23,8 +22,7 @@ interface AddStockModalProps {
 
 const EXCHANGES = ['NASDAQ', 'NYSE', 'KRX', '기타'];
 
-export default function AddStockModal({ users, onClose, onAdd }: AddStockModalProps) {
-  const [userID, setUserID] = useState(users[0]?.id ?? '');
+export default function AddStockModal({ currentUserID, onClose, onAdd }: AddStockModalProps) {
   const [symbol, setSymbol] = useState('');
   const [name, setName] = useState('');
   const [exchange, setExchange] = useState('NASDAQ');
@@ -46,7 +44,7 @@ export default function AddStockModal({ users, onClose, onAdd }: AddStockModalPr
     if (!symbol || !name || !quantity || !avgPrice) return;
     setLoading(true);
     await onAdd({
-      user_id: userID,
+      user_id: currentUserID,
       symbol: symbol.toUpperCase().trim(),
       exchange,
       name: name.trim(),
@@ -81,25 +79,9 @@ export default function AddStockModal({ users, onClose, onAdd }: AddStockModalPr
         {/* Header */}
         <div className='flex items-center justify-between'>
           <h3 className='text-base font-bold text-slate-800'>주식 추가</h3>
-          <div className='flex items-center gap-2'>
-            <div className='flex gap-1'>
-              {users.map((u) => (
-                <button
-                  key={u.id}
-                  type='button'
-                  onClick={() => setUserID(u.id)}
-                  title={u.name}
-                  className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${userID === u.id ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-40'}`}
-                  style={{ backgroundColor: u.avatar_color }}
-                >
-                  {u.name[0]}
-                </button>
-              ))}
-            </div>
-            <button onClick={onClose} className='text-slate-400 hover:text-slate-600 transition-colors'>
-              <XMarkIcon className='h-5 w-5' />
-            </button>
-          </div>
+          <button onClick={onClose} className='text-slate-400 hover:text-slate-600 transition-colors'>
+            <XMarkIcon className='h-5 w-5' />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className='space-y-4'>
