@@ -7,6 +7,7 @@ import { useCategories } from '@/hooks/useCategories'
 interface NaverPayCardProps {
   currentUserID: string
   transactions?: Transaction[]
+  accessToken?: string
   onAdd: (data: {
     user_id: string
     type: 'expense'
@@ -26,12 +27,12 @@ function openNaverPay() {
   document.body.removeChild(a)
 }
 
-export default function NaverPayCard({ currentUserID, transactions = [], onAdd }: NaverPayCardProps) {
+export default function NaverPayCard({ currentUserID, transactions = [], onAdd, accessToken }: NaverPayCardProps) {
   const [amount, setAmount] = useState('')
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('')
   const [loading, setLoading] = useState(false)
-  const { expenseCategories } = useCategories()
+  const { expenseCategories } = useCategories(accessToken)
 
   const sortedCategories = useMemo(() => {
     const counts: Record<string, number> = {}

@@ -10,7 +10,6 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSession, signOut } from 'next-auth/react'
-import { AnimatePresence, motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import Lottie from 'lottie-react'
 import loadingAnimation from '@/assets/loading.json'
@@ -86,13 +85,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
 
 type ActiveTab = 'wealth' | 'ledger' | 'life' | 'fridge'
 
-const TAB_ORDER: ActiveTab[] = ['ledger', 'life', 'fridge', 'wealth']
 
-const tabVariants = {
-  enter: (dir: number) => ({ x: dir * 48, opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({ x: -dir * 48, opacity: 0 }),
-}
 
 // ─── fetch helpers ────────────────────────────────────────────────────────────
 
@@ -191,17 +184,6 @@ export default function DashboardClient() {
   const [copied, setCopied]           = useState(false)
   const menuRef                       = useRef<HTMLDivElement>(null)
 
-  const swipeDir    = useRef<number>(1)
-  const touchStartX = useRef<number>(0)
-  const touchStartY = useRef<number>(0)
-  const touchStartedOnScrollable = useRef<boolean>(false)
-  const mainRef     = useRef<HTMLElement>(null)
-  const activeTabRef = useRef<ActiveTab>('ledger')
-
-  const navigateTab = useCallback((tab: ActiveTab, dir: number) => {
-    swipeDir.current = dir
-    setActiveTab(tab)
-  }, [])
 
   const generateInvite = useCallback(async () => {
     if (inviteLoading) return
@@ -235,46 +217,6 @@ export default function DashboardClient() {
     return () => document.removeEventListener('mousedown', handler)
   }, [showMenu])
 
-  useEffect(() => {
-    activeTabRef.current = activeTab
-  }, [activeTab])
-
-  useEffect(() => {
-    const el = mainRef.current
-    if (!el) return
-    const onStart = (e: TouchEvent) => {
-      touchStartX.current = e.touches[0].clientX
-      touchStartY.current = e.touches[0].clientY
-      let el = e.target as HTMLElement | null
-      touchStartedOnScrollable.current = false
-      while (el && el !== mainRef.current) {
-        // computed style 기반으로 실제 가로 스크롤 가능한 요소만 차단.
-        // scrollWidth > clientWidth 만으로는 overflow:visible 인 일반 요소도
-        // 잡혀서 탭 스와이프가 막히는 문제가 있었음.
-        const ox = window.getComputedStyle(el).overflowX
-        if ((ox === 'auto' || ox === 'scroll') && el.scrollWidth > el.clientWidth) {
-          touchStartedOnScrollable.current = true
-          break
-        }
-        el = el.parentElement
-      }
-    }
-    const onEnd = (e: TouchEvent) => {
-      if (touchStartedOnScrollable.current) return
-      const dx = e.changedTouches[0].clientX - touchStartX.current
-      const dy = e.changedTouches[0].clientY - touchStartY.current
-      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return
-      const idx = TAB_ORDER.indexOf(activeTabRef.current)
-      if (dx < 0 && idx < TAB_ORDER.length - 1) navigateTab(TAB_ORDER[idx + 1], 1)
-      else if (dx > 0 && idx > 0) navigateTab(TAB_ORDER[idx - 1], -1)
-    }
-    el.addEventListener('touchstart', onStart, { passive: true })
-    el.addEventListener('touchend', onEnd, { passive: true })
-    return () => {
-      el.removeEventListener('touchstart', onStart)
-      el.removeEventListener('touchend', onEnd)
-    }
-  }, [navigateTab, loading])
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }))
   const [summaryYear, setSummaryYear]   = useState(now.getFullYear())
   const [summaryMonth, setSummaryMonth] = useState(now.getMonth() + 1)
@@ -1188,18 +1130,12 @@ export default function DashboardClient() {
 
       {/* ── Main content ── */}
       <main
-        ref={mainRef}
         className="max-w-2xl mx-auto px-3 pt-4 pb-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1rem)] space-y-3"
       >
 
-        <AnimatePresence mode="wait" custom={swipeDir.current}>
         {/* ══ Tab 1: 자산 현황 ══ */}
         {activeTab === 'wealth' && (
-          <motion.div key="wealth" className="space-y-3"
-            custom={swipeDir.current} variants={tabVariants}
-            initial="enter" animate="center" exit="exit"
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-          >
+          <div className="space-y-3">
             {tabLoading === 'wealth' ? <TabSkeleton /> : <>
             {/* 통합 순자산 요약 */}
             <NetWorthSummaryCard
@@ -1230,20 +1166,17 @@ export default function DashboardClient() {
               onCreateLoanExpense={handleCreateLoanExpense}
             />
             </>}
-          </motion.div>
+          </div>
         )}
 
         {/* ══ Tab 2: 가계부 ══ */}
         {activeTab === 'ledger' && (
-          <motion.div key="ledger" className="space-y-3"
-            custom={swipeDir.current} variants={tabVariants}
-            initial="enter" animate="center" exit="exit"
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-          >
+          <div className="space-y-3">
             {/* 네이버페이 결제 카드 */}
             <NaverPayCard
               currentUserID={session?.user?.backendUser?.id ?? users[0]?.id ?? ''}
               transactions={transactions}
+              accessToken={session?.user?.accessToken}
               onAdd={async (data) => { await handleAddTransaction(data) }}
             />
 
@@ -1293,6 +1226,7 @@ export default function DashboardClient() {
               stocks={portfolio}
               otherAssets={otherAssets}
               budgetLimit={couple?.monthly_budget ?? 0}
+              accessToken={session?.user?.accessToken}
               onMonthChange={handleCalendarMonthChange}
               onAddTransaction={handleAddTransactionOnDate}
               onUpdateTransaction={handleUpdateTransaction}
@@ -1325,16 +1259,12 @@ export default function DashboardClient() {
               onDelete={handleDeleteFixedExpense}
             />
 
-          </motion.div>
+          </div>
         )}
 
         {/* ══ Tab 3: 일정/일기 ══ */}
         {activeTab === 'life' && (
-          <motion.div key="life"
-            custom={swipeDir.current} variants={tabVariants}
-            initial="enter" animate="center" exit="exit"
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-          >
+          <div>
             {tabLoading === 'life' ? <TabSkeleton /> : (
               <ScheduleTab
                 schedules={schedules}
@@ -1348,16 +1278,12 @@ export default function DashboardClient() {
                 onDeleteDiary={handleDeleteDiary}
               />
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* ══ Tab 4: 냉장고 ══ */}
         {activeTab === 'fridge' && (
-          <motion.div key="fridge" className="space-y-3"
-            custom={swipeDir.current} variants={tabVariants}
-            initial="enter" animate="center" exit="exit"
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-          >
+          <div className="space-y-3">
             {tabLoading === 'fridge' ? <TabSkeleton /> : (
               <FridgeTab
                 fridgeItems={fridgeItems}
@@ -1370,9 +1296,8 @@ export default function DashboardClient() {
                 onDeleteDish={handleDeleteSideDish}
               />
             )}
-          </motion.div>
+          </div>
         )}
-        </AnimatePresence>
 
       </main>
 
@@ -1417,7 +1342,7 @@ export default function DashboardClient() {
       <nav className="fixed bottom-0 inset-x-0 z-50 bg-white/90 backdrop-blur-lg border-t border-slate-100 shadow-[0_-1px_12px_rgba(0,0,0,0.06)]">
         <div className="max-w-2xl mx-auto flex pb-safe">
           <button
-            onClick={() => navigateTab('ledger', TAB_ORDER.indexOf('ledger') > TAB_ORDER.indexOf(activeTab) ? 1 : -1)}
+            onClick={() => setActiveTab('ledger')}
             className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
               activeTab === 'ledger' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
             }`}
@@ -1432,7 +1357,7 @@ export default function DashboardClient() {
             }`}>가계부</span>
           </button>
           <button
-            onClick={() => navigateTab('life', TAB_ORDER.indexOf('life') > TAB_ORDER.indexOf(activeTab) ? 1 : -1)}
+            onClick={() => setActiveTab('life')}
             className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
               activeTab === 'life' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
             }`}
@@ -1447,7 +1372,7 @@ export default function DashboardClient() {
             }`}>일정/일기</span>
           </button>
           <button
-            onClick={() => navigateTab('fridge', TAB_ORDER.indexOf('fridge') > TAB_ORDER.indexOf(activeTab) ? 1 : -1)}
+            onClick={() => setActiveTab('fridge')}
             className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
               activeTab === 'fridge' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
             }`}
@@ -1462,7 +1387,7 @@ export default function DashboardClient() {
             }`}>냉장고</span>
           </button>
           <button
-            onClick={() => navigateTab('wealth', TAB_ORDER.indexOf('wealth') > TAB_ORDER.indexOf(activeTab) ? 1 : -1)}
+            onClick={() => setActiveTab('wealth')}
             className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
               activeTab === 'wealth' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
             }`}

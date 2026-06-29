@@ -535,7 +535,6 @@ export default function StockPortfolioCard({
   const [taxWarning, setTaxWarning] = useState<{ asset: StockAssetWithPrice; year: number } | null>(null);
   const [checkingDelete, setCheckingDelete] = useState<string | null>(null); // asset id
   const [showChart, setShowChart] = useState(false);
-  const swipeStartY = useRef<number | null>(null);
 
   const safeAssets = Array.isArray(assets) ? assets : [];
   const safeUsers = Array.isArray(users) ? users : [];
@@ -556,13 +555,6 @@ export default function StockPortfolioCard({
     pnlPct: g.pnlPct,
   }));
 
-  function handleSwipeStart(x: number) { swipeStartY.current = x; }
-  function handleSwipeEnd(x: number) {
-    if (swipeStartY.current === null) return;
-    const dx = x - swipeStartY.current;
-    if (Math.abs(dx) > 30) setShowChart(v => !v);
-    swipeStartY.current = null;
-  }
 
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -624,13 +616,7 @@ export default function StockPortfolioCard({
         </div>
 
         {/* Horizontal slider — list panel | chart panel */}
-        <div
-          className='overflow-hidden'
-          onTouchStart={e => handleSwipeStart(e.touches[0].clientX)}
-          onTouchEnd={e => handleSwipeEnd(e.changedTouches[0].clientX)}
-          onMouseDown={e => handleSwipeStart(e.clientX)}
-          onMouseUp={e => handleSwipeEnd(e.clientX)}
-        >
+        <div className='overflow-hidden'>
           <div
             className='flex transition-transform duration-300 ease-in-out'
             style={{ transform: showChart ? 'translateX(-50%)' : 'translateX(0)', width: '200%' }}

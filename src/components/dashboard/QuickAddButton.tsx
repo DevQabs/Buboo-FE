@@ -23,9 +23,10 @@ interface QuickAddButtonProps {
   onAdd: (data: AddData) => Promise<void>
   open?: boolean
   onClose?: () => void
+  accessToken?: string
 }
 
-export default function QuickAddButton({ users, onAdd, open: controlledOpen, onClose }: QuickAddButtonProps) {
+export default function QuickAddButton({ users, onAdd, open: controlledOpen, onClose, accessToken }: QuickAddButtonProps) {
   const isControlled = controlledOpen !== undefined
 
   const [internalOpen, setInternalOpen] = useState(false)
@@ -38,7 +39,7 @@ export default function QuickAddButton({ users, onAdd, open: controlledOpen, onC
   const [title, setTitle] = useState('')
   const [loading, setLoading] = useState(false)
   const [showCatManager, setShowCatManager] = useState(false)
-  const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories()
+  const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories(accessToken)
 
   useEffect(() => {
     if (isOpen) {

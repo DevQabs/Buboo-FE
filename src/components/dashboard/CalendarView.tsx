@@ -331,13 +331,14 @@ interface DetailPanelProps {
   users: User[]
   stocks: StockAssetWithPrice[]
   otherAssets: OtherAsset[]
+  accessToken?: string
   onClose: () => void
   onAddTransaction?: (payload: AddTransactionPayload) => Promise<void>
   onUpdateTransaction?: (id: string, data: { title: string; amount: number; category: string; user_id: string }) => Promise<void>
   onDeleteTransaction?: (id: string) => Promise<void>
 }
 
-function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, otherAssets, onClose, onAddTransaction, onUpdateTransaction, onDeleteTransaction }: DetailPanelProps) {
+function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, otherAssets, accessToken, onClose, onAddTransaction, onUpdateTransaction, onDeleteTransaction }: DetailPanelProps) {
   const dayTxns = useMemo(() =>
     transactions
       .filter(tx => toDateKey(new Date(tx.date)) === dateKey)
@@ -366,7 +367,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, stocks, oth
   const [editUserId, setEditUserId]         = useState('')
   const [editSaving, setEditSaving]         = useState(false)
   const [formError, setFormError]           = useState('')
-  const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories()
+  const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories(accessToken)
 
   const categories = txType === 'expense' ? expenseCategories : incomeCategories
 
@@ -740,6 +741,7 @@ interface CalendarViewProps {
   stocks: StockAssetWithPrice[]
   otherAssets: OtherAsset[]
   budgetLimit?: number
+  accessToken?: string
   onMonthChange: (year: number, month: number) => void
   onAddTransaction?: (payload: AddTransactionPayload) => Promise<void>
   onUpdateTransaction?: (id: string, data: { title: string; amount: number; category: string; user_id: string }) => Promise<void>
@@ -755,6 +757,7 @@ export default function CalendarView({
   stocks,
   otherAssets,
   budgetLimit = 0,
+  accessToken,
   onMonthChange,
   onAddTransaction,
   onUpdateTransaction,
@@ -877,6 +880,7 @@ export default function CalendarView({
             users={users}
             stocks={stocks}
             otherAssets={otherAssets}
+            accessToken={accessToken}
             onClose={() => setSelectedDate(null)}
             onAddTransaction={onAddTransaction}
             onUpdateTransaction={onUpdateTransaction}
