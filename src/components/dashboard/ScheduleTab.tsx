@@ -84,6 +84,11 @@ function MiniCalendar({
   const firstDay = new Date(year, month - 1, 1).getDay()
   const daysInMonth = new Date(year, month, 0).getDate()
 
+  const [direction, setDirection] = useState(0)
+
+  const handlePrev = () => { setDirection(-1); onPrev() }
+  const handleNext = () => { setDirection(1);  onNext() }
+
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
 
@@ -96,8 +101,8 @@ function MiniCalendar({
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = e.changedTouches[0].clientY - touchStartY.current
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-      if (dx < 0) onNext()
-      else onPrev()
+      if (dx < 0) handleNext()
+      else handlePrev()
     }
   }
 
@@ -121,13 +126,13 @@ function MiniCalendar({
       onTouchEnd={handleTouchEnd}
     >
       <div className="flex items-center justify-between mb-3">
-        <button onClick={onPrev} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
+        <button onClick={handlePrev} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
           <ChevronLeftIcon className="h-4 w-4 text-slate-400" />
         </button>
         <span className="text-sm font-bold text-slate-800">
           {year}년 {month}월
         </span>
-        <button onClick={onNext} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
+        <button onClick={handleNext} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
           <ChevronRightIcon className="h-4 w-4 text-slate-400" />
         </button>
       </div>
@@ -140,42 +145,59 @@ function MiniCalendar({
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-y-0.5">
-        {cells.map((day, i) => {
-          if (!day) return <div key={i} />
-          const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-          const isToday = dateStr === todayStr
-          const isSelected = dateStr === selectedDate
-          const hasSchedule = scheduleDays.has(dateStr)
-          const hasDiary = diaryDays.has(dateStr)
-          const holiday = holidayMap[dateStr]
-          const col = i % 7
+      <div className="overflow-hidden">
+        <AnimatePresence initial={false} custom={direction} mode="popLayout">
+          <motion.div
+            key={`${year}-${month}`}
+            custom={direction}
+            variants={{
+              enter: (dir: number) => ({ x: dir >= 0 ? '100%' : '-100%', opacity: 0 }),
+              center: { x: 0, opacity: 1 },
+              exit:  (dir: number) => ({ x: dir >= 0 ? '-100%' : '100%', opacity: 0 }),
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: 'tween', duration: 0.22, ease: 'easeInOut' }}
+            className="grid grid-cols-7 gap-y-0.5"
+          >
+            {cells.map((day, i) => {
+              if (!day) return <div key={i} />
+              const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+              const isToday = dateStr === todayStr
+              const isSelected = dateStr === selectedDate
+              const hasSchedule = scheduleDays.has(dateStr)
+              const hasDiary = diaryDays.has(dateStr)
+              const holiday = holidayMap[dateStr]
+              const col = i % 7
 
-          return (
-            <button
-              key={i}
-              onClick={() => onDayClick(dateStr)}
-              className={`flex flex-col items-center py-1 rounded-lg transition-colors ${
-                isSelected ? 'bg-brand-500' : isToday ? 'bg-brand-50' : 'hover:bg-slate-50'
-              }`}
-            >
-              <span className={`text-xs font-medium ${
-                isSelected ? 'text-white'
-                : isToday   ? 'text-brand-600'
-                : col === 0 || (col !== 6 && holiday) ? 'text-rose-500'
-                : col === 6 ? 'text-blue-500'
-                : 'text-slate-700'
-              }`}>{day}</span>
-              <span className={`text-[8px] leading-none ${isSelected ? 'text-brand-100' : 'text-slate-300'}`}>
-                {lunarCellDay(dateStr)}
-              </span>
-              <div className="flex gap-0.5 mt-0.5 h-1">
-                {hasSchedule && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-brand-500'}`} />}
-                {hasDiary    && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-amber-200' : 'bg-amber-400'}`} />}
-              </div>
-            </button>
-          )
-        })}
+              return (
+                <button
+                  key={i}
+                  onClick={() => onDayClick(dateStr)}
+                  className={`flex flex-col items-center py-1 rounded-lg transition-colors ${
+                    isSelected ? 'bg-brand-500' : isToday ? 'bg-brand-50' : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <span className={`text-xs font-medium ${
+                    isSelected ? 'text-white'
+                    : isToday   ? 'text-brand-600'
+                    : col === 0 || (col !== 6 && holiday) ? 'text-rose-500'
+                    : col === 6 ? 'text-blue-500'
+                    : 'text-slate-700'
+                  }`}>{day}</span>
+                  <span className={`text-[8px] leading-none ${isSelected ? 'text-brand-100' : 'text-slate-300'}`}>
+                    {lunarCellDay(dateStr)}
+                  </span>
+                  <div className="flex gap-0.5 mt-0.5 h-1">
+                    {hasSchedule && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-brand-500'}`} />}
+                    {hasDiary    && <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-amber-200' : 'bg-amber-400'}`} />}
+                  </div>
+                </button>
+              )
+            })}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Legend */}
