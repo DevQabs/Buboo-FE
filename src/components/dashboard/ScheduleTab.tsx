@@ -84,6 +84,23 @@ function MiniCalendar({
   const firstDay = new Date(year, month - 1, 1).getDay()
   const daysInMonth = new Date(year, month, 0).getDate()
 
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) onNext()
+      else onPrev()
+    }
+  }
+
   const scheduleDays = new Set(
     schedules.map(s => s.start_date.slice(0, 10))
   )
@@ -98,7 +115,11 @@ function MiniCalendar({
   const todayStr = today()
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+    <div
+      className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="flex items-center justify-between mb-3">
         <button onClick={onPrev} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
           <ChevronLeftIcon className="h-4 w-4 text-slate-400" />

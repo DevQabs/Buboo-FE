@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PlusIcon, Cog6ToothIcon, PencilIcon, TrashIcon, CheckIcon } from '@heroicons/react/24/outline'
 import { formatAmountInput } from '@/lib/formatNumber'
 import { useCategories } from '@/hooks/useCategories'
@@ -775,6 +775,24 @@ export default function CalendarView({
   const goPrev = () => month === 1 ? onMonthChange(year - 1, 12) : onMonthChange(year, month - 1)
   const goNext = () => month === 12 ? onMonthChange(year + 1, 1) : onMonthChange(year, month + 1)
 
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) goNext()
+      else goPrev()
+      setSelectedDate(null)
+    }
+  }
+
   const handleCellClick = (dayNum: number) => {
     const key = `${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`
     setSelectedDate(prev => prev === key ? null : key)
@@ -786,7 +804,11 @@ export default function CalendarView({
   }), { expense: 0, income: 0 }) ?? { expense: 0, income: 0 }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div
+      className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
 
       {/* ── Month navigator + stats ── */}
       <div className="px-3 pt-3 pb-2">

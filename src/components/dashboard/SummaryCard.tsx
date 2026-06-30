@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { PieChart, Pie, Cell, Tooltip } from 'recharts'
 import {
   PencilSquareIcon,
   CheckIcon,
@@ -9,6 +10,12 @@ import {
   ChevronDownIcon,
 } from '@heroicons/react/24/outline'
 import type { MonthlySummary } from '@/types'
+
+const CHART_COLORS = [
+  '#0F4C81', '#8B5CF6', '#F59E0B', '#06B6D4',
+  '#EC4899', '#84CC16', '#F97316', '#14B8A6',
+  '#6366F1', '#A78BFA',
+]
 
 interface CategoryItem {
   category: string
@@ -48,6 +55,32 @@ const TIER_STYLES = {
   warn:   { bar: 'bg-rose-400',    text: 'text-rose-500',    badge: 'bg-rose-50  text-rose-700',      label: '주의' },
   danger: { bar: 'bg-rose-500',    text: 'text-rose-600',    badge: 'bg-rose-50   text-rose-700',     label: '위험' },
   over:   { bar: 'bg-rose-700',    text: 'text-rose-700',    badge: 'bg-rose-100  text-rose-800',     label: '초과' },
+}
+
+function CategoryChartTooltip({ active, payload }: {
+  active?: boolean
+  payload?: Array<{ payload: { category: string; amount: number; pct: number; isFixed?: boolean } }>
+}) {
+  if (!active || !payload?.length) return null
+  const d = payload[0].payload
+  return (
+    <div className="bg-white border border-slate-100 rounded-2xl shadow-lg px-4 py-3 min-w-[140px]">
+      <p className="text-xs font-bold text-slate-800 mb-2">
+        {d.category}
+        {d.isFixed && <span className="ml-1.5 text-[9px] bg-amber-50 text-amber-600 px-1 py-0.5 rounded font-medium">고정</span>}
+      </p>
+      <div className="space-y-1">
+        <div className="flex justify-between gap-4 text-xs">
+          <span className="text-slate-400">비중</span>
+          <span className="font-semibold text-slate-700 tabular-nums">{d.pct.toFixed(1)}%</span>
+        </div>
+        <div className="flex justify-between gap-4 text-xs">
+          <span className="text-slate-400">금액</span>
+          <span className="font-semibold text-slate-700 tabular-nums">{formatKRW(d.amount)}</span>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function SummaryCard({
@@ -233,30 +266,40 @@ export default function SummaryCard({
                 transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                 className="overflow-hidden"
               >
-                <div className="px-4 pb-3 space-y-2">
-                  {categoryBreakdown.map(item => {
-                    const pct = (item.amount / totalForBreakdown) * 100
-                    return (
-                      <div key={item.category}>
-                        <div className="flex items-center justify-between text-xs mb-0.5">
-                          <div className="flex items-center gap-1">
-                            {item.isFixed && <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
-                            <span className="text-slate-600 font-medium">{item.category}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-slate-400">{pct.toFixed(0)}%</span>
-                            <span className="font-semibold text-slate-700 tabular-nums">{formatKRW(item.amount)}</span>
-                          </div>
-                        </div>
-                        <div className="w-full bg-white/60 rounded-full h-1">
-                          <div
-                            className={`h-1 rounded-full transition-all duration-500 ${item.isFixed ? 'bg-amber-400' : 'bg-brand-100'}`}
-                            style={{ width: `${Math.min(pct, 100)}%` }}
-                          />
-                        </div>
+                <div className="px-4 pb-4">
+                  <div className="flex justify-center">
+                    <div className="relative">
+                      <PieChart width={160} height={160} style={{ outline: 'none' }}>
+                        <Pie
+                          data={categoryBreakdown.map(item => ({
+                            ...item,
+                            pct: (item.amount / totalForBreakdown) * 100,
+                          }))}
+                          dataKey="amount"
+                          cx={80}
+                          cy={80}
+                          innerRadius={48}
+                          outerRadius={72}
+                          startAngle={90}
+                          endAngle={-270}
+                          paddingAngle={2}
+                          strokeWidth={0}
+                          focusable={false}
+                        >
+                          {categoryBreakdown.map((_, i) => (
+                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} stroke="none" />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CategoryChartTooltip />} />
+                      </PieChart>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span className="text-[10px] text-slate-400 font-medium">총 지출</span>
+                        <span className="text-sm font-black text-slate-800 tabular-nums leading-tight">
+                          {formatKRW(committedExpense)}
+                        </span>
                       </div>
-                    )
-                  })}
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}
