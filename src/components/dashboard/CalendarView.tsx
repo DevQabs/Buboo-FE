@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { useState, useMemo } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PlusIcon, Cog6ToothIcon, PencilIcon, TrashIcon, CheckIcon } from '@heroicons/react/24/outline'
 import { formatAmountInput } from '@/lib/formatNumber'
 import { useCategories } from '@/hooks/useCategories'
@@ -773,33 +772,11 @@ export default function CalendarView({
     return dayNum >= 1 && dayNum <= daysInMonth ? dayNum : 0
   })
 
-  const [direction, setDirection] = useState(0)
-
   const goPrev = () => {
-    setDirection(-1)
     month === 1 ? onMonthChange(year - 1, 12) : onMonthChange(year, month - 1)
   }
   const goNext = () => {
-    setDirection(1)
     month === 12 ? onMonthChange(year + 1, 1) : onMonthChange(year, month + 1)
-  }
-
-  const touchStartX = useRef(0)
-  const touchStartY = useRef(0)
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX
-    touchStartY.current = e.touches[0].clientY
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const dx = e.changedTouches[0].clientX - touchStartX.current
-    const dy = e.changedTouches[0].clientY - touchStartY.current
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-      if (dx < 0) goNext()
-      else goPrev()
-      setSelectedDate(null)
-    }
   }
 
   const handleCellClick = (dayNum: number) => {
@@ -813,11 +790,7 @@ export default function CalendarView({
   }), { expense: 0, income: 0 }) ?? { expense: 0, income: 0 }
 
   return (
-    <div
-      className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
 
       {/* ── Month navigator + stats ── */}
       <div className="px-3 pt-3 pb-2">
@@ -857,45 +830,28 @@ export default function CalendarView({
       </div>
 
       {/* ── Calendar grid ── */}
-      <div className="overflow-hidden border-t border-slate-50">
-        <AnimatePresence initial={false} custom={direction} mode="popLayout">
-          <motion.div
-            key={`${year}-${month}`}
-            custom={direction}
-            variants={{
-              enter: (dir: number) => ({ x: dir >= 0 ? '100%' : '-100%', opacity: 0 }),
-              center: { x: 0, opacity: 1 },
-              exit:  (dir: number) => ({ x: dir >= 0 ? '-100%' : '100%', opacity: 0 }),
-            }}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ type: 'tween', duration: 0.22, ease: 'easeInOut' }}
-            className="grid grid-cols-7 gap-px px-1 pb-1"
-          >
-            {cells.map((dayNum, i) => {
-              const dateKey = dayNum > 0
-                ? `${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`
-                : ''
-              return (
-                <CalendarCell
-                  key={i}
-                  day={dayNum}
-                  dateKey={dateKey}
-                  dayData={dayMap[dateKey]}
-                  events={eventMap[dateKey] ?? []}
-                  isToday={dateKey === today}
-                  isSelected={dateKey === selectedDate}
-                  isOtherMonth={false}
-                  dailyBudget={dailyBudget}
-                  holiday={holidayMap[dateKey]}
-                  col={i % 7}
-                  onClick={() => dayNum > 0 && handleCellClick(dayNum)}
-                />
-              )
-            })}
-          </motion.div>
-        </AnimatePresence>
+      <div className="grid grid-cols-7 gap-px px-1 pb-1 border-t border-slate-50">
+        {cells.map((dayNum, i) => {
+          const dateKey = dayNum > 0
+            ? `${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`
+            : ''
+          return (
+            <CalendarCell
+              key={i}
+              day={dayNum}
+              dateKey={dateKey}
+              dayData={dayMap[dateKey]}
+              events={eventMap[dateKey] ?? []}
+              isToday={dateKey === today}
+              isSelected={dateKey === selectedDate}
+              isOtherMonth={false}
+              dailyBudget={dailyBudget}
+              holiday={holidayMap[dateKey]}
+              col={i % 7}
+              onClick={() => dayNum > 0 && handleCellClick(dayNum)}
+            />
+          )
+        })}
       </div>
 
       {/* ── Detail panel ── */}
