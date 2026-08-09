@@ -88,6 +88,7 @@ export interface StockAsset {
   memo: string
   logo_url: string | null
   purchased_at: string
+  sort_order: number       // 드래그로 지정한 수동 정렬 순서
   created_at: string
   updated_at: string
 }
@@ -261,6 +262,7 @@ export interface OtherAsset {
   payment_day: number
   memo: string
   acquired_at: string
+  sort_order: number              // 드래그로 지정한 수동 정렬 순서
   created_at: string
   updated_at: string
 }

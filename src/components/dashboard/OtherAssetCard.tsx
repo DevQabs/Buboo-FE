@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { PencilSquareIcon, TrashIcon, XMarkIcon, LockClosedIcon } from '@heroicons/react/24/outline'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { formatAmountInput } from '@/lib/formatNumber'
+import { DragHandle, SortableList, SortableRow } from './SortableList'
 import type {
   OtherAsset,
   OtherAssetType,
@@ -24,6 +25,8 @@ interface OtherAssetCardProps {
   onEdit: (id: string, data: UpdateOtherAssetRequest) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onCreateLoanExpense?: (id: string) => Promise<void>
+  /** Receives every asset id in the new display order (all sections, not just the moved one). */
+  onReorder: (ids: string[]) => Promise<void>
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -540,7 +543,8 @@ function AssetRow({ asset, user, onEdit, onDelete, onCreateLoanExpense, loanExpe
     : null
 
   return (
-    <li className="relative flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors">
+    <SortableRow id={asset.id} className="relative flex items-center gap-3 pl-3 pr-5 py-3.5 hover:bg-slate-50 transition-colors">
+      <DragHandle />
       <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg ${
         isLoan ? 'bg-rose-50' : asset.is_liability ? 'bg-rose-50' : asset.is_locked ? 'bg-amber-50' : 'bg-emerald-50'
       }`}>
@@ -632,13 +636,13 @@ function AssetRow({ asset, user, onEdit, onDelete, onCreateLoanExpense, loanExpe
           </>
         )}
       </div>
-    </li>
+    </SortableRow>
   )
 }
 
 // ─── Main card ────────────────────────────────────────────────────────────────
 
-export default function OtherAssetCard({ assets = [], users = [], currentUserID, fixedExpenseTitles = [], onAdd, onEdit, onDelete, onCreateLoanExpense }: OtherAssetCardProps) {
+export default function OtherAssetCard({ assets = [], users = [], currentUserID, fixedExpenseTitles = [], onAdd, onEdit, onDelete, onCreateLoanExpense, onReorder }: OtherAssetCardProps) {
   const [showAdd, setShowAdd] = useState(false)
   const [editingAsset, setEditingAsset] = useState<OtherAsset | null>(null)
   const [pendingDelete, setPendingDelete] = useState<OtherAsset | null>(null)
@@ -650,6 +654,20 @@ export default function OtherAssetCard({ assets = [], users = [], currentUserID,
   const liquidAssets  = safeAssets.filter(a => !a.is_liability && !a.is_locked && a.asset_type !== '대출')
   const lockedAssets  = safeAssets.filter(a => !a.is_liability && a.is_locked)
   const liabilities   = safeAssets.filter(a => a.is_liability || a.asset_type === '대출')
+
+  // Assets are dragged within their own section, but the server stores one flat
+  // order — so splice the moved section back into the full list before saving.
+  const handleSectionReorder = (section: 'liquid' | 'locked' | 'liability') => (nextIDs: string[]) => {
+    const ids = {
+      liquid: liquidAssets.map(a => a.id),
+      locked: lockedAssets.map(a => a.id),
+      liability: liabilities.map(a => a.id),
+    }
+    ids[section] = nextIDs
+    // A failed save rolls the list back to its previous order, which is the
+    // user-visible signal — nothing to do here but keep the rejection handled.
+    onReorder([...ids.liquid, ...ids.locked, ...ids.liability]).catch(err => console.error(err))
+  }
 
   const totalLiquid    = liquidAssets.reduce((s, a) => s + a.value_krw, 0)
   const totalLocked    = lockedAssets.reduce((s, a) => s + a.value_krw, 0)
@@ -704,9 +722,11 @@ export default function OtherAssetCard({ assets = [], users = [], currentUserID,
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">유동 자산</span>
               </li>
             )}
-            {liquidAssets.map(asset => (
-              <AssetRow key={asset.id} asset={asset} user={userMap[asset.user_id]} onEdit={() => setEditingAsset(asset)} onDelete={() => setPendingDelete(asset)} />
-            ))}
+            <SortableList ids={liquidAssets.map(a => a.id)} onReorder={handleSectionReorder('liquid')}>
+              {liquidAssets.map(asset => (
+                <AssetRow key={asset.id} asset={asset} user={userMap[asset.user_id]} onEdit={() => setEditingAsset(asset)} onDelete={() => setPendingDelete(asset)} />
+              ))}
+            </SortableList>
 
             {lockedAssets.length > 0 && (
               <li className="px-5 py-1.5 bg-amber-50 flex items-center gap-1.5">
@@ -714,26 +734,30 @@ export default function OtherAssetCard({ assets = [], users = [], currentUserID,
                 <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide">인출 불가 자산</span>
               </li>
             )}
-            {lockedAssets.map(asset => (
-              <AssetRow key={asset.id} asset={asset} user={userMap[asset.user_id]} onEdit={() => setEditingAsset(asset)} onDelete={() => setPendingDelete(asset)} />
-            ))}
+            <SortableList ids={lockedAssets.map(a => a.id)} onReorder={handleSectionReorder('locked')}>
+              {lockedAssets.map(asset => (
+                <AssetRow key={asset.id} asset={asset} user={userMap[asset.user_id]} onEdit={() => setEditingAsset(asset)} onDelete={() => setPendingDelete(asset)} />
+              ))}
+            </SortableList>
 
             {liabilities.length > 0 && (
               <li className="px-5 py-1.5 bg-rose-50">
                 <span className="text-[10px] font-semibold text-rose-400 uppercase tracking-wide">부채 · 대출</span>
               </li>
             )}
-            {liabilities.map(asset => (
-              <AssetRow
-                key={asset.id}
-                asset={asset}
-                user={userMap[asset.user_id]}
-                onEdit={() => setEditingAsset(asset)}
-                onDelete={() => setPendingDelete(asset)}
-                onCreateLoanExpense={onCreateLoanExpense ? () => onCreateLoanExpense(asset.id) : undefined}
-                loanExpenseExists={fixedExpenseTitles.includes(asset.name + ' 납입금')}
-              />
-            ))}
+            <SortableList ids={liabilities.map(a => a.id)} onReorder={handleSectionReorder('liability')}>
+              {liabilities.map(asset => (
+                <AssetRow
+                  key={asset.id}
+                  asset={asset}
+                  user={userMap[asset.user_id]}
+                  onEdit={() => setEditingAsset(asset)}
+                  onDelete={() => setPendingDelete(asset)}
+                  onCreateLoanExpense={onCreateLoanExpense ? () => onCreateLoanExpense(asset.id) : undefined}
+                  loanExpenseExists={fixedExpenseTitles.includes(asset.name + ' 납입금')}
+                />
+              ))}
+            </SortableList>
           </ul>
         )}
       </div>

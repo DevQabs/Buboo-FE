@@ -15,6 +15,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
 import type { StockAssetWithPrice, User, PortfolioSummary } from '@/types';
+import { DragHandle, SortableList, SortableRow } from './SortableList';
 
 
 interface StockPortfolioCardProps {
@@ -26,6 +27,8 @@ interface StockPortfolioCardProps {
   onEditClick?: (asset: StockAssetWithPrice) => void;
   onBuySellClick?: (asset: StockAssetWithPrice, mode: 'buy' | 'sell') => void;
   onDeleteClick?: (asset: StockAssetWithPrice) => void;
+  /** Receives every holding id in the new display order, grouped rows kept together. */
+  onReorder: (ids: string[]) => Promise<void>;
 }
 
 function formatCurrency(value: number, currency: string): string {
@@ -161,10 +164,15 @@ interface StockGroup {
   price_source: string;
 }
 
+/** Identity of a symbol group — also its drag-and-drop sortable id. */
+function groupKeyOf(g: { symbol: string; exchange: string }): string {
+  return `${g.symbol}::${g.exchange}`;
+}
+
 function groupAssets(assets: StockAssetWithPrice[]): StockGroup[] {
   const map = new Map<string, StockAssetWithPrice[]>();
   for (const a of assets) {
-    const key = `${a.symbol}::${a.exchange}`;
+    const key = groupKeyOf(a);
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(a);
   }
@@ -286,9 +294,11 @@ function UserHoldingRow({
 // ─── Grouped stock row ────────────────────────────────────────────────────────
 
 function GroupedStockRow({
-  group, userMap, onEdit, onBuy, onSell, onDelete,
+  group, groupKey, userMap, onEdit, onBuy, onSell, onDelete,
 }: {
   group: StockGroup;
+  /** Stable sortable id for the whole symbol group. */
+  groupKey: string;
   userMap: Record<string, User>;
   onEdit: (asset: StockAssetWithPrice) => void;
   onBuy: (asset: StockAssetWithPrice) => void;
@@ -314,13 +324,15 @@ function GroupedStockRow({
   const longPressHandlers = useLongPress(() => setShowDetail(true));
 
   return (
-    <li className='relative'>
+    <SortableRow id={groupKey} className='relative'>
       {/* Main grouped row */}
       <div
-        className='relative flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors select-none cursor-pointer overflow-hidden'
+        className='relative flex items-center gap-3 pl-3 pr-5 py-3 hover:bg-slate-50 transition-colors select-none cursor-pointer overflow-hidden'
         onClick={() => setExpanded(v => !v)}
         {...longPressHandlers}
       >
+        <DragHandle />
+
         {/* Symbol badge */}
         <div className='flex-shrink-0 w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center'>
           <span className='text-[10px] font-bold text-brand-600 leading-tight text-center px-1'>{group.symbol}</span>
@@ -383,7 +395,7 @@ function GroupedStockRow({
           onDelete={() => onDelete(asset)}
         />
       ))}
-    </li>
+    </SortableRow>
   );
 }
 
@@ -530,6 +542,7 @@ export default function StockPortfolioCard({
   onEditClick,
   onBuySellClick,
   onDeleteClick,
+  onReorder,
 }: StockPortfolioCardProps) {
   const [pendingDelete, setPendingDelete] = useState<StockAssetWithPrice | null>(null);
   const [taxWarning, setTaxWarning] = useState<{ asset: StockAssetWithPrice; year: number } | null>(null);
@@ -540,6 +553,16 @@ export default function StockPortfolioCard({
   const safeUsers = Array.isArray(users) ? users : [];
   const userMap = Object.fromEntries(safeUsers.map((u) => [u.id, u]));
   const groups = groupAssets(safeAssets);
+
+  // Rows are dragged one symbol group at a time, but the server orders individual
+  // holdings — so expand each group back into its own rows, keeping them adjacent.
+  const handleGroupReorder = (nextKeys: string[]) => {
+    const byKey = new Map(groups.map(g => [groupKeyOf(g), g]));
+    const ids = nextKeys.flatMap(k => byKey.get(k)?.assets.map(a => a.id) ?? []);
+    // A failed save rolls the list back to its previous order, which is the
+    // user-visible signal — nothing to do here but keep the rejection handled.
+    onReorder(ids).catch(err => console.error(err));
+  };
 
   const totalValueKRW = summary?.total_value_krw ?? safeAssets.reduce((sum, a) => sum + (a.current_value_krw ?? 0), 0);
   const totalCostKRW = summary?.total_cost_krw ?? 0;
@@ -630,17 +653,20 @@ export default function StockPortfolioCard({
                 </div>
               ) : (
                 <ul className='divide-y divide-slate-50'>
-                  {groups.map(group => (
-                    <GroupedStockRow
-                      key={`${group.symbol}::${group.exchange}`}
-                      group={group}
-                      userMap={userMap}
-                      onEdit={a => onEditClick?.(a)}
-                      onBuy={a => onBuySellClick?.(a, 'buy')}
-                      onSell={a => onBuySellClick?.(a, 'sell')}
-                      onDelete={a => handleDeleteRequest(a)}
-                    />
-                  ))}
+                  <SortableList ids={groups.map(groupKeyOf)} onReorder={handleGroupReorder}>
+                    {groups.map(group => (
+                      <GroupedStockRow
+                        key={groupKeyOf(group)}
+                        groupKey={groupKeyOf(group)}
+                        group={group}
+                        userMap={userMap}
+                        onEdit={a => onEditClick?.(a)}
+                        onBuy={a => onBuySellClick?.(a, 'buy')}
+                        onSell={a => onBuySellClick?.(a, 'sell')}
+                        onDelete={a => handleDeleteRequest(a)}
+                      />
+                    ))}
+                  </SortableList>
                 </ul>
               )}
               {checkingDelete && (

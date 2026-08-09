@@ -816,6 +816,43 @@ export default function DashboardClient() {
     setOtherAssets(prev => prev.filter(a => a.id !== id))
   }
 
+  // ── reorder handlers ──────────────────────────────────────────────────────
+  // Both take the complete id list in the new display order. The list is applied
+  // locally first so the row lands where it was dropped without waiting on the
+  // network, and rolled back if the request fails.
+  const reorderByIDs = <T extends { id: string }>(items: T[], ids: string[]): T[] => {
+    const rank = new Map(ids.map((id, i) => [id, i]))
+    return [...items].sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0))
+  }
+
+  const handleReorderStocks = async (ids: string[]) => {
+    const previous = portfolio
+    setPortfolio(prev => reorderByIDs(prev, ids))
+    const res = await fetch(`${API_BASE}/api/stocks/reorder`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
+      body: JSON.stringify({ ids }),
+    })
+    if (!res.ok) {
+      setPortfolio(previous)
+      throw new Error(`주식 순서 저장 실패: ${res.status}`)
+    }
+  }
+
+  const handleReorderAssets = async (ids: string[]) => {
+    const previous = otherAssets
+    setOtherAssets(prev => reorderByIDs(prev, ids))
+    const res = await fetch(`${API_BASE}/api/assets/reorder`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
+      body: JSON.stringify({ ids }),
+    })
+    if (!res.ok) {
+      setOtherAssets(previous)
+      throw new Error(`자산 순서 저장 실패: ${res.status}`)
+    }
+  }
+
   const handleCreateLoanExpense = async (id: string) => {
     const res = await fetch(`${API_BASE}/api/assets/${id}/loan-expense`, { method: 'POST', headers: { Authorization: `Bearer ${_accessToken}` } })
     if (!res.ok) throw new Error(`고정비 생성 실패: ${res.status}`)
@@ -1155,6 +1192,7 @@ export default function DashboardClient() {
               onEditClick={setEditingStock}
               onBuySellClick={(asset, mode) => setBuySellTarget({ asset, mode })}
               onDeleteClick={handleDeleteStock}
+              onReorder={handleReorderStocks}
             />
 
             {/* 기타 자산 */}
@@ -1167,6 +1205,7 @@ export default function DashboardClient() {
               onEdit={handleEditAsset}
               onDelete={handleDeleteAsset}
               onCreateLoanExpense={handleCreateLoanExpense}
+              onReorder={handleReorderAssets}
             />
             </>}
           </div>
