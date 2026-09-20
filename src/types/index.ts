@@ -127,6 +127,8 @@ export interface PortfolioSummary {
   fx_source: 'live' | 'fallback'
   calculated_at: string
   krw_basis_approx_count: number  // >0이면 합계 손익에 그만큼 환차손익이 빠져 있음
+  estimated_tax_krw: number       // 전량 매도 시 양도소득세 (인별 250만 공제·22%, 올해 실현분과 통산)
+  net_after_tax_krw: number       // total_value_krw − estimated_tax_krw
 }
 
 // GET /api/stocks/portfolio 응답 형태

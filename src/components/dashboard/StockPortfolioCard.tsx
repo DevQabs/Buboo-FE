@@ -570,7 +570,12 @@ export default function StockPortfolioCard({
   const totalValueKRW = summary?.total_value_krw ?? safeAssets.reduce((sum, a) => sum + (a.current_value_krw ?? 0), 0);
   const totalCostKRW = summary?.total_cost_krw ?? 0;
   const totalPnlKRW = totalValueKRW - totalCostKRW;
-  const isOverallUp = totalPnlKRW >= 0;
+  // 합계는 지금 전량 매도했을 때 손에 남는 금액으로 본다. 양도소득세는 서버가
+  // 인별로 250만원을 공제하고 올해 실현손익과 통산해 낸 값이다.
+  const estimatedTaxKRW = summary?.estimated_tax_krw ?? 0;
+  const netAfterTaxKRW = summary?.net_after_tax_krw ?? totalValueKRW;
+  const afterTaxPnlKRW = totalPnlKRW - estimatedTaxKRW;
+  const isOverallUp = afterTaxPnlKRW >= 0;
 
   const chartData = groups.map(g => ({
     name: g.symbol,
@@ -621,10 +626,15 @@ export default function StockPortfolioCard({
           <div className='flex items-center gap-3'>
             {safeAssets.length > 0 && (
               <div className='text-right'>
-                <p className='text-base font-black text-slate-800 tabular-nums'>₩{Math.round(totalValueKRW / 10000).toLocaleString()}만</p>
+                <p className='text-base font-black text-slate-800 tabular-nums'>₩{Math.round(netAfterTaxKRW / 10000).toLocaleString()}만</p>
                 <p className={`text-xs font-semibold tabular-nums ${isOverallUp ? 'text-emerald-600' : 'text-rose-500'}`}>
-                  {isOverallUp ? '+' : ''}₩{Math.abs(Math.round(totalPnlKRW / 10000)).toLocaleString()}만 손익
+                  {isOverallUp ? '+' : ''}₩{Math.abs(Math.round(afterTaxPnlKRW / 10000)).toLocaleString()}만 손익 (세후)
                 </p>
+                {estimatedTaxKRW > 0 && (
+                  <p className='text-[10px] text-slate-400 tabular-nums'>
+                    평가 ₩{Math.round(totalValueKRW / 10000).toLocaleString()}만 · 양도세 ₩{Math.round(estimatedTaxKRW / 10000).toLocaleString()}만
+                  </p>
+                )}
               </div>
             )}
             <div className='flex items-center gap-1.5'>
