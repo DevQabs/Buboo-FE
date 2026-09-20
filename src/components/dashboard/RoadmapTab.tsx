@@ -37,7 +37,7 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
   const [candidates, setCandidates] = useState<RoadmapDividendCandidate[]>([]);
   const [showAssumptions, setShowAssumptions] = useState(false);
   const [scale, setScale] = useState<'year' | 'month'>('month');
-  const [tableScale, setTableScale] = useState<'year' | 'month'>('year');
+  const [tableScale, setTableScale] = useState<'year' | 'month'>('month');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
