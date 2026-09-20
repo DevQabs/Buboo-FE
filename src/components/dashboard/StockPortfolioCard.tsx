@@ -183,11 +183,10 @@ function groupAssets(assets: StockAssetWithPrice[]): StockGroup[] {
       ? group.reduce((s, a) => s + a.quantity * a.average_price, 0) / totalQty
       : 0;
     const totalValueKRW = group.reduce((s, a) => s + (a.current_value_krw ?? 0), 0);
-    const totalCostKRW = group.reduce((s, a) => {
-      const rate = a.exchange_rate ?? 1;
-      return s + a.quantity * a.average_price * (a.currency === 'KRW' ? 1 : rate);
-    }, 0);
-    const pnlKRW = totalValueKRW - totalCostKRW;
+    // 손익은 서버가 매입 시점 환율로 낸 값을 그대로 합친다. 여기서 오늘
+    // 환율로 원가를 다시 환산하면 환차손익이 지워져 부호까지 뒤집힌다.
+    const pnlKRW = group.reduce((s, a) => s + (a.profit_loss_krw ?? 0), 0);
+    const totalCostKRW = totalValueKRW - pnlKRW;
     const pnlPct = totalCostKRW > 0 ? (pnlKRW / totalCostKRW) * 100 : 0;
     return {
       symbol: first.symbol,
@@ -608,6 +607,11 @@ export default function StockPortfolioCard({
             <h2 className='text-sm font-bold text-slate-800'>주식 포트폴리오</h2>
             {safeAssets.length > 0 && summary?.usd_krw && (
               <p className='text-xs text-slate-400 mt-0.5'>USD/KRW {summary.usd_krw.toFixed(0)}원 기준</p>
+            )}
+            {(summary?.krw_basis_approx_count ?? 0) > 0 && (
+              <p className='text-xs text-amber-600 mt-0.5'>
+                {summary!.krw_basis_approx_count}개 종목은 원화 취득가가 없어 환차손익이 빠져 있어요
+              </p>
             )}
           </div>
           <div className='flex items-center gap-3'>

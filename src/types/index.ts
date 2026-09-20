@@ -110,6 +110,7 @@ export interface StockAssetWithPrice extends StockAsset {
   profit_loss: number
   profit_loss_krw: number
   profit_loss_pct: number
+  krw_basis_exact: boolean   // false면 원화 취득가 손상 — 오늘 환율 근사, 환차손익 미반영
   change: number
   change_percent: number
   exchange_rate?: number
@@ -125,6 +126,7 @@ export interface PortfolioSummary {
   usd_krw: number
   fx_source: 'live' | 'fallback'
   calculated_at: string
+  krw_basis_approx_count: number  // >0이면 합계 손익에 그만큼 환차손익이 빠져 있음
 }
 
 // GET /api/stocks/portfolio 응답 형태
