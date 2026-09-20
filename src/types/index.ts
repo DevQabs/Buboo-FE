@@ -639,6 +639,33 @@ export interface RoadmapYearRow {
   actual_net_worth_krw: number | null
 }
 
+export interface RoadmapContribution {
+  year: number
+  monthly_krw: number
+}
+
+export interface RoadmapDividendHolding {
+  symbol: string
+  shares: number
+  dps: number
+  growth_start: number
+  decay: number
+  floor: number
+  starts_year: number
+}
+
+export interface RoadmapAssumptions {
+  id: string
+  couple_id: string
+  goal_id: string
+  price_growth: number
+  dividend_tax_rate: number
+  other_assets_krw: number
+  contributions: RoadmapContribution[]
+  dividend_plan: RoadmapDividendHolding[]
+  updated_at: string
+}
+
 export interface RoadmapProjection {
   goal: { target_krw: number; target_date: string; age_at_target: number }
   current: { net_worth_krw: number; progress_pct: number; days_left: number }
