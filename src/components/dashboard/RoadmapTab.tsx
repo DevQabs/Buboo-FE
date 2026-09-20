@@ -30,7 +30,7 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
   const [data, setData] = useState<RoadmapProjection | null>(null);
   const [assumptions, setAssumptions] = useState<RoadmapAssumptions | null>(null);
   const [showAssumptions, setShowAssumptions] = useState(false);
-  const [scale, setScale] = useState<'year' | 'month'>('year');
+  const [scale, setScale] = useState<'year' | 'month'>('month');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
