@@ -684,6 +684,8 @@ export interface RoadmapAssumptionsResponse {
 
 export interface RoadmapMonthPoint {
   month: string              // YYYY-MM
+  contribution_krw: number
+  dividend_after_tax_krw: number
   projected_net_worth_krw: number
   actual_net_worth_krw: number | null
 }

@@ -37,6 +37,7 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
   const [candidates, setCandidates] = useState<RoadmapDividendCandidate[]>([]);
   const [showAssumptions, setShowAssumptions] = useState(false);
   const [scale, setScale] = useState<'year' | 'month'>('month');
+  const [tableScale, setTableScale] = useState<'year' | 'month'>('year');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -171,34 +172,64 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
         </ResponsiveContainer>
       </div>
 
-      {/* ④ 연도별 마일스톤 */}
+      {/* ④ 마일스톤 */}
       <div className='bg-white rounded-3xl shadow-sm border border-slate-100 px-5 py-4'>
-        <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase mb-3'>연도별 마일스톤</p>
+        <div className='flex items-center justify-between mb-3'>
+          <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>마일스톤</p>
+          <div className='flex rounded-lg bg-slate-100 p-0.5'>
+            {(['month', 'year'] as const).map(s => (
+              <button
+                key={s}
+                onClick={() => setTableScale(s)}
+                className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-colors ${
+                  tableScale === s ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400'
+                }`}
+              >
+                {s === 'year' ? '연도' : '월'}
+              </button>
+            ))}
+          </div>
+        </div>
         <table className='w-full text-xs tabular-nums'>
           <thead>
             <tr className='text-slate-400'>
-              <th className='text-left font-medium pb-2'>연도</th>
-              <th className='text-right font-medium pb-2'>월 적립</th>
+              <th className='text-left font-medium pb-2'>{tableScale === 'year' ? '연도' : '월'}</th>
+              <th className='text-right font-medium pb-2'>적립</th>
               <th className='text-right font-medium pb-2'>세후 배당(예상)</th>
               <th className='text-right font-medium pb-2'>목표</th>
               <th className='text-right font-medium pb-2'>실적</th>
             </tr>
           </thead>
           <tbody>
-            {years.map(y => {
-              const diff = y.actual_net_worth_krw != null ? y.actual_net_worth_krw - y.projected_net_worth_krw : null;
-              return (
-                <tr key={y.year} className='border-t border-slate-50'>
-                  <td className='py-1.5 font-semibold text-slate-700'>{y.year}<span className='text-slate-300'> · {y.age}세</span></td>
-                  <td className='text-right text-slate-500'>{man(y.monthly_krw)}</td>
-                  <td className='text-right text-slate-500'>{man(y.dividend_after_tax_krw)}</td>
-                  <td className='text-right font-semibold text-slate-700'>{eok(y.projected_net_worth_krw)}</td>
-                  <td className={`text-right font-semibold ${diff == null ? 'text-slate-300' : diff >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                    {y.actual_net_worth_krw != null ? eok(y.actual_net_worth_krw) : '—'}
-                  </td>
-                </tr>
-              );
-            })}
+            {tableScale === 'year'
+              ? years.map(y => {
+                  const diff = y.actual_net_worth_krw != null ? y.actual_net_worth_krw - y.projected_net_worth_krw : null;
+                  return (
+                    <tr key={y.year} className='border-t border-slate-50'>
+                      <td className='py-1.5 font-semibold text-slate-700'>{y.year}<span className='text-slate-300'> · {y.age}세</span></td>
+                      <td className='text-right text-slate-500'>{man(y.monthly_krw)}</td>
+                      <td className='text-right text-slate-500'>{man(y.dividend_after_tax_krw)}</td>
+                      <td className='text-right font-semibold text-slate-700'>{eok(y.projected_net_worth_krw)}</td>
+                      <td className={`text-right font-semibold ${diff == null ? 'text-slate-300' : diff >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                        {y.actual_net_worth_krw != null ? eok(y.actual_net_worth_krw) : '—'}
+                      </td>
+                    </tr>
+                  );
+                })
+              : (data.months ?? []).slice(0, 13).map(m => {
+                  const diff = m.actual_net_worth_krw != null ? m.actual_net_worth_krw - m.projected_net_worth_krw : null;
+                  return (
+                    <tr key={m.month} className='border-t border-slate-50'>
+                      <td className='py-1.5 font-semibold text-slate-700'>{m.month.replace('-', '.')}</td>
+                      <td className='text-right text-slate-500'>{m.contribution_krw > 0 ? man(m.contribution_krw) : '—'}</td>
+                      <td className='text-right text-slate-500'>{m.dividend_after_tax_krw > 0 ? man(m.dividend_after_tax_krw) : '—'}</td>
+                      <td className='text-right font-semibold text-slate-700'>{eok(m.projected_net_worth_krw)}</td>
+                      <td className={`text-right font-semibold ${diff == null ? 'text-slate-300' : diff >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                        {m.actual_net_worth_krw != null ? eok(m.actual_net_worth_krw) : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
           </tbody>
         </table>
       </div>
