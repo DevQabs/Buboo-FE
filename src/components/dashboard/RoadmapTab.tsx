@@ -11,7 +11,7 @@ const man = (krw: number) => `${Math.round(krw / 10_000).toLocaleString()}만`;
 
 function ChartTooltip({ active, payload, label }: {
   active?: boolean;
-  label?: number;
+  label?: string;
   payload?: Array<{ dataKey: string; value: number }>;
 }) {
   if (!active || !payload?.length) return null;
@@ -19,7 +19,7 @@ function ChartTooltip({ active, payload, label }: {
   const actual = payload.find(p => p.dataKey === 'actual')?.value;
   return (
     <div className='rounded-xl bg-slate-800 px-3 py-2 text-white shadow-lg'>
-      <p className='text-[10px] text-slate-300'>{label}년</p>
+      <p className='text-[10px] text-slate-300'>{label}</p>
       {plan != null && <p className='text-xs font-semibold tabular-nums'>계획 {eok(plan)}</p>}
       {actual != null && <p className='text-xs font-semibold tabular-nums text-brand-300'>실적 {eok(actual)}</p>}
     </div>
@@ -30,6 +30,7 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
   const [data, setData] = useState<RoadmapProjection | null>(null);
   const [assumptions, setAssumptions] = useState<RoadmapAssumptions | null>(null);
   const [showAssumptions, setShowAssumptions] = useState(false);
+  const [scale, setScale] = useState<'year' | 'month'>('year');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,7 +95,9 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
   }
 
   const { goal, current, years } = data;
-  const chartData = years.map(y => ({ year: y.year, plan: y.projected_net_worth_krw, actual: y.actual_net_worth_krw }));
+  const chartData = scale === 'year'
+    ? years.map(y => ({ label: String(y.year), plan: y.projected_net_worth_krw, actual: y.actual_net_worth_krw }))
+    : (data.months ?? []).map(m => ({ label: m.month, plan: m.projected_net_worth_krw, actual: m.actual_net_worth_krw }));
 
   return (
     <div className='space-y-3'>
@@ -124,6 +127,20 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
       <div className='bg-white rounded-3xl shadow-sm border border-slate-100 px-5 py-4'>
         <div className='flex items-center justify-between mb-3'>
           <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>자산 추이</p>
+          <div className='flex items-center gap-3'>
+            <div className='flex rounded-lg bg-slate-100 p-0.5'>
+              {(['year', 'month'] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setScale(s)}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-colors ${
+                    scale === s ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400'
+                  }`}
+                >
+                  {s === 'year' ? '연도' : '월'}
+                </button>
+              ))}
+            </div>
           <button
             onClick={recordSnapshot}
             disabled={saving}
@@ -131,11 +148,15 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
           >
             이번 달 실적 기록
           </button>
+          </div>
         </div>
         <ResponsiveContainer width='100%' height={200}>
           <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: -8 }}>
             <CartesianGrid stroke='#F1F5F9' vertical={false} />
-            <XAxis dataKey='year' tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+            <XAxis
+              dataKey='label' tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false}
+              interval='preserveStartEnd' minTickGap={24}
+            />
             <YAxis
               tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false}
               tickFormatter={(v: number) => `${(v / 100_000_000).toFixed(0)}억`}

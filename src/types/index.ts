@@ -666,6 +666,12 @@ export interface RoadmapAssumptions {
   updated_at: string
 }
 
+export interface RoadmapMonthPoint {
+  month: string              // YYYY-MM
+  projected_net_worth_krw: number
+  actual_net_worth_krw: number | null
+}
+
 export interface RoadmapProjection {
   goal: { target_krw: number; target_date: string; age_at_target: number }
   current: { net_worth_krw: number; progress_pct: number; days_left: number }
@@ -673,4 +679,5 @@ export interface RoadmapProjection {
   current_dividend_yield: number
   required_total_return: number
   years: RoadmapYearRow[]
+  months: RoadmapMonthPoint[]
 }
