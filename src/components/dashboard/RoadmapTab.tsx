@@ -118,9 +118,6 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
       <div className='bg-white rounded-3xl shadow-sm border border-slate-100 px-5 py-4'>
         <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>필요 수익률</p>
         <p className='mt-1 text-xl font-black text-slate-800 tabular-nums'>{(data.required_total_return * 100).toFixed(2)}%</p>
-        <p className='mt-0.5 text-xs text-slate-400 tabular-nums'>
-          가격 {(data.required_price_growth * 100).toFixed(2)}% + 배당 {(data.current_dividend_yield * 100).toFixed(2)}%
-        </p>
       </div>
 
       {/* ③ 자산 추이 */}
