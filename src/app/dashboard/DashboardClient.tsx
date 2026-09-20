@@ -39,6 +39,7 @@ const DividendCard     = dynamic(() => import('@/components/dashboard/DividendCa
 const ScheduleTab = dynamic(() => import('@/components/dashboard/ScheduleTab'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 const FridgeTab   = dynamic(() => import('@/components/dashboard/FridgeTab'),   { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 const RoadmapTab  = dynamic(() => import('@/components/dashboard/RoadmapTab'),  { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
+type RoadmapPrefetch = import('@/components/dashboard/RoadmapTab').RoadmapPrefetch
 
 // ─── 모달 — 열릴 때만 로드, Phase2 .preload() 로 청크 미리 다운로드 ──────────────
 // loading 스켈레톤 없음: 모달은 열리기 전까지 DOM에 없으므로 CLS 무관.
@@ -78,6 +79,8 @@ import type {
   UpdateFridgeItemRequest,
   CreateSideDishRequest,
   UpdateSideDishRequest,
+  RoadmapProjection,
+  RoadmapAssumptionsResponse,
 } from '@/types'
 
 // 개발: NEXT_PUBLIC_API_URL=http://localhost:8090 으로 직접 호출
@@ -174,6 +177,7 @@ export default function DashboardClient() {
   const [tabLoading, setTabLoading]   = useState<ActiveTab | null>(null)
   const [error, setError]             = useState<string | null>(null)
   const loadedTabs = useRef<Set<ActiveTab>>(new Set<ActiveTab>())
+  const [roadmap, setRoadmap] = useState<RoadmapPrefetch | null>(null)
 
   // ── UI state ──
   const [activeTab, setActiveTab]     = useState<ActiveTab>('ledger')
@@ -372,7 +376,7 @@ export default function DashboardClient() {
     ;[
       NetWorthSummaryCard, StockPortfolioCard, OtherAssetCard,
       FixedExpenseCard, DividendCard,
-      ScheduleTab, FridgeTab,
+      ScheduleTab, FridgeTab, RoadmapTab,
       AddStockModal, EditStockModal, BuySellModal, TradeHistoryModal,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ].forEach(c => (c as any).preload?.())
@@ -403,6 +407,23 @@ export default function DashboardClient() {
           setSchedules(Array.isArray(sch) ? sch : [])
           setDiaries(Array.isArray(dia) ? dia : [])
           loadedTabs.current.add('life')
+        } catch {}
+      })(),
+      // ── 로드맵 탭 ──
+      (async () => {
+        try {
+          const [projection, assumptions] = await Promise.all([
+            apiFetch<RoadmapProjection>('/api/roadmap/projection'),
+            apiFetch<RoadmapAssumptionsResponse>('/api/roadmap/assumptions'),
+          ])
+          if (projection && assumptions?.assumptions) {
+            setRoadmap({
+              projection,
+              assumptions: assumptions.assumptions,
+              candidates: assumptions.dividend_candidates ?? [],
+            })
+            loadedTabs.current.add('roadmap')
+          }
         } catch {}
       })(),
       // ── 냉장고 탭 ──
@@ -1327,7 +1348,7 @@ export default function DashboardClient() {
 
         {/* ══ Tab 4: 냉장고 ══ */}
         {activeTab === 'roadmap' && (
-          <RoadmapTab accessToken={session?.user?.accessToken} />
+          <RoadmapTab accessToken={session?.user?.accessToken} prefetched={roadmap} />
         )}
 
         {activeTab === 'fridge' && (

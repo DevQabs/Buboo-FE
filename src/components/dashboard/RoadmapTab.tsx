@@ -31,10 +31,23 @@ function ChartTooltip({ active, payload, label }: {
   );
 }
 
-export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
-  const [data, setData] = useState<RoadmapProjection | null>(null);
-  const [assumptions, setAssumptions] = useState<RoadmapAssumptions | null>(null);
-  const [candidates, setCandidates] = useState<RoadmapDividendCandidate[]>([]);
+export interface RoadmapPrefetch {
+  projection: RoadmapProjection;
+  assumptions: RoadmapAssumptions;
+  candidates: RoadmapDividendCandidate[];
+}
+
+export default function RoadmapTab({
+  accessToken,
+  prefetched,
+}: {
+  accessToken?: string;
+  // 대시보드가 미리 받아 둔 데이터. 있으면 첫 화면을 바로 그린다.
+  prefetched?: RoadmapPrefetch | null;
+}) {
+  const [data, setData] = useState<RoadmapProjection | null>(prefetched?.projection ?? null);
+  const [assumptions, setAssumptions] = useState<RoadmapAssumptions | null>(prefetched?.assumptions ?? null);
+  const [candidates, setCandidates] = useState<RoadmapDividendCandidate[]>(prefetched?.candidates ?? []);
   const [showAssumptions, setShowAssumptions] = useState(false);
   const [scale, setScale] = useState<'year' | 'month'>('month');
   const [tableScale, setTableScale] = useState<'year' | 'month'>('month');
@@ -65,7 +78,10 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
     }
   }, [headers]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (prefetched) return; // 이미 받아 둔 데이터가 있으면 다시 부르지 않는다
+    load();
+  }, [load, prefetched]);
 
   async function saveAssumptions(next: RoadmapAssumptions) {
     setSaving(true);
