@@ -692,8 +692,8 @@ export default function StockPortfolioCard({
               <p className='text-xs font-semibold text-slate-400 mb-3 tracking-wide uppercase'>종목별 비중</p>
               {chartData.length > 0 ? (
                 <>
-                  <ResponsiveContainer width='100%' height={240} style={{ outline: 'none' }}>
-                    <PieChart style={{ outline: 'none' }}>
+                  <ResponsiveContainer width='100%' height={240}>
+                    <PieChart>
                       <Pie
                         data={chartData}
                         dataKey='value'

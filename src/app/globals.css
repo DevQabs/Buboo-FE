@@ -20,6 +20,14 @@
     font-feature-settings: 'kern' 1;
   }
 
+  /* recharts는 클릭 시 wrapper와 sector에 포커스를 준다. 브라우저 기본
+     포커스 링이 도넛 위에 파란 사각형으로 뜨므로 전부 끈다. */
+  .recharts-wrapper,
+  .recharts-wrapper :focus,
+  .recharts-wrapper :focus-visible {
+    outline: none;
+  }
+
   /* 숫자 tabular-nums 기본 적용 */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
