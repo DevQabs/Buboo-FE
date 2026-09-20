@@ -169,22 +169,35 @@ export interface StockTransaction {
   created_at: string
 }
 
+// 해외주식 양도소득세는 인별 과세다. 기본공제 250만원도 각자 적용되므로
+// 세액은 by_user에서 사람별로 계산한 뒤 합산한 값이다.
 export interface AnnualTaxSummary {
   year: number
   couple_id: string
-  total_realized_pnl: number
-  taxable_gain: number
-  estimated_tax: number
-  tax_rate: number
+  total_realized_pnl: number   // KRW, 부부 합계
+  total_deduction: number      // 적용된 기본공제 합계 (최대 250만 × 인원)
+  taxable_gain: number         // 인별 과세표준의 합
+  estimated_tax: number        // 인별 세액의 합
+  tax_rate: number             // 0.22
+  by_user: UserTaxSummary[]
   by_symbol: SymbolTaxSummary[]
 }
 
+export interface UserTaxSummary {
+  user_id: string
+  sell_count: number
+  realized_pnl: number   // KRW, 종목 간 손익 통산 후
+  deduction: number      // 실제 적용된 기본공제 (최대 250만원)
+  taxable_gain: number   // max(0, realized_pnl - deduction)
+  estimated_tax: number  // taxable_gain × 0.22
+}
+
+// 세액 필드는 없다 — 세금은 종목이 아니라 사람 단위로 매겨진다.
 export interface SymbolTaxSummary {
   symbol: string
   exchange: string
   sell_count: number
-  realized_pnl: number
-  estimated_tax: number
+  realized_pnl: number   // KRW
 }
 
 export interface TaxCheckResponse {
