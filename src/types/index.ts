@@ -688,6 +688,7 @@ export interface RoadmapMonthPoint {
   dividend_after_tax_krw: number
   projected_net_worth_krw: number
   actual_net_worth_krw: number | null
+  actual_contribution_krw: number | null
 }
 
 export interface RoadmapProjection {

@@ -227,7 +227,19 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
                         {m.month.replace('-', '.')}
                         {isAnchor && <span className='text-slate-300'> · 현재</span>}
                       </td>
-                      <td className='text-right text-slate-500'>{isAnchor ? '반영됨' : m.contribution_krw > 0 ? man(m.contribution_krw) : '—'}</td>
+                      <td className='text-right text-slate-500'>
+                        <span>{isAnchor ? '반영됨' : m.contribution_krw > 0 ? man(m.contribution_krw) : '—'}</span>
+                        {/* 실제로 넣은 돈: 저축 + 주식 순매수 */}
+                        {m.actual_contribution_krw != null && (
+                          <span
+                            className={`block text-[10px] ${
+                              m.actual_contribution_krw >= m.contribution_krw ? 'text-emerald-600' : 'text-rose-500'
+                            }`}
+                          >
+                            실적 {man(m.actual_contribution_krw)}
+                          </span>
+                        )}
+                      </td>
                       <td className='text-right text-slate-500'>{isAnchor ? '반영됨' : m.dividend_after_tax_krw > 0 ? man(m.dividend_after_tax_krw) : '—'}</td>
                       <td className='text-right font-semibold text-slate-700'>{eok(m.projected_net_worth_krw)}</td>
                       <td className={`text-right font-semibold ${diff == null ? 'text-slate-300' : diff >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
