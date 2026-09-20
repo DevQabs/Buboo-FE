@@ -13,7 +13,7 @@ import { useSession, signOut } from 'next-auth/react'
 import dynamic from 'next/dynamic'
 import Lottie from 'lottie-react'
 import loadingAnimation from '@/assets/loading.json'
-import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, ArchiveBoxIcon, UserPlusIcon, ArrowRightOnRectangleIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, ArchiveBoxIcon, FlagIcon, UserPlusIcon, ArrowRightOnRectangleIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 // ─── 가계부 탭 (초기 탭) — 정적 import ────────────────────────────────────────
 import SummaryCard from '@/components/dashboard/SummaryCard'
@@ -38,6 +38,7 @@ const DividendCard     = dynamic(() => import('@/components/dashboard/DividendCa
 // ─── 라이프 / 냉장고 탭 — 첫 방문 시 로드 ──────────────────────────────────────
 const ScheduleTab = dynamic(() => import('@/components/dashboard/ScheduleTab'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 const FridgeTab   = dynamic(() => import('@/components/dashboard/FridgeTab'),   { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
+const RoadmapTab  = dynamic(() => import('@/components/dashboard/RoadmapTab'),  { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 
 // ─── 모달 — 열릴 때만 로드, Phase2 .preload() 로 청크 미리 다운로드 ──────────────
 // loading 스켈레톤 없음: 모달은 열리기 전까지 DOM에 없으므로 CLS 무관.
@@ -83,7 +84,7 @@ import type {
 // 프로덕션: 빈 문자열 → /api/* 경로로 → next.config.mjs rewrite가 백엔드로 프록시
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
 
-type ActiveTab = 'wealth' | 'ledger' | 'life' | 'fridge'
+type ActiveTab = 'wealth' | 'ledger' | 'life' | 'fridge' | 'roadmap'
 
 
 
@@ -1325,6 +1326,10 @@ export default function DashboardClient() {
         )}
 
         {/* ══ Tab 4: 냉장고 ══ */}
+        {activeTab === 'roadmap' && (
+          <RoadmapTab accessToken={session?.user?.accessToken} />
+        )}
+
         {activeTab === 'fridge' && (
           <div className="space-y-3">
             {tabLoading === 'fridge' ? <TabSkeleton /> : (
@@ -1442,6 +1447,21 @@ export default function DashboardClient() {
             <span className={`text-[10px] font-semibold tracking-tight ${
               activeTab === 'wealth' ? 'text-brand-600' : 'text-slate-400'
             }`}>자산 현황</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('roadmap')}
+            className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
+              activeTab === 'roadmap' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
+            }`}
+          >
+            <div className={`p-1.5 rounded-xl transition-all duration-200 ${
+              activeTab === 'roadmap' ? 'bg-brand-50' : ''
+            }`}>
+              <FlagIcon className="h-5 w-5" />
+            </div>
+            <span className={`text-[10px] font-semibold tracking-tight ${
+              activeTab === 'roadmap' ? 'text-brand-600' : 'text-slate-400'
+            }`}>로드맵</span>
           </button>
         </div>
       </nav>

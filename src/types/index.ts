@@ -626,3 +626,24 @@ export interface UpdateSideDishRequest {
   location?: SideDishLocation
   memo?: string
 }
+
+// ─── 로드맵 ───────────────────────────────────────────────────────────────────
+
+export interface RoadmapYearRow {
+  year: number
+  age: number
+  monthly_krw: number
+  annual_contribution_krw: number
+  dividend_after_tax_krw: number
+  projected_net_worth_krw: number
+  actual_net_worth_krw: number | null
+}
+
+export interface RoadmapProjection {
+  goal: { target_krw: number; target_date: string; age_at_target: number }
+  current: { net_worth_krw: number; progress_pct: number; days_left: number }
+  required_price_growth: number
+  current_dividend_yield: number
+  required_total_return: number
+  years: RoadmapYearRow[]
+}
