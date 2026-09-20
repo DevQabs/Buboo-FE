@@ -663,7 +663,23 @@ export interface RoadmapAssumptions {
   other_assets_krw: number
   contributions: RoadmapContribution[]
   dividend_plan: RoadmapDividendHolding[]
+  dividend_symbols: string[]
   updated_at: string
+}
+
+export interface RoadmapDividendCandidate {
+  symbol: string
+  shares: number
+  annual_dps: number
+  yield: number
+  cagr_3y: number
+  selected: boolean
+  auto_include: boolean
+}
+
+export interface RoadmapAssumptionsResponse {
+  assumptions: RoadmapAssumptions
+  dividend_candidates: RoadmapDividendCandidate[]
 }
 
 export interface RoadmapMonthPoint {

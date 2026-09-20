@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import type { RoadmapAssumptions, RoadmapProjection } from '@/types';
+import type {
+  RoadmapAssumptions,
+  RoadmapAssumptionsResponse,
+  RoadmapDividendCandidate,
+  RoadmapProjection,
+} from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -29,6 +34,7 @@ function ChartTooltip({ active, payload, label }: {
 export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
   const [data, setData] = useState<RoadmapProjection | null>(null);
   const [assumptions, setAssumptions] = useState<RoadmapAssumptions | null>(null);
+  const [candidates, setCandidates] = useState<RoadmapDividendCandidate[]>([]);
   const [showAssumptions, setShowAssumptions] = useState(false);
   const [scale, setScale] = useState<'year' | 'month'>('month');
   const [saving, setSaving] = useState(false);
@@ -50,7 +56,9 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
       ]);
       if (!p.ok || !a.ok) throw new Error('load failed');
       setData(await p.json());
-      setAssumptions(await a.json());
+      const body: RoadmapAssumptionsResponse = await a.json();
+      setAssumptions(body.assumptions);
+      setCandidates(body.dividend_candidates ?? []);
     } catch {
       setError('로드맵을 불러오지 못했습니다');
     }
@@ -242,6 +250,36 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
                     />
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div>
+              <p className='text-xs font-semibold text-slate-500 mb-2'>배당 계산에 넣을 종목</p>
+              <div className='space-y-1'>
+                {candidates.map(c => (
+                  <label key={c.symbol} className='flex items-center gap-2 py-1 cursor-pointer'>
+                    <input
+                      type='checkbox'
+                      checked={c.selected}
+                      onChange={e => {
+                        const next = candidates.map(x =>
+                          x.symbol === c.symbol ? { ...x, selected: e.target.checked } : x,
+                        );
+                        setCandidates(next);
+                        setAssumptions({
+                          ...assumptions,
+                          dividend_symbols: next.filter(x => x.selected).map(x => x.symbol),
+                        });
+                      }}
+                      className='w-4 h-4 rounded accent-brand-500'
+                    />
+                    <span className='text-xs font-semibold text-slate-600 w-14'>{c.symbol}</span>
+                    <span className='text-xs text-slate-400 tabular-nums flex-1'>
+                      {c.shares.toLocaleString()}주 · 배당률 {(c.yield * 100).toFixed(2)}% · 성장 {(c.cagr_3y * 100).toFixed(1)}%
+                    </span>
+                  </label>
+                ))}
+                {candidates.length === 0 && <p className='text-xs text-slate-300'>배당 내역이 있는 보유 종목이 없습니다</p>}
               </div>
             </div>
 
