@@ -188,7 +188,7 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
             <tr className='text-slate-400'>
               <th className='text-left font-medium pb-2'>연도</th>
               <th className='text-right font-medium pb-2'>월 적립</th>
-              <th className='text-right font-medium pb-2'>배당</th>
+              <th className='text-right font-medium pb-2'>세후 배당(예상)</th>
               <th className='text-right font-medium pb-2'>목표</th>
               <th className='text-right font-medium pb-2'>실적</th>
             </tr>
