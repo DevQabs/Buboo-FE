@@ -212,34 +212,6 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
               </div>
             </div>
 
-            <div>
-              <p className='text-xs font-semibold text-slate-500 mb-2'>배당 (주당 배당 · 시작 인상률 · 연 감속 · 하한)</p>
-              <div className='space-y-1.5'>
-                {assumptions.dividend_plan.map((d, i) => (
-                  <div key={d.symbol} className='flex items-center gap-1.5'>
-                    <span className='text-xs font-semibold text-slate-600 w-12'>{d.symbol}</span>
-                    {(['dps', 'growth_start', 'decay', 'floor'] as const).map(field => (
-                      <input
-                        key={field}
-                        type='number'
-                        step='0.0001'
-                        value={d[field]}
-                        onChange={e => {
-                          const next = { ...assumptions, dividend_plan: [...assumptions.dividend_plan] };
-                          next.dividend_plan[i] = { ...d, [field]: Number(e.target.value) };
-                          setAssumptions(next);
-                        }}
-                        className='flex-1 min-w-0 border border-slate-200 rounded-xl px-2 py-1.5 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-brand-500'
-                      />
-                    ))}
-                  </div>
-                ))}
-                {assumptions.dividend_plan.length === 0 && (
-                  <p className='text-xs text-slate-300'>등록된 배당 종목이 없습니다</p>
-                )}
-              </div>
-            </div>
-
             <button
               onClick={() => saveAssumptions(assumptions)}
               disabled={saving}
