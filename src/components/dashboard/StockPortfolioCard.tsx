@@ -628,13 +628,8 @@ export default function StockPortfolioCard({
               <div className='text-right'>
                 <p className='text-base font-black text-slate-800 tabular-nums'>₩{Math.round(netAfterTaxKRW / 10000).toLocaleString()}만</p>
                 <p className={`text-xs font-semibold tabular-nums ${isOverallUp ? 'text-emerald-600' : 'text-rose-500'}`}>
-                  {isOverallUp ? '+' : ''}₩{Math.abs(Math.round(afterTaxPnlKRW / 10000)).toLocaleString()}만 손익 (세후)
+                  {isOverallUp ? '+' : '-'}₩{Math.abs(Math.round(afterTaxPnlKRW / 10000)).toLocaleString()}만
                 </p>
-                {estimatedTaxKRW > 0 && (
-                  <p className='text-[10px] text-slate-400 tabular-nums'>
-                    평가 ₩{Math.round(totalValueKRW / 10000).toLocaleString()}만 · 양도세 ₩{Math.round(estimatedTaxKRW / 10000).toLocaleString()}만
-                  </p>
-                )}
               </div>
             )}
             <div className='flex items-center gap-1.5'>
