@@ -94,6 +94,9 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
   }
 
   const { goal, current, years } = data;
+  // 이번 달 적립은 그 해 계획 월 적립으로 둔다. 주식 순매수 집계는 계좌 안에서
+  // 옮긴 돈까지 잡아 실제로 새로 넣은 금액보다 크게 나온다.
+  const anchorContributionKRW = years[0]?.monthly_krw ?? 0;
   // 월별은 앞으로 1년까지만 본다. 75개월을 한 화면에 그리면 계단이 뭉개진다.
   const chartData = scale === 'year'
     ? years.map(y => ({ label: String(y.year), plan: y.projected_net_worth_krw, actual: y.actual_net_worth_krw }))
@@ -227,20 +230,11 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
                         {m.month.replace('-', '.')}
                         {isAnchor && <span className='text-slate-300'> · 현재</span>}
                       </td>
+                      {/* 적립은 실제로 넣은 돈이다. 아직 오지 않은 달은 비운다. */}
                       <td className='text-right text-slate-500'>
-                        <span>{isAnchor ? '반영됨' : m.contribution_krw > 0 ? man(m.contribution_krw) : '—'}</span>
-                        {/* 실제로 넣은 돈: 저축 + 주식 순매수 */}
-                        {m.actual_contribution_krw != null && (
-                          <span
-                            className={`block text-[10px] ${
-                              m.actual_contribution_krw >= m.contribution_krw ? 'text-emerald-600' : 'text-rose-500'
-                            }`}
-                          >
-                            실적 {man(m.actual_contribution_krw)}
-                          </span>
-                        )}
+                        {isAnchor ? man(anchorContributionKRW) : '—'}
                       </td>
-                      <td className='text-right text-slate-500'>{isAnchor ? '반영됨' : m.dividend_after_tax_krw > 0 ? man(m.dividend_after_tax_krw) : '—'}</td>
+                      <td className='text-right text-slate-500'>{m.dividend_after_tax_krw > 0 ? man(m.dividend_after_tax_krw) : '—'}</td>
                       <td className='text-right font-semibold text-slate-700'>{eok(m.projected_net_worth_krw)}</td>
                       <td className={`text-right font-semibold ${diff == null ? 'text-slate-300' : diff >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
                         {m.actual_net_worth_krw != null ? eok(m.actual_net_worth_krw) : '—'}
@@ -250,11 +244,6 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
                 })}
           </tbody>
         </table>
-        {tableScale === 'month' && (
-          <p className='mt-2 text-[10px] text-slate-400'>
-            이번 달 적립과 배당은 이미 현재 순자산에 들어 있어 계획에 다시 더하지 않습니다
-          </p>
-        )}
       </div>
 
       {/* ⑤ 가정 편집 */}
