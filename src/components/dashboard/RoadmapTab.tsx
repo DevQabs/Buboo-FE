@@ -81,16 +81,6 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
     }
   }
 
-  async function recordSnapshot() {
-    setSaving(true);
-    try {
-      await fetch(`${API_BASE}/api/roadmap/snapshot`, { method: 'POST', headers: headers() });
-      await load();
-    } finally {
-      setSaving(false);
-    }
-  }
-
   if (error) {
     return (
       <div className='bg-white rounded-3xl shadow-sm border border-slate-100 px-5 py-10 text-center'>
@@ -142,7 +132,7 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
           <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>자산 추이</p>
           <div className='flex items-center gap-3'>
             <div className='flex rounded-lg bg-slate-100 p-0.5'>
-              {(['year', 'month'] as const).map(s => (
+              {(['month', 'year'] as const).map(s => (
                 <button
                   key={s}
                   onClick={() => setScale(s)}
@@ -154,13 +144,6 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
                 </button>
               ))}
             </div>
-          <button
-            onClick={recordSnapshot}
-            disabled={saving}
-            className='text-xs font-semibold text-brand-600 disabled:opacity-40'
-          >
-            이번 달 실적 기록
-          </button>
           </div>
         </div>
         <ResponsiveContainer width='100%' height={200}>
