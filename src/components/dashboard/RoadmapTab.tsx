@@ -221,16 +221,22 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
                 {assumptions.contributions.map((c, i) => (
                   <div key={c.year} className='flex items-center gap-2'>
                     <span className='text-xs text-slate-500 w-12 tabular-nums'>{c.year}</span>
-                    <input
-                      type='number'
-                      value={c.monthly_krw}
-                      onChange={e => {
-                        const next = { ...assumptions, contributions: [...assumptions.contributions] };
-                        next.contributions[i] = { ...c, monthly_krw: Number(e.target.value) };
-                        setAssumptions(next);
-                      }}
-                      className='flex-1 border border-slate-200 rounded-xl px-3 py-1.5 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-brand-500'
-                    />
+                    <div className='flex-1 flex items-center gap-1.5 border border-slate-200 rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-brand-500'>
+                      <input
+                        type='text'
+                        inputMode='numeric'
+                        // 만원 단위로 넣는다. 원 단위 0 여섯 개는 눈으로 세기 어렵다.
+                        value={(c.monthly_krw / 10_000).toLocaleString('ko-KR')}
+                        onChange={e => {
+                          const man = Number(e.target.value.replace(/[^0-9]/g, ''));
+                          const next = { ...assumptions, contributions: [...assumptions.contributions] };
+                          next.contributions[i] = { ...c, monthly_krw: man * 10_000 };
+                          setAssumptions(next);
+                        }}
+                        className='flex-1 min-w-0 text-xs text-right tabular-nums focus:outline-none'
+                      />
+                      <span className='text-xs text-slate-400 shrink-0'>만원</span>
+                    </div>
                   </div>
                 ))}
               </div>
