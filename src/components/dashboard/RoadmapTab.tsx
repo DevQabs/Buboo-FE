@@ -21,7 +21,7 @@ function ChartTooltip({ active, payload, label }: {
     <div className='rounded-xl bg-slate-800 px-3 py-2 text-white shadow-lg'>
       <p className='text-[10px] text-slate-300'>{label}</p>
       {plan != null && <p className='text-xs font-semibold tabular-nums'>계획 {eok(plan)}</p>}
-      {actual != null && <p className='text-xs font-semibold tabular-nums text-brand-300'>실적 {eok(actual)}</p>}
+      {actual != null && <p className='text-xs font-semibold tabular-nums text-emerald-300'>실적 {eok(actual)}</p>}
     </div>
   );
 }
@@ -117,7 +117,7 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
           <span className='text-base font-semibold text-slate-400'> / {eok(goal.target_krw)}</span>
         </p>
         <div className='mt-3 h-2 rounded-full bg-white/15 overflow-hidden'>
-          <div className='h-full rounded-full bg-brand-400' style={{ width: `${Math.min(100, current.progress_pct)}%` }} />
+          <div className='h-full rounded-full bg-brand-300' style={{ width: `${Math.min(100, current.progress_pct)}%` }} />
         </div>
         <p className='mt-2 text-xs text-slate-300 tabular-nums'>{current.progress_pct.toFixed(1)}% 달성</p>
       </div>
