@@ -95,9 +95,14 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
   }
 
   const { goal, current, years } = data;
+  // 월별은 앞으로 1년까지만 본다. 75개월을 한 화면에 그리면 계단이 뭉개진다.
   const chartData = scale === 'year'
     ? years.map(y => ({ label: String(y.year), plan: y.projected_net_worth_krw, actual: y.actual_net_worth_krw }))
-    : (data.months ?? []).map(m => ({ label: m.month, plan: m.projected_net_worth_krw, actual: m.actual_net_worth_krw }));
+    : (data.months ?? []).slice(0, 13).map(m => ({
+        label: m.month.slice(2).replace('-', '.'), // 26.09
+        plan: m.projected_net_worth_krw,
+        actual: m.actual_net_worth_krw,
+      }));
 
   return (
     <div className='space-y-3'>
@@ -159,11 +164,18 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
             />
             <YAxis
               tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false}
-              tickFormatter={(v: number) => `${(v / 100_000_000).toFixed(0)}억`}
+              tickFormatter={(v: number) => `${(v / 100_000_000).toFixed(scale === 'month' ? 1 : 0)}억`}
+              domain={scale === 'month' ? ['dataMin - 10000000', 'dataMax + 10000000'] : [0, 'auto']}
             />
             <Tooltip content={<ChartTooltip />} />
-            <Line type='monotone' dataKey='plan' stroke='#6366F1' strokeWidth={2} dot={false} />
-            <Line type='monotone' dataKey='actual' stroke='#10B981' strokeWidth={2} strokeDasharray='4 4' dot={{ r: 3 }} connectNulls />
+            <Line
+              type={scale === 'month' ? 'stepAfter' : 'monotone'}
+              dataKey='plan' stroke='#6366F1' strokeWidth={2} dot={false}
+            />
+            <Line
+              type={scale === 'month' ? 'stepAfter' : 'monotone'}
+              dataKey='actual' stroke='#10B981' strokeWidth={2} strokeDasharray='4 4' dot={{ r: 3 }} connectNulls
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
