@@ -216,13 +216,19 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
                     </tr>
                   );
                 })
-              : (data.months ?? []).slice(0, 13).map(m => {
+              : (data.months ?? []).slice(0, 13).map((m, idx) => {
                   const diff = m.actual_net_worth_krw != null ? m.actual_net_worth_krw - m.projected_net_worth_krw : null;
+                  // 첫 줄은 출발점이다. 이번 달 적립과 배당은 이미 현재 순자산에
+                  // 들어 있어 계획에서 다시 더하지 않는다.
+                  const isAnchor = idx === 0;
                   return (
                     <tr key={m.month} className='border-t border-slate-50'>
-                      <td className='py-1.5 font-semibold text-slate-700'>{m.month.replace('-', '.')}</td>
-                      <td className='text-right text-slate-500'>{m.contribution_krw > 0 ? man(m.contribution_krw) : '—'}</td>
-                      <td className='text-right text-slate-500'>{m.dividend_after_tax_krw > 0 ? man(m.dividend_after_tax_krw) : '—'}</td>
+                      <td className='py-1.5 font-semibold text-slate-700'>
+                        {m.month.replace('-', '.')}
+                        {isAnchor && <span className='text-slate-300'> · 현재</span>}
+                      </td>
+                      <td className='text-right text-slate-500'>{isAnchor ? '반영됨' : m.contribution_krw > 0 ? man(m.contribution_krw) : '—'}</td>
+                      <td className='text-right text-slate-500'>{isAnchor ? '반영됨' : m.dividend_after_tax_krw > 0 ? man(m.dividend_after_tax_krw) : '—'}</td>
                       <td className='text-right font-semibold text-slate-700'>{eok(m.projected_net_worth_krw)}</td>
                       <td className={`text-right font-semibold ${diff == null ? 'text-slate-300' : diff >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
                         {m.actual_net_worth_krw != null ? eok(m.actual_net_worth_krw) : '—'}
@@ -232,6 +238,11 @@ export default function RoadmapTab({ accessToken }: { accessToken?: string }) {
                 })}
           </tbody>
         </table>
+        {tableScale === 'month' && (
+          <p className='mt-2 text-[10px] text-slate-400'>
+            이번 달 적립과 배당은 이미 현재 순자산에 들어 있어 계획에 다시 더하지 않습니다
+          </p>
+        )}
       </div>
 
       {/* ⑤ 가정 편집 */}
