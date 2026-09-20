@@ -186,8 +186,12 @@ function groupAssets(assets: StockAssetWithPrice[]): StockGroup[] {
     // 손익은 서버가 매입 시점 환율로 낸 값을 그대로 합친다. 여기서 오늘
     // 환율로 원가를 다시 환산하면 환차손익이 지워져 부호까지 뒤집힌다.
     const pnlKRW = group.reduce((s, a) => s + (a.profit_loss_krw ?? 0), 0);
-    const totalCostKRW = totalValueKRW - pnlKRW;
-    const pnlPct = totalCostKRW > 0 ? (pnlKRW / totalCostKRW) * 100 : 0;
+    // 수익률은 개별 행과 같은 매입 통화(USD) 기준으로 낸다. 원화 기준으로
+    // 내면 환차손익이 섞여 행(-7.84%)과 그룹(-11.85%)이 어긋난다. 환차손익은
+    // 금액(pnlKRW)과 카드 상단 합계에만 반영한다.
+    const costOrig = group.reduce((s, a) => s + a.quantity * a.average_price, 0);
+    const pnlOrig = group.reduce((s, a) => s + (a.profit_loss ?? 0), 0);
+    const pnlPct = costOrig > 0 ? (pnlOrig / costOrig) * 100 : 0;
     return {
       symbol: first.symbol,
       exchange: first.exchange,
