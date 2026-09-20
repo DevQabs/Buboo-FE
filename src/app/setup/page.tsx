@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -135,6 +135,16 @@ export default function SetupPage() {
             className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 transition-colors disabled:opacity-40"
           >
             {loading ? '생성 중...' : '시작하기'}
+          </button>
+
+          {/* 잘못된 계정으로 로그인했을 때의 탈출구. 미들웨어가 needsSetup
+              사용자를 /setup 으로 되돌리므로, 여기 없으면 빠져나갈 길이 없다. */}
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="w-full text-xs text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            {session?.user?.googleEmail ?? session?.user?.email} · 다른 계정으로 로그인
           </button>
         </form>
       </div>
