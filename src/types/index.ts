@@ -694,6 +694,9 @@ export interface RoadmapMonthPoint {
 export interface RoadmapProjection {
   goal: { target_krw: number; target_date: string; age_at_target: number }
   current: { net_worth_krw: number; progress_pct: number; days_left: number }
+  // 확정된 계획선의 출발점과 그때 정한 수익률. 다시 계산하지 않는다.
+  plan: { anchor_month: string; anchor_net_worth_krw: number; price_growth: number; total_return: number }
+  // 아래 셋은 지금 순자산에서 목표까지 남은 기간에 필요한 값이다.
   required_price_growth: number
   current_dividend_yield: number
   required_total_return: number
