@@ -140,27 +140,35 @@ export default function RoadmapTab({
         <p className='mt-2 text-xs text-slate-300 tabular-nums'>{current.progress_pct.toFixed(1)}% 달성</p>
       </div>
 
-      {/* ② 필요 수익률 — 계획은 고정, 지금부터 필요한 값만 실시간 */}
+      {/* ② 필요 수익률 — 계획은 고정, 지금부터 필요한 값만 실시간.
+          plan 이 없는 건 백엔드가 아직 옛 버전일 때다. 그때는 예전처럼 하나만 보인다. */}
       <div className='bg-white rounded-3xl shadow-sm border border-slate-100 px-5 py-4'>
-        <div className='grid grid-cols-2 gap-4'>
-          <div>
-            <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>계획 수익률</p>
-            <p className='mt-1 text-xl font-black text-slate-800 tabular-nums'>{(data.plan.total_return * 100).toFixed(2)}%</p>
-            <p className='text-[10px] text-slate-400 tabular-nums'>
-              {data.plan.anchor_month.replace('-', '.')} {eok(data.plan.anchor_net_worth_krw)} 출발 · 고정
-            </p>
+        {data.plan ? (
+          <div className='grid grid-cols-2 gap-4'>
+            <div>
+              <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>계획 수익률</p>
+              <p className='mt-1 text-xl font-black text-slate-800 tabular-nums'>{(data.plan.total_return * 100).toFixed(2)}%</p>
+              <p className='text-[10px] text-slate-400 tabular-nums'>
+                {data.plan.anchor_month.replace('-', '.')} {eok(data.plan.anchor_net_worth_krw)} 출발 · 고정
+              </p>
+            </div>
+            <div>
+              <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>지금부터 필요</p>
+              {/* 계획보다 뒤처지면 더 벌어야 하니 빨강, 앞서면 초록 */}
+              <p className={`mt-1 text-xl font-black tabular-nums ${
+                data.required_total_return > data.plan.total_return ? 'text-rose-500' : 'text-emerald-600'
+              }`}>
+                {(data.required_total_return * 100).toFixed(2)}%
+              </p>
+              <p className='text-[10px] text-slate-400'>현재 순자산 기준</p>
+            </div>
           </div>
-          <div>
-            <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>지금부터 필요</p>
-            {/* 계획보다 뒤처지면 더 벌어야 하니 빨강, 앞서면 초록 */}
-            <p className={`mt-1 text-xl font-black tabular-nums ${
-              data.required_total_return > data.plan.total_return ? 'text-rose-500' : 'text-emerald-600'
-            }`}>
-              {(data.required_total_return * 100).toFixed(2)}%
-            </p>
-            <p className='text-[10px] text-slate-400'>현재 순자산 기준</p>
-          </div>
-        </div>
+        ) : (
+          <>
+            <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>필요 수익률</p>
+            <p className='mt-1 text-xl font-black text-slate-800 tabular-nums'>{(data.required_total_return * 100).toFixed(2)}%</p>
+          </>
+        )}
       </div>
 
       {/* ③ 자산 추이 */}
