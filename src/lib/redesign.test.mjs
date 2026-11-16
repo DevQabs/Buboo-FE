@@ -78,3 +78,31 @@ test('고정비 합계와 카테고리 집계는 SummaryCard 식 그대로', () 
     { category: '식비', amount: 5000, isFixed: false },
   ])
 })
+
+// ── Task 3: 일정 D-day ──
+import { buildAgenda, ddayBadge } from './dday.ts'
+
+const sch = (id, start, o = {}) => ({ id, start_date: `${start}T00:00:00Z`, is_dday: false, is_anniversary: false, ...o })
+
+test('D-day 는 당일까지만, 기념일은 지나도 D+', () => {
+  assert.equal(ddayBadge(sch('a', '2026-11-18', { is_dday: true }), '2026-11-17'), 'D-1')
+  assert.equal(ddayBadge(sch('a', '2026-11-17', { is_dday: true }), '2026-11-17'), 'D-Day')
+  assert.equal(ddayBadge(sch('a', '2026-11-16', { is_dday: true }), '2026-11-17'), null)
+  assert.equal(ddayBadge(sch('b', '2025-10-01', { is_anniversary: true }), '2026-11-17'), 'D+412')
+  assert.equal(ddayBadge(sch('c', '2026-11-20'), '2026-11-17'), null)
+})
+
+test('이번 주(토요일까지)·그 뒤·지난 기념일로 나눈다', () => {
+  // 2026-11-17 은 화요일 → 이번 주는 11-21(토)까지. 여러 날 일정은 끝나는 날까지 남는다.
+  const list = [
+    sch('w', '2026-11-18'),
+    sch('n', '2026-11-24'),
+    sch('old', '2026-11-01'),
+    sch('ann', '2025-10-01', { is_anniversary: true }),
+    sch('multi', '2026-11-15', { end_date: '2026-11-17T00:00:00Z' }),
+  ]
+  const a = buildAgenda(list, '2026-11-17')
+  assert.deepEqual(a.thisWeek.map(s => s.id), ['multi', 'w'])
+  assert.deepEqual(a.later.map(s => s.id), ['n'])
+  assert.deepEqual(a.anniversaries.map(s => s.id), ['ann'])
+})

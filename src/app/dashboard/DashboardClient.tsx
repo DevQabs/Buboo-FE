@@ -32,6 +32,7 @@ const OtherAssetCard      = dynamic(() => import('@/components/dashboard/OtherAs
 
 // ─── 라이프 / 로드맵 탭 — 첫 방문 시 로드 ──────────────────────────────────────
 const ScheduleTab = dynamic(() => import('@/components/dashboard/ScheduleTab'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
+const ScheduleScreen = dynamic(() => import('@/components/life/ScheduleScreen'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 const RoadmapTab  = dynamic(() => import('@/components/dashboard/RoadmapTab'),  { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 type RoadmapPrefetch = import('@/components/dashboard/RoadmapTab').RoadmapPrefetch
 
@@ -352,7 +353,7 @@ export default function DashboardClient() {
     // ── JS 청크 미리 다운로드 (렌더링 없이 네트워크만, 병렬) ──
     ;[
       NetWorthSummaryCard, StockPortfolioCard, OtherAssetCard,
-      ScheduleTab, RoadmapTab,
+      ScheduleTab, ScheduleScreen, RoadmapTab,
       AddStockModal, EditStockModal, BuySellModal, TradeHistoryModal,
     ].forEach(c => (c as any).preload?.())
 
@@ -807,30 +808,17 @@ export default function DashboardClient() {
 
   // ── schedule handlers ─────────────────────────────────────────────────────
   const handleAddSchedule = async (req: CreateScheduleRequest) => {
-    const res = await fetch(`${API_BASE}/api/schedules`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify(req),
-    })
-    if (!res.ok) throw new Error(`일정 저장 실패: ${res.status}`)
-    const created: Schedule = await res.json()
+    const created = await apiFetch<Schedule>('/api/schedules', { method: 'POST', body: JSON.stringify(req) })
     setSchedules(s => [...s, created])
   }
 
   const handleEditSchedule = async (id: string, req: UpdateScheduleRequest) => {
-    const res = await fetch(`${API_BASE}/api/schedules/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify(req),
-    })
-    if (!res.ok) throw new Error(`일정 수정 실패: ${res.status}`)
-    const updated: Schedule = await res.json()
+    const updated = await apiFetch<Schedule>(`/api/schedules/${id}`, { method: 'PUT', body: JSON.stringify(req) })
     setSchedules(s => s.map(x => x.id === id ? updated : x))
   }
 
   const handleDeleteSchedule = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/schedules/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
-    if (!res.ok) throw new Error(`일정 삭제 실패: ${res.status}`)
+    await apiFetch(`/api/schedules/${id}`, { method: 'DELETE' })
     setSchedules(s => s.filter(x => x.id !== id))
   }
 
@@ -981,7 +969,7 @@ export default function DashboardClient() {
         )}
 
         {/* 2단 메뉴 칩 — 화면이 직접 그리면 여기서는 뺀다(Task 3·5·6) */}
-        {chipRow}
+        {currentTab?.key !== 'life' && chipRow}
 
         {/* ══ 아기 (3단계에서 채움) ══ */}
         {currentTab?.key === 'baby' && (
@@ -1070,16 +1058,17 @@ export default function DashboardClient() {
           />
         )}
 
-        {/* ══ Tab 3: 일정/일기 ══ */}
+        {/* ══ 일상: 일정 · 일기 ══ */}
         {currentTab?.key === 'life' && (
-          <div>
-            {tabLoading === 'life' ? <TabSkeleton /> : (
+          tabLoading === 'life' ? <TabSkeleton /> : currentSub?.key === 'diary' ? (
+            <div className="space-y-3">
+              {chipRow}
               <ScheduleTab
-                canEdit={canEdit(currentSub?.key === 'diary' ? 'diary' : 'schedule')}
                 schedules={schedules}
                 diaries={diaries}
                 currentUserID={currentUserID}
-                section={currentSub?.key === 'diary' ? 'diary' : 'schedule'}
+                section="diary"
+                canEdit={canEdit('diary')}
                 onAddSchedule={handleAddSchedule}
                 onEditSchedule={handleEditSchedule}
                 onDeleteSchedule={handleDeleteSchedule}
@@ -1087,8 +1076,19 @@ export default function DashboardClient() {
                 onDiaryEdited={handleDiaryEdited}
                 onDeleteDiary={handleDeleteDiary}
               />
-            )}
-          </div>
+            </div>
+          ) : (
+            <ScheduleScreen
+              schedules={schedules}
+              diaries={diaries}
+              currentUserID={currentUserID}
+              canEdit={canEdit('schedule')}
+              chips={chipRow}
+              onAdd={handleAddSchedule}
+              onEdit={handleEditSchedule}
+              onDelete={handleDeleteSchedule}
+            />
+          )
         )}
 
         {/* ══ Tab 4: 로드맵 ══ */}

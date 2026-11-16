@@ -513,6 +513,7 @@ export interface Schedule {
   end_date?: string
   all_day: boolean
   is_dday: boolean
+  is_anniversary: boolean   // 지나도 D+N 으로 센다(기념일 칸)
   dday_label: string
   color: ScheduleColor
   created_at: string
@@ -527,6 +528,7 @@ export interface CreateScheduleRequest {
   end_date?: string
   all_day?: boolean
   is_dday?: boolean
+  is_anniversary?: boolean
   dday_label?: string
   color?: ScheduleColor
 }
@@ -538,6 +540,7 @@ export interface UpdateScheduleRequest {
   end_date?: string
   all_day?: boolean
   is_dday?: boolean
+  is_anniversary?: boolean
   dday_label?: string
   color?: ScheduleColor
 }
