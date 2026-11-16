@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { formatAmountInput, parseAmount } from './formatNumber.ts'
-import { sortCategoriesByUse, readPayMethod, applySummaryDelta } from './ledger.ts'
+import { sortCategoriesByUse, readPayMethod, applySummaryDelta, categoryColor, CATEGORY_PALETTE } from './ledger.ts'
 
 test('금액 입력: 숫자만 남기고 천 단위 쉼표, 다시 읽으면 원 금액', () => {
   assert.equal(formatAmountInput('12000'), '12,000')
@@ -42,4 +42,20 @@ test('요약 낙관 반영: 그 거래 금액만 더하고 빼며, 다른 거래
   // a 실패 되돌리기: b 의 수입 반영은 남는다(스냅샷 복원이면 사라진다)
   assert.deepEqual(applySummaryDelta(b, 'expense', -30), { total_income: 110, total_expense: 50, balance: 60, other: 1 })
   assert.equal(applySummaryDelta(null, 'expense', 30), null)
+})
+
+test('카테고리 색: 정해진 이름은 고정 색, 모르는 이름은 늘 같은 팔레트 색', () => {
+  assert.equal(categoryColor('식비'), 'rose')
+  assert.equal(categoryColor('카페'), 'amber')
+  assert.equal(categoryColor('생활'), 'emerald')
+  assert.equal(categoryColor('교통'), 'teal')
+  assert.equal(categoryColor('쇼핑'), 'violet')
+  assert.equal(categoryColor('육아'), 'orange')
+  assert.equal(categoryColor('의료'), 'lime')
+  assert.equal(categoryColor('기타'), 'stone')
+  for (const name of ['반려동물', '경조사', '용돈', '', 'abc']) {
+    assert.equal(categoryColor(name), categoryColor(name))
+    assert.ok(CATEGORY_PALETTE.includes(categoryColor(name)), name)
+  }
+  assert.ok(!CATEGORY_PALETTE.includes('indigo') && !CATEGORY_PALETTE.includes('blue'))
 })

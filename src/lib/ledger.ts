@@ -95,3 +95,18 @@ export function applySummaryDelta<S extends SummaryTotals>(s: S | null, type: 'e
     balance: s.balance + (type === 'income' ? amount : -amount),
   }
 }
+
+// 카테고리 색: 정해진 이름은 고정 색, 나머지는 이름을 해시해 팔레트 안에서 늘 같은 색
+export const CATEGORY_PALETTE = ['rose', 'amber', 'emerald', 'teal', 'violet', 'orange', 'lime', 'stone', 'brand'] as const
+export type CategoryColor = (typeof CATEGORY_PALETTE)[number]
+const KNOWN_CATEGORY_COLOR: Record<string, CategoryColor> = {
+  식비: 'rose', 카페: 'amber', 생활: 'emerald', 교통: 'teal', 쇼핑: 'violet', 육아: 'orange', 의료: 'lime', 기타: 'stone',
+}
+
+export function categoryColor(name: string): CategoryColor {
+  const known = KNOWN_CATEGORY_COLOR[name]
+  if (known) return known
+  let h = 0
+  for (const ch of name) h = (h * 31 + ch.codePointAt(0)!) >>> 0
+  return CATEGORY_PALETTE[h % CATEGORY_PALETTE.length]
+}

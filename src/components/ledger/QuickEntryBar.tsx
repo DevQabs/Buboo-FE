@@ -5,7 +5,7 @@
 // 저축은 자산 연동 양식이 필요해 입력 시트(EntrySheet)로 넘긴다.
 import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
-import { motion, useAnimate, useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { SPRING, NO_MOTION, tapHaptic } from '@/components/ui/Card'
 import { useCategories } from '@/hooks/useCategories'
 import CategoryManager from '@/components/dashboard/CategoryManager'
@@ -14,10 +14,24 @@ import { toastError } from '@/components/ui/Toast'
 import { openNaverPay } from './EntrySheet'
 import { formatAmountInput, parseAmount } from '@/lib/formatNumber'
 import { todayKST } from '@/lib/date'
-import { sortCategoriesByUse, readPayMethod, PAY_METHOD_KEY, type PayMethod } from '@/lib/ledger'
+import { sortCategoriesByUse, readPayMethod, categoryColor, PAY_METHOD_KEY, type PayMethod, type CategoryColor } from '@/lib/ledger'
 import type { Transaction } from '@/types'
 
 type QuickType = 'expense' | 'income'
+
+// 카테고리 색 → 클래스. Tailwind JIT 가 찾도록 완성된 문자열로 둔다.
+// dot: 칩 점 / soft: 안 고른 칩 / solid: 고른 칩 / pill: 금액 옆 알약(브랜드 바 위)
+const CAT_CLASS: Record<CategoryColor, { dot: string; soft: string; solid: string; pill: string }> = {
+  rose: { dot: 'bg-rose-500', soft: 'border-rose-200 bg-rose-50 text-rose-700', solid: 'border-rose-500 bg-rose-500 text-white ring-2 ring-rose-200', pill: 'bg-rose-100 text-rose-800' },
+  amber: { dot: 'bg-amber-500', soft: 'border-amber-200 bg-amber-50 text-amber-800', solid: 'border-amber-600 bg-amber-600 text-white ring-2 ring-amber-200', pill: 'bg-amber-100 text-amber-800' },
+  emerald: { dot: 'bg-emerald-500', soft: 'border-emerald-200 bg-emerald-50 text-emerald-700', solid: 'border-emerald-600 bg-emerald-600 text-white ring-2 ring-emerald-200', pill: 'bg-emerald-100 text-emerald-800' },
+  teal: { dot: 'bg-teal-500', soft: 'border-teal-200 bg-teal-50 text-teal-700', solid: 'border-teal-600 bg-teal-600 text-white ring-2 ring-teal-200', pill: 'bg-teal-100 text-teal-800' },
+  violet: { dot: 'bg-violet-500', soft: 'border-violet-200 bg-violet-50 text-violet-700', solid: 'border-violet-500 bg-violet-500 text-white ring-2 ring-violet-200', pill: 'bg-violet-100 text-violet-800' },
+  orange: { dot: 'bg-orange-500', soft: 'border-orange-200 bg-orange-50 text-orange-700', solid: 'border-orange-600 bg-orange-600 text-white ring-2 ring-orange-200', pill: 'bg-orange-100 text-orange-800' },
+  lime: { dot: 'bg-lime-500', soft: 'border-lime-200 bg-lime-50 text-lime-800', solid: 'border-lime-700 bg-lime-700 text-white ring-2 ring-lime-200', pill: 'bg-lime-100 text-lime-800' },
+  stone: { dot: 'bg-stone-400', soft: 'border-stone-200 bg-stone-50 text-stone-600', solid: 'border-stone-500 bg-stone-500 text-white ring-2 ring-stone-200', pill: 'bg-stone-100 text-stone-700' },
+  brand: { dot: 'bg-brand-500', soft: 'border-brand-100 bg-brand-50 text-brand-700', solid: 'border-brand-500 bg-brand-500 text-white ring-2 ring-brand-200', pill: 'bg-brand-100 text-brand-700' },
+}
 
 interface QuickEntryBarProps {
   hasNav: boolean
@@ -82,6 +96,8 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
   const [memo, setMemo] = useState('')
   const [undoID, setUndoID] = useState<string | null>(null)
   const [showCats, setShowCats] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pillPop, setPillPop] = useState(0) // 같은 카테고리를 다시 골라도 알약이 다시 부풀게
   const [method, setMethod] = useState<PayMethod>('카드')
   const inputRef = useRef<HTMLInputElement>(null)
   const dateRef = useRef<HTMLInputElement>(null)
@@ -90,7 +106,6 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
   const saveSeq = useRef(0) // 마지막으로 시작한 저장 번호 — 되돌리기는 이 저장만 가리킨다
   const keyboard = useKeyboardInset()
   const reduceMotion = useReducedMotion()
-  const [chipRow, animate] = useAnimate()
   const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories(accessToken)
 
   const cats = useMemo(
@@ -114,13 +129,16 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
     return () => ro.disconnect()
   }, [])
 
-  // 고른 칩이 보글 부풀었다(1.15) 스프링으로 돌아온다
+  // 금액 옆 알약을 누르면 선택판이 열리고 닫힌다. 칩을 고르면 접히고 알약이 다시 부푼다.
+  const togglePicker = () => {
+    tapHaptic()
+    setPickerOpen(v => !v)
+  }
   const pickCategory = (c: string) => {
     setCategory(c)
     tapHaptic()
-    if (reduceMotion) return
-    const chip = `[data-cat="${CSS.escape(c)}"]`
-    animate(chip, { scale: 1.15 }, { duration: 0.08 }).then(() => animate(chip, { scale: 1 }, SPRING))
+    setPickerOpen(false)
+    setPillPop(n => n + 1)
   }
 
   const pickMethod = (m: PayMethod) => {
@@ -153,6 +171,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
     setMemo('')
     setMemoOpen(false)
     setCategory('')
+    setPickerOpen(false)
     setUndoID(null)
     inputRef.current?.focus()
     const seq = ++saveSeq.current
@@ -241,27 +260,6 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
                 />
               )}
 
-              <div className="flex items-center gap-1.5">
-                <div ref={chipRow} className="no-scrollbar -my-1 flex flex-1 gap-1.5 overflow-x-auto py-1">
-                  {cats.map(c => (
-                    <button
-                      key={c}
-                      type="button"
-                      data-cat={c}
-                      {...keepFocusTap(() => pickCategory(c))}
-                      className={`h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition-colors ${
-                        activeCategory === c ? 'border-brand-500 bg-brand-500 text-white' : 'border-line bg-white text-stone-500'
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-                <button type="button" onClick={() => setShowCats(true)} aria-label="카테고리 관리" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-400">
-                  <Cog6ToothIcon className="h-5 w-5" />
-                </button>
-              </div>
-
               <div className="flex gap-2">
                 {type === 'expense' && (
                   <div className="flex shrink-0 gap-1.5">
@@ -291,18 +289,64 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
             </div>
           )}
 
+          {amt > 0 && pickerOpen && (
+            <>
+              <div id="quick-cat-picker" className="rounded-card border border-line bg-white p-3 shadow-warm">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-sm font-bold text-stone-800">카테고리</span>
+                  <button type="button" onClick={() => setShowCats(true)} aria-label="카테고리 관리" className="-my-2 flex h-11 w-11 items-center justify-center rounded-full text-stone-400">
+                    <Cog6ToothIcon className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {cats.map((c, i) => {
+                    const cc = CAT_CLASS[categoryColor(c)]
+                    const on = activeCategory === c
+                    return (
+                      <motion.button
+                        key={c}
+                        type="button"
+                        aria-pressed={on}
+                        {...keepFocusTap(() => pickCategory(c))}
+                        initial={reduceMotion ? false : { scale: 0.4, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={reduceMotion ? NO_MOTION : { ...SPRING, delay: i * 0.025 }}
+                        className={`flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors ${on ? cc.solid : cc.soft}`}
+                      >
+                        <span aria-hidden className={`h-2 w-2 rounded-full ${on ? 'bg-white' : cc.dot}`} />
+                        {c}
+                      </motion.button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div role="separator" className="mx-4 h-px bg-line" />
+            </>
+          )}
+
           <label className="flex w-full items-center gap-2 rounded-[18px] bg-brand-500 px-4 text-white shadow-bar">
             <span className="text-lg font-bold text-white/70">+</span>
             {amt > 0 && (
-              <motion.span
-                key={activeCategory}
-                initial={reduceMotion ? false : { scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={reduceMotion ? NO_MOTION : SPRING}
-                className="shrink-0 rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold text-white"
+              <button
+                type="button"
+                aria-label="카테고리 바꾸기"
+                aria-expanded={pickerOpen}
+                aria-controls="quick-cat-picker"
+                {...keepFocusTap(togglePicker)}
+                className="-mx-1 flex h-11 min-w-11 shrink-0 items-center justify-center px-1"
               >
-                {activeCategory}
-              </motion.span>
+                <motion.span
+                  key={`${activeCategory}-${pillPop}`}
+                  initial={reduceMotion ? false : { scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={reduceMotion ? NO_MOTION : SPRING}
+                  className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-white/40 ${CAT_CLASS[categoryColor(activeCategory)].pill}`}
+                >
+                  <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${CAT_CLASS[categoryColor(activeCategory)].dot}`} />
+                  {activeCategory}
+                  <span aria-hidden className={`text-[10px] transition-transform ${pickerOpen ? 'rotate-180' : ''}`}>▾</span>
+                </motion.span>
+              </button>
             )}
             <input
               ref={inputRef}
