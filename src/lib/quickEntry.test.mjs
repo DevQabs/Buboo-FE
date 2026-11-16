@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { formatAmountInput, parseAmount } from './formatNumber.ts'
-import { sortCategoriesByUse, readPayMethod, applySummaryDelta, categoryColor, CATEGORY_PALETTE } from './ledger.ts'
+import { sortCategoriesByUse, readPayMethod, applySummaryDelta, categoryColor, CATEGORY_PALETTE, recentTitles, NAVER_PAY_TITLE } from './ledger.ts'
 
 test('금액 입력: 숫자만 남기고 천 단위 쉼표, 다시 읽으면 원 금액', () => {
   assert.equal(formatAmountInput('12000'), '12,000')
@@ -64,4 +64,33 @@ test('카테고리 색: 객체 프로토타입 이름("constructor" 등)도 팔�
   for (const name of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
     assert.ok(CATEGORY_PALETTE.includes(categoryColor(name)), name)
   }
+})
+
+test('자주 쓴 내용: 많이 쓴 것부터, 같으면 최근 것부터, 빈 내용·기본 내용·다른 종류는 뺀다', () => {
+  const tx = (title, category, date, type = 'expense') => ({ type, title, category, date })
+  const txs = [
+    tx('쿠팡', '쇼핑', '2026-11-01T10:00:00Z'),
+    tx('스타벅스', '카페', '2026-11-02T10:00:00Z'),
+    tx('쿠팡', '생활', '2026-11-05T10:00:00Z'),
+    tx('편의점', '식비', '2026-11-03T10:00:00Z'),
+    tx('관리비', '생활', '2026-11-04T10:00:00Z'),
+    tx('', '식비', '2026-11-06T10:00:00Z'),
+    tx('  ', '식비', '2026-11-06T10:00:00Z'),
+    tx(NAVER_PAY_TITLE, '식비', '2026-11-06T10:00:00Z'),
+    tx(NAVER_PAY_TITLE, '식비', '2026-11-07T10:00:00Z'),
+    tx('월급', '급여', '2026-11-06T10:00:00Z', 'income'),
+    tx('월급', '급여', '2026-11-07T10:00:00Z', 'income'),
+  ]
+  // 쿠팡 2번(마지막 카테고리 생활) → 나머지 1번씩 최근 순
+  assert.deepEqual(recentTitles(txs), [
+    { title: '쿠팡', category: '생활' },
+    { title: '관리비', category: '생활' },
+    { title: '편의점', category: '식비' },
+    { title: '스타벅스', category: '카페' },
+  ])
+  assert.deepEqual(recentTitles(txs, { limit: 2 }).map(t => t.title), ['쿠팡', '관리비'])
+  assert.deepEqual(recentTitles(txs, { type: 'income' }), [{ title: '월급', category: '급여' }])
+  // 목록 순서와 상관없이 마지막 카테고리는 날짜로 정한다
+  assert.deepEqual(recentTitles([...txs].reverse())[0], { title: '쿠팡', category: '생활' })
+  assert.deepEqual(recentTitles([]), [])
 })

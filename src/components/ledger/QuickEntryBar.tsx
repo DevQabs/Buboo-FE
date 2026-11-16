@@ -2,8 +2,9 @@
 
 // 가계부 빠른 입력: 하단 바가 곧 금액 입력 칸이다. 누르면 바로 숫자 키패드가 뜨고,
 // 금액이 들어가면 바로 위에 카테고리·저장 패널이 올라온다. 저장 뒤에도 키패드를 그대로 두어 다음 건을 잇는다.
+// 바 둘째 줄은 내용(거래 title) 칸: 금액 뒤 "다음"으로 넘어가 엔터로 저장한다. 바로 위 칩으로 자주 쓴 내용을 채운다.
 // 저축은 자산 연동 양식이 필요해 입력 시트(EntrySheet)로 넘긴다.
-import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type FocusEvent, type FormEvent, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
 import { motion, useReducedMotion } from 'framer-motion'
 import { SPRING, NO_MOTION, tapHaptic } from '@/components/ui/Card'
@@ -14,7 +15,7 @@ import { toastError } from '@/components/ui/Toast'
 import { openNaverPay } from './EntrySheet'
 import { formatAmountInput, parseAmount } from '@/lib/formatNumber'
 import { todayKST } from '@/lib/date'
-import { sortCategoriesByUse, readPayMethod, categoryColor, PAY_METHOD_KEY, type PayMethod, type CategoryColor } from '@/lib/ledger'
+import { sortCategoriesByUse, readPayMethod, categoryColor, recentTitles, NAVER_PAY_TITLE, PAY_METHOD_KEY, type PayMethod, type CategoryColor } from '@/lib/ledger'
 import type { Transaction } from '@/types'
 
 type QuickType = 'expense' | 'income'
@@ -37,7 +38,7 @@ interface QuickEntryBarProps {
   hasNav: boolean
   currentUserID: string
   accessToken?: string
-  /** 카테고리 정렬용(이 기간 거래) */
+  /** 카테고리 정렬·자주 쓴 내용용(이 기간 거래) */
   transactions: Transaction[]
   /** 만든 거래 id 를 돌려준다. 실패하면 던진다(대시보드가 낙관적 반영을 되돌리고 토스트를 띄운다) */
   onSubmit: (p: AddTransactionPayload) => Promise<string>
@@ -92,14 +93,15 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
   const [type, setType] = useState<QuickType>('expense')
   const [category, setCategory] = useState('')
   const [date, setDate] = useState(todayKST())
-  const [memoOpen, setMemoOpen] = useState(false)
-  const [memo, setMemo] = useState('')
+  const [title, setTitle] = useState('')
+  const [focused, setFocused] = useState(false) // 금액·내용 칸 중 하나에 포커스
   const [undoID, setUndoID] = useState<string | null>(null)
   const [showCats, setShowCats] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pillPop, setPillPop] = useState(0) // 같은 카테고리를 다시 골라도 알약이 다시 부풀게
   const [method, setMethod] = useState<PayMethod>('카드')
   const inputRef = useRef<HTMLInputElement>(null)
+  const titleRef = useRef<HTMLInputElement>(null)
   const dateRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const [barH, setBarH] = useState(0)
@@ -112,6 +114,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
     () => sortCategoriesByUse(type === 'income' ? incomeCategories : expenseCategories, transactions, type),
     [type, incomeCategories, expenseCategories, transactions],
   )
+  const titles = useMemo(() => recentTitles(transactions, { limit: 8, type }), [transactions, type])
   const activeCategory = category || cats[0] || '기타'
   const amt = parseAmount(amount)
   const today = todayKST()
@@ -163,14 +166,13 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
       type,
       amount: amt,
       category: activeCategory,
-      title: memo.trim() || (thenPay ? '네이버페이 결제' : ''),
+      title: title.trim() || (thenPay ? NAVER_PAY_TITLE : ''),
       date,
       payment_method: pay,
     }
     // 다음 건을 바로 넣게 먼저 비우고 포커스를 지킨다. 실패하면 금액을 되살린다.
     setAmount('')
-    setMemo('')
-    setMemoOpen(false)
+    setTitle('')
     setCategory('')
     setPickerOpen(false)
     setUndoID(null)
@@ -200,6 +202,29 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
   const onFormSubmit = (e: FormEvent) => {
     e.preventDefault()
     save()
+  }
+
+  const pickTitle = (t: { title: string; category: string }) => {
+    tapHaptic()
+    setTitle(t.title)
+    setCategory(t.category)
+    setPillPop(n => n + 1)
+  }
+
+  // 한글 조합 중 엔터는 글자 확정이라 넘긴다
+  const onAmountKey = (e: KeyboardEvent) => {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+    e.preventDefault()
+    if (amt > 0) titleRef.current?.focus()
+  }
+  const onTitleKey = (e: KeyboardEvent) => {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+    e.preventDefault()
+    save()
+  }
+  // 바 안에서 금액 ↔ 내용으로 옮길 때는 포커스가 빠진 것이 아니다
+  const onBarBlur = (e: FocusEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false)
   }
 
   const openDate = () => {
@@ -247,19 +272,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
                   aria-label="날짜"
                   className="sr-only"
                 />
-                <Toggle on={memoOpen || !!memo} onClick={() => setMemoOpen(v => !v)}>메모</Toggle>
               </div>
-
-              {memoOpen && (
-                <input
-                  autoFocus
-                  enterKeyHint="done"
-                  placeholder={type === 'expense' ? '어디서 썼나요?' : '내용'}
-                  value={memo}
-                  onChange={e => setMemo(e.target.value)}
-                  className="w-full rounded-xl border border-line px-3 py-2.5 text-base text-stone-700 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              )}
 
               <button
                 type="button"
@@ -306,19 +319,47 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
             </>
           )}
 
+          {(focused || amt > 0) && titles.length > 0 && (
+            // 자주 쓴 내용: 누르면 내용과 그 내용에 마지막으로 고른 카테고리를 채운다
+            <div className="no-scrollbar -mx-3 flex gap-1.5 overflow-x-auto px-3">
+              {titles.map(t => {
+                const on = title === t.title
+                return (
+                  <button
+                    key={t.title}
+                    type="button"
+                    aria-pressed={on}
+                    aria-label={`내용 ${t.title}, 카테고리 ${t.category}`}
+                    {...keepFocusTap(() => pickTitle(t))}
+                    className={`flex min-h-10 max-w-[10rem] shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold shadow-warm transition-colors ${on ? 'border-brand-500 bg-brand-500 text-white' : 'border-line bg-white text-stone-700'}`}
+                  >
+                    <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${on ? 'bg-white' : CAT_CLASS[categoryColor(t.category)].dot}`} />
+                    <span className="truncate">{t.title}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
           {/* 바 오른쪽 카테고리·결제수단은 금액 전에도 누를 수 있는 버튼이다. label 밖에 두어 누름이 금액 칸 포커스로 먹히지 않게 한다 */}
-          <div className="flex w-full items-center gap-1 rounded-[18px] bg-brand-500 pl-4 pr-1.5 text-white shadow-bar">
+          <div
+            onFocus={() => setFocused(true)}
+            onBlur={onBarBlur}
+            className="w-full rounded-[18px] bg-brand-500 text-white shadow-bar"
+          >
+          <div className="flex w-full items-center gap-1 pl-4 pr-1.5">
             <label className="flex min-w-0 flex-1 items-center gap-2">
               <span className="text-lg font-bold text-white/70">+</span>
               <input
                 ref={inputRef}
                 inputMode="numeric"
-                enterKeyHint="done"
+                enterKeyHint="next"
                 placeholder="금액 입력"
                 aria-label="금액"
                 value={amount}
                 onChange={e => setAmount(formatAmountInput(e.target.value))}
-                className="h-12 min-w-0 flex-1 bg-transparent text-lg font-bold tabular-nums text-white placeholder:text-white/70 focus:outline-none"
+                onKeyDown={onAmountKey}
+                className={`h-12 min-w-0 flex-1 bg-transparent font-bold ${amount.length > 9 ? 'text-base' : 'text-lg'} tabular-nums text-white placeholder:text-white/70 focus:outline-none`}
               />
               {amt > 0 && <span className="text-sm font-medium text-white/60">원</span>}
             </label>
@@ -328,7 +369,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
               aria-expanded={pickerOpen}
               aria-controls="quick-cat-picker"
               {...keepFocusTap(togglePicker)}
-              className="flex h-11 min-w-11 max-w-[8.5rem] shrink-0 items-center justify-center px-0.5"
+              className="flex h-11 min-w-11 max-w-[6.5rem] shrink-0 items-center justify-center px-0.5"
             >
               <motion.span
                 key={`${activeCategory}-${pillPop}`}
@@ -361,6 +402,18 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
                 </motion.span>
               </button>
             )}
+          </div>
+          <div className="mx-4 border-t border-white/20" />
+          <input
+            ref={titleRef}
+            enterKeyHint="done"
+            placeholder={type === 'expense' ? '어디에 썼나요?' : '어디서 받았나요?'}
+            aria-label="내용"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            onKeyDown={onTitleKey}
+            className="h-11 w-full bg-transparent px-4 text-base text-white placeholder:text-white/60 focus:outline-none"
+          />
           </div>
         </div>
       </form>

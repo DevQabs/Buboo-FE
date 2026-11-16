@@ -11,7 +11,7 @@ import { SavingLinkInline, type AddTransactionPayload } from '@/components/dashb
 import { Chip } from '@/components/ui/Card'
 import { formatAmountInput } from '@/lib/formatNumber'
 import { todayKST } from '@/lib/date'
-import { sortCategoriesByUse } from '@/lib/ledger'
+import { sortCategoriesByUse, NAVER_PAY_TITLE } from '@/lib/ledger'
 import type { OtherAsset, SavingLink, StockAssetWithPrice, Transaction } from '@/types'
 
 type TxType = AddTransactionPayload['type']
@@ -85,7 +85,7 @@ export default function EntrySheet({ currentUserID, accessToken, transactions, s
         type,
         amount: amt,
         category: type === 'saving' ? '저축/투자' : activeCategory,
-        title: title.trim() || (thenPay ? '네이버페이 결제' : ''),
+        title: title.trim() || (thenPay ? NAVER_PAY_TITLE : ''),
         date,
         payment_method: '카드',
         saving_link: savingLink ?? undefined,

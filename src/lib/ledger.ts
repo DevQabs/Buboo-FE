@@ -109,3 +109,32 @@ export function categoryColor(name: string): CategoryColor {
   for (const ch of name) h = (h * 31 + ch.codePointAt(0)!) >>> 0
   return CATEGORY_PALETTE[h % CATEGORY_PALETTE.length]
 }
+
+/** 내용을 비우고 저장할 때 넣는 기본 내용(N페이 결제). 자주 쓴 내용에서는 뺀다. */
+export const NAVER_PAY_TITLE = '네이버페이 결제'
+
+/**
+ * 자주 쓴 내용(거래 title). 많이 쓴 것부터, 같으면 최근에 쓴 것부터.
+ * 빈 내용·기본 내용은 뺀다. category 는 그 내용으로 가장 최근에 고른 카테고리.
+ */
+export function recentTitles(
+  txs: Pick<Transaction, 'type' | 'title' | 'category' | 'date'>[],
+  { limit = 8, type = 'expense' }: { limit?: number; type?: 'expense' | 'income' } = {},
+): { title: string; category: string }[] {
+  const map = new Map<string, { count: number; last: number; category: string }>()
+  for (const tx of txs) {
+    const title = tx.title?.trim()
+    if (tx.type !== type || !title || title === NAVER_PAY_TITLE) continue
+    const at = Date.parse(tx.date) || 0
+    const prev = map.get(title)
+    if (!prev) map.set(title, { count: 1, last: at, category: tx.category })
+    else {
+      prev.count++
+      if (at >= prev.last) { prev.last = at; prev.category = tx.category }
+    }
+  }
+  return Array.from(map.entries())
+    .sort((a, b) => b[1].count - a[1].count || b[1].last - a[1].last)
+    .slice(0, limit)
+    .map(([title, v]) => ({ title, category: v.category }))
+}
