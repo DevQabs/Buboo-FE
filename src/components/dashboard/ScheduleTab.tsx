@@ -14,6 +14,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from '@heroicons/react/24/outline'
+import { apiFetch } from '@/lib/api'
+import { attachDiaryPhotos } from '@/lib/media'
 import type { Schedule, DiaryEntry, CreateScheduleRequest, CreateDiaryRequest, UpdateScheduleRequest, UpdateDiaryRequest, DiaryMood, ScheduleColor, User } from '@/types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
@@ -534,8 +536,9 @@ function DiaryRow({ d, apiBase, canEdit, onEdit, onDelete }: { d: DiaryEntry; ap
           <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{d.content}</p>
           {d.photos.length > 0 && (
             <div className="flex gap-2 mt-2 flex-wrap">
-              {d.photos.map(p => {
-                const src = p.startsWith('http') ? p : `${apiBase}${p}`
+              {d.photos.map((p, i) => {
+                const u = d.photo_urls[i] ?? ''
+                const src = u.startsWith('/') ? `${apiBase}${u}` : u
                 return (
                   <img key={p} src={src} alt=""
                     className="w-20 h-20 object-cover rounded-xl border border-slate-100 cursor-pointer hover:opacity-90 transition-opacity"
@@ -671,8 +674,9 @@ function AddDiaryModal({ currentUserID, initialDate, onClose, onSave }: {
 
 // ─── Edit Diary Modal ─────────────────────────────────────────────────────────
 
-function EditDiaryModal({ diary, onClose, onSaved }: {
+function EditDiaryModal({ diary, accessToken, onClose, onSaved }: {
   diary: DiaryEntry
+  accessToken: string
   onClose: () => void
   onSaved: () => Promise<void>
 }) {
@@ -685,14 +689,15 @@ function EditDiaryModal({ diary, onClose, onSaved }: {
   const [error, setError]         = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const photoSrc = (p: string) => p.startsWith('http') ? p : `${API_BASE}${p}`
-  const photoFilename = (p: string) => p.split('/').pop() ?? p
+  const photoSrc = (key: string) => {
+    const u = diary.photo_urls[diary.photos.indexOf(key)] ?? ''
+    return u.startsWith('/') ? `${API_BASE}${u}` : u
+  }
 
-  const handleDeleteExisting = async (photoURL: string) => {
-    const filename = photoFilename(photoURL)
+  const handleDeleteExisting = async (key: string) => {
     try {
-      await fetch(`${API_BASE}/api/diaries/${diary.id}/photos/${encodeURIComponent(filename)}`, { method: 'DELETE' })
-      setExistingPhotos(ps => ps.filter(p => p !== photoURL))
+      await apiFetch(`/api/diaries/${diary.id}/photos?key=${encodeURIComponent(key)}`, accessToken, { method: 'DELETE' })
+      setExistingPhotos(ps => ps.filter(p => p !== key))
     } catch {
       setError('사진 삭제 실패')
     }
@@ -718,17 +723,11 @@ function EditDiaryModal({ diary, onClose, onSaved }: {
     if (!content.trim()) { setError('내용을 입력해주세요'); return }
     setSaving(true); setError('')
     try {
-      const res = await fetch(`${API_BASE}/api/diaries/${diary.id}`, {
+      await apiFetch(`/api/diaries/${diary.id}`, accessToken, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content, mood } satisfies UpdateDiaryRequest),
       })
-      if (!res.ok) throw new Error(`수정 실패: ${res.status}`)
-      for (const photo of newPhotos) {
-        const form = new FormData()
-        form.append('photo', photo)
-        await fetch(`${API_BASE}/api/diaries/${diary.id}/photos`, { method: 'POST', body: form })
-      }
+      await attachDiaryPhotos(accessToken, diary.id, newPhotos)
       await onSaved()
       onClose()
     } catch (e) {
@@ -819,6 +818,7 @@ interface ScheduleTabProps {
   schedules: Schedule[]
   diaries: DiaryEntry[]
   currentUserID: string
+  accessToken: string
   /** 대시보드의 일상 칩(일정/일기)이 고른 쪽만 그린다. */
   section: 'schedule' | 'diary'
   /** false 면 추가·수정·삭제를 숨긴다(보기 전용). */
@@ -832,7 +832,7 @@ interface ScheduleTabProps {
 }
 
 export default function ScheduleTab({
-  schedules, diaries, currentUserID, section, canEdit,
+  schedules, diaries, currentUserID, accessToken, section, canEdit,
   onAddSchedule, onEditSchedule, onDeleteSchedule,
   onAddDiary, onDiaryEdited, onDeleteDiary,
 }: ScheduleTabProps) {
@@ -969,6 +969,7 @@ export default function ScheduleTab({
         {editingDiary && (
           <EditDiaryModal
             diary={editingDiary}
+            accessToken={accessToken}
             onClose={() => setEditingDiary(null)}
             onSaved={onDiaryEdited}
           />

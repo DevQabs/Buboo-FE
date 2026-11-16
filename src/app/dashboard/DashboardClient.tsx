@@ -77,6 +77,7 @@ import type {
 import { levelOf, visibleTabs, type TabKey } from '@/lib/menus'
 import { ledgerPeriod, ledgerMonthOf, todayKST } from '@/lib/date'
 import { apiFetch as callApi, latestOnly, ignoreAbort } from '@/lib/api'
+import { attachDiaryPhotos } from '@/lib/media'
 import { Chip } from '@/components/ui/Card'
 import { Toaster, toastError } from '@/components/ui/Toast'
 
@@ -831,15 +832,12 @@ export default function DashboardClient() {
     })
     if (!res.ok) throw new Error(`일기 저장 실패: ${res.status}`)
     const created: DiaryEntry = await res.json()
-    // Upload photos one by one
-    for (const photo of photos) {
-      const form = new FormData()
-      form.append('photo', photo)
-      await fetch(`${API_BASE}/api/diaries/${created.id}/photos`, { method: 'POST', body: form, headers: { Authorization: `Bearer ${_accessToken}` } })
+    // 사진이 실패해도 만들어진 일기는 목록에 보이게 먼저 새로고침하고, 오류는 작성 창에 보인다.
+    try {
+      await attachDiaryPhotos(_accessToken, created.id, photos)
+    } finally {
+      await handleDiaryEdited()
     }
-    // Refetch diary to get updated photos
-    const updated = await apiFetch<DiaryEntry[]>('/api/diaries')
-    setDiaries(Array.isArray(updated) ? updated : [])
   }
 
   const handleDiaryEdited = async () => {
@@ -1067,6 +1065,7 @@ export default function DashboardClient() {
                 schedules={schedules}
                 diaries={diaries}
                 currentUserID={currentUserID}
+                accessToken={session?.user?.accessToken ?? ''}
                 section="diary"
                 canEdit={canEdit('diary')}
                 onAddSchedule={handleAddSchedule}

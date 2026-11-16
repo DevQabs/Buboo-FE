@@ -557,7 +557,10 @@ export interface DiaryEntry {
   user_id: string
   date: string
   content: string
+  /** 저장소 키(이전 전 옛 값은 URL) — 삭제할 때 쓴다 */
   photos: string[]
+  /** 표시용 주소, photos 와 같은 순서(1시간 유효). '/' 로 시작하면 API 주소를 앞에 붙인다 */
+  photo_urls: string[]
   mood: DiaryMood
   created_at: string
   updated_at: string
@@ -650,4 +653,51 @@ export interface RoadmapProjection {
   required_total_return: number
   years: RoadmapYearRow[]
   months: RoadmapMonthPoint[]
+}
+
+// ─── 저장소 · 아기 (설계서 5·6절) ───────────────────────────────────────────
+/** GET /api/storage/usage (owner) */
+export interface StorageUsage {
+  used_bytes: number
+  limit_bytes: number
+  warn_bytes: number
+}
+
+export type BabySex = 'male' | 'female'
+
+/** GET /api/baby — 미등록이면 null */
+export interface Baby {
+  name: string
+  birth_date: string
+  sex: BabySex
+}
+
+export interface BabyMedia {
+  id: string
+  moment_id: string
+  kind: 'image' | 'video'
+  key: string
+  content_type: string
+  size_bytes: number
+  sort_order: number
+  /** 1시간 유효 presigned 주소 */
+  url: string
+}
+
+export interface BabyMoment {
+  id: string
+  user_id: string
+  date: string
+  content: string
+  media: BabyMedia[]
+  created_at: string
+}
+
+export interface BabyGrowth {
+  id: string
+  measured_on: string
+  height_cm: number | null
+  weight_kg: number | null
+  head_cm: number | null
+  memo: string
 }

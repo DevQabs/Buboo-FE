@@ -2,6 +2,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { levelOf, permissionSummary, visibleTabs } from './menus.ts'
+import {
+  clampTrimStart, daysSinceBirth, fitWithin, formatBytes, formatClock, usageLevel,
+} from './mediaRules.ts'
 
 test('권한을 못 받았으면 아무 탭도 없다', () => {
   assert.deepEqual(visibleTabs(null), [])
@@ -36,4 +39,35 @@ test('권한 요약 문구', () => {
     permissionSummary({ is_owner: false, menus: { baby_photo: 'edit', baby_growth: 'edit', schedule: 'view' } }),
     '사진일기·성장 편집, 일정 보기',
   )
+})
+
+test('사진은 긴 변 2048px 로 줄이고 작은 건 그대로', () => {
+  assert.deepEqual(fitWithin(4032, 3024, 2048), { width: 2048, height: 1536 })
+  assert.deepEqual(fitWithin(3024, 4032, 2048), { width: 1536, height: 2048 })
+  assert.deepEqual(fitWithin(800, 600, 2048), { width: 800, height: 600 })
+})
+
+test('자르기 시작점은 0 ~ (길이-30초)', () => {
+  assert.equal(clampTrimStart(-5, 50), 0)
+  assert.equal(clampTrimStart(25, 50), 20)
+  assert.equal(clampTrimStart(10, 50), 10)
+  assert.equal(clampTrimStart(10, 20), 0)
+})
+
+test('생후 일수 — 시안: 10월 5일생, 11월 16일은 생후 42일', () => {
+  assert.equal(daysSinceBirth('2026-10-05', '2026-11-16'), 42)
+  assert.equal(daysSinceBirth('2026-10-05', '2026-10-05'), 0)
+})
+
+test('용량·시간 표시', () => {
+  assert.equal(formatBytes(8_100_000_000), '8.1GB')
+  assert.equal(formatBytes(52_400_000), '52.4MB')
+  assert.equal(formatClock(65.4), '1:05')
+  assert.equal(formatClock(0), '0:00')
+})
+
+test('저장 공간 단계', () => {
+  assert.equal(usageLevel(7_000_000_000, 8_000_000_000, 9_500_000_000), 'ok')
+  assert.equal(usageLevel(8_000_000_000, 8_000_000_000, 9_500_000_000), 'warn')
+  assert.equal(usageLevel(9_500_000_000, 8_000_000_000, 9_500_000_000), 'full')
 })
