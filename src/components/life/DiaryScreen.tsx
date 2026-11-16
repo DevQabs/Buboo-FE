@@ -5,6 +5,7 @@ import { useState, type ReactNode } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { ChevronLeftIcon, ChevronRightIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { Card, FloatingBar, IconButton, PageTitle } from '@/components/ui/Card'
+import StorageWarning from '@/components/ui/StorageWarning'
 import { toastError } from '@/components/ui/Toast'
 import { AddDiaryModal, EditDiaryModal, MOOD_LABEL, MOOD_TONE, PhotoLightbox, photoSrc } from './DiaryModals'
 import { todayKST } from '@/lib/date'
@@ -15,6 +16,8 @@ interface DiaryScreenProps {
   diaries: DiaryEntry[]
   users: User[]
   currentUserID: string
+  /** 저장 공간 경고(owner 만 보임) */
+  accessToken: string
   canEdit: boolean
   hasNav: boolean
   /** 2단 메뉴 칩 줄(제목 아래) */
@@ -26,7 +29,7 @@ interface DiaryScreenProps {
 }
 
 export default function DiaryScreen({
-  diaries, users, currentUserID, canEdit, hasNav, chips, onAdd, onUpdate, onDeletePhoto, onDelete,
+  diaries, users, currentUserID, accessToken, canEdit, hasNav, chips, onAdd, onUpdate, onDeletePhoto, onDelete,
 }: DiaryScreenProps) {
   const today = todayKST()
   const [ym, setYm] = useState(today.slice(0, 7)) // "YYYY-MM"
@@ -70,6 +73,7 @@ export default function DiaryScreen({
         </>}
       />
       {chips}
+      {canEdit && accessToken && <StorageWarning accessToken={accessToken} className="rounded-card bg-white p-4 shadow-warm" />}
 
       {/* 한 달 기분 띠 */}
       <Card className="px-3 py-2.5">
@@ -131,12 +135,8 @@ export default function DiaryScreen({
                   </>
                 ) : (
                   <>
-                    <button type="button" aria-label="수정" onClick={() => setEditing(d)} className="rounded-lg p-1.5 text-stone-300 hover:bg-amber-50 hover:text-amber-500">
-                      <PencilSquareIcon className="h-4 w-4" />
-                    </button>
-                    <button type="button" aria-label="삭제" onClick={() => setConfirmDel(d.id)} className="rounded-lg p-1.5 text-stone-300 hover:bg-rose-50 hover:text-rose-400">
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
+                    <IconButton label="수정" onClick={() => setEditing(d)}><PencilSquareIcon className="h-4 w-4" /></IconButton>
+                    <IconButton label="삭제" onClick={() => setConfirmDel(d.id)}><TrashIcon className="h-4 w-4" /></IconButton>
                   </>
                 )}
               </div>

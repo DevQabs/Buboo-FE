@@ -780,14 +780,18 @@ export default function DashboardClient() {
   // 일기 글은 이미 저장됐으므로 던지지 않는다: 쓰기 창이 열린 채 다시 저장해 같은 일기가 또 생기는 일을 막는다.
   const uploadDiaryPhotos = async (diaryID: string, files: File[]) => {
     let failed = 0
+    let firstError: unknown
     for (const file of files) {
       try {
         await attachDiaryPhotos(_accessToken, diaryID, [file])
-      } catch {
+      } catch (e) {
         failed++
+        firstError ??= e
       }
     }
-    if (failed > 0) showToast(`사진 ${failed}장을 올리지 못했어요. 수정에서 다시 올려 주세요`)
+    // 첫 실패 사유를 같이 보인다(저장 공간이 가득 찬 413 문구 등).
+    const reason = firstError instanceof Error && firstError.message ? ` (${firstError.message})` : ''
+    if (failed > 0) showToast(`사진 ${failed}장을 올리지 못했어요${reason}. 수정에서 다시 올려 주세요`)
   }
 
   // 저장 뒤 목록 새로고침 실패도 던지지 않는다(같은 이유).
@@ -1035,6 +1039,7 @@ export default function DashboardClient() {
               diaries={diaries}
               users={users}
               currentUserID={currentUserID}
+              accessToken={session?.user?.accessToken ?? ''}
               canEdit={canEdit('diary')}
               hasNav={tabs.length > 1}
               chips={chipRow}
