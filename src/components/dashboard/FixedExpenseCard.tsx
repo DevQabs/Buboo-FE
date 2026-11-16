@@ -567,6 +567,8 @@ interface FixedExpenseCardProps {
   onAdd: (data: CreateFixedExpenseRequest) => Promise<void>
   onEdit: (id: string, data: UpdateFixedExpenseRequest) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  /** false 면 고정비 추가·수정·활성 전환·삭제를 숨긴다(보기 전용). */
+  canEdit: boolean
 }
 
 export default function FixedExpenseCard({
@@ -580,6 +582,7 @@ export default function FixedExpenseCard({
   onAdd,
   onEdit,
   onDelete,
+  canEdit,
 }: FixedExpenseCardProps) {
   const [showModal, setShowModal] = useState(false)
   const [editingFe, setEditingFe] = useState<FixedExpense | null>(null)
@@ -609,6 +612,7 @@ export default function FixedExpenseCard({
           </div>
 
           <div className="flex items-center gap-2">
+            {canEdit && (
             <button
               onClick={() => { setEditingFe(null); setShowModal(true) }}
               className="w-8 h-8 rounded-xl bg-white/60 hover:bg-white/90 flex items-center justify-center transition-colors"
@@ -616,6 +620,7 @@ export default function FixedExpenseCard({
             >
               <PlusIcon className="h-4 w-4 text-amber-700" />
             </button>
+            )}
             <button
               onClick={() => setIsOpen(v => !v)}
               className="w-8 h-8 rounded-xl bg-amber-100 hover:bg-amber-200 flex items-center justify-center transition-colors"
@@ -632,17 +637,19 @@ export default function FixedExpenseCard({
         {activeItems.length === 0 && inactiveItems.length === 0 ? (
           <div className="px-5 py-6 text-center">
             <p className="text-sm text-slate-400">등록된 고정비가 없어요</p>
+              {canEdit && (
             <button
               onClick={() => { setEditingFe(null); setShowModal(true) }}
               className="mt-2 text-xs text-brand-500 hover:underline"
             >
               첫 고정비 추가하기 →
             </button>
+              )}
           </div>
         ) : (
           <>
             {activeItems.map(fe => (
-              <FeRow key={fe.id} fe={fe}
+              <FeRow key={fe.id} fe={fe} canEdit={canEdit}
                 onEdit={() => { setEditingFe(fe); setShowModal(true) }}
                 onDelete={() => onDelete(fe.id)}
                 onToggle={() => onEdit(fe.id, { is_active: false })} />
@@ -653,7 +660,7 @@ export default function FixedExpenseCard({
                   <p className="text-[10px] text-slate-400 font-medium">비활성</p>
                 </div>
                 {inactiveItems.map(fe => (
-                  <FeRow key={fe.id} fe={fe}
+                  <FeRow key={fe.id} fe={fe} canEdit={canEdit}
                     onEdit={() => { setEditingFe(fe); setShowModal(true) }}
                     onDelete={() => onDelete(fe.id)}
                     onToggle={() => onEdit(fe.id, { is_active: true })} />
@@ -685,11 +692,13 @@ export default function FixedExpenseCard({
 
 function FeRow({
   fe,
+  canEdit,
   onEdit,
   onDelete,
   onToggle,
 }: {
   fe: FixedExpense
+  canEdit: boolean
   onEdit: () => void
   onDelete: () => void
   onToggle: () => void
@@ -714,7 +723,7 @@ function FeRow({
         {formatKRW(fe.amount)}
       </span>
 
-      <FeMenu onEdit={onEdit} onDelete={onDelete} onToggle={onToggle} isActive={fe.is_active} />
+      {canEdit && <FeMenu onEdit={onEdit} onDelete={onDelete} onToggle={onToggle} isActive={fe.is_active} />}
     </div>
   )
 }

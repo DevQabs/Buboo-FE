@@ -40,10 +40,13 @@ export interface RoadmapPrefetch {
 export default function RoadmapTab({
   accessToken,
   prefetched,
+  canEdit,
 }: {
   accessToken?: string;
   // 대시보드가 미리 받아 둔 데이터. 있으면 첫 화면을 바로 그린다.
   prefetched?: RoadmapPrefetch | null;
+  /** false 면 가정 편집 카드를 숨긴다(보기 전용). */
+  canEdit: boolean;
 }) {
   const [data, setData] = useState<RoadmapProjection | null>(prefetched?.projection ?? null);
   const [assumptions, setAssumptions] = useState<RoadmapAssumptions | null>(prefetched?.assumptions ?? null);
@@ -288,6 +291,7 @@ export default function RoadmapTab({
       </div>
 
       {/* ⑤ 가정 편집 */}
+      {canEdit && (
       <div className='bg-white rounded-3xl shadow-sm border border-slate-100 px-5 py-4'>
         <button
           onClick={() => setShowAssumptions(v => !v)}
@@ -367,6 +371,7 @@ export default function RoadmapTab({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

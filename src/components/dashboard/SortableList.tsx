@@ -45,10 +45,14 @@ interface SortableListProps {
   ids: string[]
   /** Receives the complete reordered id list. Not called when nothing moved. */
   onReorder: (nextIDs: string[]) => void
+  /** 보기 전용이면 끌기 손잡이를 숨긴다. */
+  disabled?: boolean
   children: ReactNode
 }
 
-export function SortableList({ ids, onReorder, children }: SortableListProps) {
+const ReorderDisabled = createContext(false)
+
+export function SortableList({ ids, onReorder, disabled = false, children }: SortableListProps) {
   // distance:5 means a press only becomes a drag once the finger actually moves,
   // so the grip never swallows a tap and vertical page scrolling still works.
   const sensors = useSensors(
@@ -69,6 +73,7 @@ export function SortableList({ ids, onReorder, children }: SortableListProps) {
   }
 
   return (
+    <ReorderDisabled.Provider value={disabled}>
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
@@ -82,6 +87,7 @@ export function SortableList({ ids, onReorder, children }: SortableListProps) {
         {children}
       </SortableContext>
     </DndContext>
+    </ReorderDisabled.Provider>
   )
 }
 
@@ -133,7 +139,8 @@ export function SortableRow({ id, className = '', children }: SortableRowProps) 
 /** The 3-line grip. Renders nothing unless placed inside a <SortableRow />. */
 export function DragHandle({ className = '' }: { className?: string }) {
   const ctx = useContext(HandleContext)
-  if (!ctx) return null
+  const disabled = useContext(ReorderDisabled)
+  if (!ctx || disabled) return null
 
   return (
     <button

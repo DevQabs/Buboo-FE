@@ -200,7 +200,7 @@ function DDayBanner({ schedules }: { schedules: Schedule[] }) {
 
 // ─── Schedule row ─────────────────────────────────────────────────────────────
 
-function ScheduleRow({ s, onEdit, onDelete }: { s: Schedule; onEdit: () => void; onDelete: () => void }) {
+function ScheduleRow({ s, canEdit, onEdit, onDelete }: { s: Schedule; canEdit: boolean; onEdit: () => void; onDelete: () => void }) {
   const c = COLOR_MAP[s.color] ?? COLOR_MAP.indigo
   const dday = s.is_dday ? calcDDay(s.start_date) : null
   return (
@@ -218,6 +218,7 @@ function ScheduleRow({ s, onEdit, onDelete }: { s: Schedule; onEdit: () => void;
         <p className="text-xs text-slate-400">{fmtDate(s.start_date)}{s.end_date ? ` ~ ${fmtDate(s.end_date)}` : ''} · {lunarFullLabel(s.start_date.slice(0, 10))}</p>
         {s.description && <p className="text-xs text-slate-500 truncate">{s.description}</p>}
       </div>
+      {canEdit && (
       <div className="flex items-center gap-1 flex-shrink-0">
         <button
           onClick={onEdit}
@@ -232,6 +233,7 @@ function ScheduleRow({ s, onEdit, onDelete }: { s: Schedule; onEdit: () => void;
           <TrashIcon className="h-3.5 w-3.5" />
         </button>
       </div>
+      )}
     </div>
   )
 }
@@ -483,7 +485,7 @@ function PhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
   )
 }
 
-function DiaryRow({ d, apiBase, onEdit, onDelete }: { d: DiaryEntry; apiBase: string; onEdit: () => void; onDelete: () => void }) {
+function DiaryRow({ d, apiBase, canEdit, onEdit, onDelete }: { d: DiaryEntry; apiBase: string; canEdit: boolean; onEdit: () => void; onDelete: () => void }) {
   const [expanded, setExpanded] = useState(false)
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -499,6 +501,7 @@ function DiaryRow({ d, apiBase, onEdit, onDelete }: { d: DiaryEntry; apiBase: st
               <p className="text-xs text-slate-400">{lunarFullLabel(d.date)} · {MOOD_LABEL[d.mood] ?? d.mood} · {d.photos.length > 0 ? `📷 ${d.photos.length}` : '텍스트'}</p>
             </div>
           </div>
+          {canEdit && (
           <div className="flex items-center gap-1">
             <button onClick={e => { e.stopPropagation(); onEdit() }}
               className="p-1.5 rounded-lg text-slate-300 hover:text-amber-400 hover:bg-amber-50 transition-colors">
@@ -522,6 +525,7 @@ function DiaryRow({ d, apiBase, onEdit, onDelete }: { d: DiaryEntry; apiBase: st
               </button>
             )}
           </div>
+          )}
         </div>
       </button>
       {expanded && (
@@ -816,6 +820,8 @@ interface ScheduleTabProps {
   currentUserID: string
   /** 대시보드의 일상 칩(일정/일기)이 고른 쪽만 그린다. */
   section: 'schedule' | 'diary'
+  /** false 면 추가·수정·삭제를 숨긴다(보기 전용). */
+  canEdit: boolean
   onAddSchedule: (req: CreateScheduleRequest) => Promise<void>
   onEditSchedule: (id: string, req: UpdateScheduleRequest) => Promise<void>
   onDeleteSchedule: (id: string) => Promise<void>
@@ -825,7 +831,7 @@ interface ScheduleTabProps {
 }
 
 export default function ScheduleTab({
-  schedules, diaries, currentUserID, section,
+  schedules, diaries, currentUserID, section, canEdit,
   onAddSchedule, onEditSchedule, onDeleteSchedule,
   onAddDiary, onDiaryEdited, onDeleteDiary,
 }: ScheduleTabProps) {
@@ -882,6 +888,7 @@ export default function ScheduleTab({
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-50">
           <span className="text-xs text-slate-400">{selectedDate} · {lunarFullLabel(selectedDate)}</span>
+          {canEdit && (
           <button
             onClick={() => section === 'schedule' ? setShowAddSchedule(true) : setShowAddDiary(true)}
             className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
@@ -890,6 +897,7 @@ export default function ScheduleTab({
           >
             <PlusIcon className="h-4 w-4" />
           </button>
+          )}
         </div>
 
         {section === 'schedule' ? (
@@ -897,12 +905,14 @@ export default function ScheduleTab({
             {dateSchedules.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-sm text-slate-400">이 날 일정이 없어요</p>
+                {canEdit && (
                 <button onClick={() => setShowAddSchedule(true)} className="mt-1 text-xs text-brand-500 hover:underline">일정 추가 →</button>
+                )}
               </div>
             ) : (
               <div className="divide-y divide-slate-50">
                 {dateSchedules.map(s => (
-                  <ScheduleRow key={s.id} s={s} onEdit={() => setEditingSchedule(s)} onDelete={() => onDeleteSchedule(s.id)} />
+                  <ScheduleRow key={s.id} s={s} canEdit={canEdit} onEdit={() => setEditingSchedule(s)} onDelete={() => onDeleteSchedule(s.id)} />
                 ))}
               </div>
             )}
@@ -912,11 +922,13 @@ export default function ScheduleTab({
             {dateDiaries.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-sm text-slate-400">이 날 일기가 없어요</p>
+                {canEdit && (
                 <button onClick={() => setShowAddDiary(true)} className="mt-1 text-xs text-amber-500 hover:underline">일기 쓰기 →</button>
+                )}
               </div>
             ) : (
               dateDiaries.map(d => (
-                <DiaryRow key={d.id} d={d} apiBase={API_BASE} onEdit={() => setEditingDiary(d)} onDelete={() => onDeleteDiary(d.id)} />
+                <DiaryRow key={d.id} d={d} apiBase={API_BASE} canEdit={canEdit} onEdit={() => setEditingDiary(d)} onDelete={() => onDeleteDiary(d.id)} />
               ))
             )}
           </div>

@@ -29,6 +29,8 @@ interface StockPortfolioCardProps {
   onDeleteClick?: (asset: StockAssetWithPrice) => void;
   /** Receives every holding id in the new display order, grouped rows kept together. */
   onReorder: (ids: string[]) => Promise<void>;
+  /** false 면 종목 추가·수정·삭제·매수/매도·순서 변경을 숨긴다(보기 전용). */
+  canEdit: boolean;
 }
 
 function formatCurrency(value: number, currency: string): string {
@@ -213,10 +215,11 @@ function groupAssets(assets: StockAssetWithPrice[]): StockGroup[] {
 // ─── Individual user holding row (inside expanded group) ─────────────────────
 
 function UserHoldingRow({
-  asset, user, onEdit, onBuy, onSell, onDelete,
+  asset, user, canEdit, onEdit, onBuy, onSell, onDelete,
 }: {
   asset: StockAssetWithPrice;
   user?: User;
+  canEdit: boolean;
   onEdit?: () => void;
   onBuy?: () => void;
   onSell?: () => void;
@@ -253,6 +256,7 @@ function UserHoldingRow({
           </p>
         </div>
         {/* Menu */}
+        {canEdit && (
         <div className='relative flex-shrink-0'>
           <button
             onClick={() => setMenuOpen(v => !v)}
@@ -278,8 +282,10 @@ function UserHoldingRow({
             </>
           )}
         </div>
+        )}
       </div>
       {/* Buy/Sell */}
+      {canEdit && (
       <div className='flex gap-2 mt-1.5 pl-4'>
         <button onClick={onBuy}
           className='flex-1 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-semibold hover:bg-emerald-100 active:scale-[0.97] transition-all'>
@@ -290,6 +296,7 @@ function UserHoldingRow({
           − 매도
         </button>
       </div>
+      )}
     </div>
   );
 }
@@ -297,12 +304,13 @@ function UserHoldingRow({
 // ─── Grouped stock row ────────────────────────────────────────────────────────
 
 function GroupedStockRow({
-  group, groupKey, userMap, onEdit, onBuy, onSell, onDelete,
+  group, groupKey, userMap, canEdit, onEdit, onBuy, onSell, onDelete,
 }: {
   group: StockGroup;
   /** Stable sortable id for the whole symbol group. */
   groupKey: string;
   userMap: Record<string, User>;
+  canEdit: boolean;
   onEdit: (asset: StockAssetWithPrice) => void;
   onBuy: (asset: StockAssetWithPrice) => void;
   onSell: (asset: StockAssetWithPrice) => void;
@@ -392,6 +400,7 @@ function GroupedStockRow({
           key={asset.id}
           asset={asset}
           user={userMap[asset.user_id]}
+          canEdit={canEdit}
           onEdit={() => onEdit(asset)}
           onBuy={() => onBuy(asset)}
           onSell={() => onSell(asset)}
@@ -546,6 +555,7 @@ export default function StockPortfolioCard({
   onBuySellClick,
   onDeleteClick,
   onReorder,
+  canEdit,
 }: StockPortfolioCardProps) {
   const [pendingDelete, setPendingDelete] = useState<StockAssetWithPrice | null>(null);
   const [taxWarning, setTaxWarning] = useState<{ asset: StockAssetWithPrice; year: number } | null>(null);
@@ -640,6 +650,7 @@ export default function StockPortfolioCard({
               >
                 <ClockIcon className='h-4 w-4 text-slate-500' />
               </button>
+              {canEdit && (
               <button
                 onClick={onAddClick}
                 className='w-8 h-8 rounded-xl bg-brand-50 hover:bg-brand-100 flex items-center justify-center transition-colors'
@@ -647,6 +658,7 @@ export default function StockPortfolioCard({
               >
                 <PlusIcon className='h-4 w-4 text-brand-600' />
               </button>
+              )}
             </div>
           </div>
         </div>
@@ -662,17 +674,18 @@ export default function StockPortfolioCard({
               {groups.length === 0 ? (
                 <div className='px-5 py-10 flex flex-col items-center gap-2 text-center'>
                   <p className='text-sm font-medium text-slate-400'>보유 주식이 없습니다</p>
-                  <p className='text-xs text-slate-300'>+ 버튼으로 종목을 추가해보세요</p>
+                  {canEdit && <p className='text-xs text-slate-300'>+ 버튼으로 종목을 추가해보세요</p>}
                 </div>
               ) : (
                 <ul className='divide-y divide-slate-50'>
-                  <SortableList ids={groups.map(groupKeyOf)} onReorder={handleGroupReorder}>
+                  <SortableList ids={groups.map(groupKeyOf)} onReorder={handleGroupReorder} disabled={!canEdit}>
                     {groups.map(group => (
                       <GroupedStockRow
                         key={groupKeyOf(group)}
                         groupKey={groupKeyOf(group)}
                         group={group}
                         userMap={userMap}
+                        canEdit={canEdit}
                         onEdit={a => onEditClick?.(a)}
                         onBuy={a => onBuySellClick?.(a, 'buy')}
                         onSell={a => onBuySellClick?.(a, 'sell')}

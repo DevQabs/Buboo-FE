@@ -27,6 +27,8 @@ interface OtherAssetCardProps {
   onCreateLoanExpense?: (id: string) => Promise<void>
   /** Receives every asset id in the new display order (all sections, not just the moved one). */
   onReorder: (ids: string[]) => Promise<void>
+  /** false 면 자산 추가·수정·삭제·대출 고정비 등록·순서 변경을 숨긴다(보기 전용). */
+  canEdit: boolean
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -528,7 +530,7 @@ function DeleteConfirm({ asset, onConfirm, onCancel }: { asset: OtherAsset; onCo
 
 // ─── Asset Row ────────────────────────────────────────────────────────────────
 
-function AssetRow({ asset, user, onEdit, onDelete, onCreateLoanExpense, loanExpenseExists }: { asset: OtherAsset; user?: User; onEdit: () => void; onDelete: () => void; onCreateLoanExpense?: () => void; loanExpenseExists?: boolean }) {
+function AssetRow({ asset, user, canEdit, onEdit, onDelete, onCreateLoanExpense, loanExpenseExists }: { asset: OtherAsset; user?: User; canEdit: boolean; onEdit: () => void; onDelete: () => void; onCreateLoanExpense?: () => void; loanExpenseExists?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const isLoan = asset.asset_type === '대출'
   const pnl = !isLoan && asset.cost_krw > 0 ? asset.value_krw - asset.cost_krw : null
@@ -602,6 +604,7 @@ function AssetRow({ asset, user, onEdit, onDelete, onCreateLoanExpense, loanExpe
         )}
       </div>
 
+      {canEdit && (
       <div className="relative flex-shrink-0">
         <button
           onClick={() => setMenuOpen(v => !v)}
@@ -636,13 +639,14 @@ function AssetRow({ asset, user, onEdit, onDelete, onCreateLoanExpense, loanExpe
           </>
         )}
       </div>
+      )}
     </SortableRow>
   )
 }
 
 // ─── Main card ────────────────────────────────────────────────────────────────
 
-export default function OtherAssetCard({ assets = [], users = [], currentUserID, fixedExpenseTitles = [], onAdd, onEdit, onDelete, onCreateLoanExpense, onReorder }: OtherAssetCardProps) {
+export default function OtherAssetCard({ assets = [], users = [], currentUserID, fixedExpenseTitles = [], onAdd, onEdit, onDelete, onCreateLoanExpense, onReorder, canEdit }: OtherAssetCardProps) {
   const [showAdd, setShowAdd] = useState(false)
   const [editingAsset, setEditingAsset] = useState<OtherAsset | null>(null)
   const [pendingDelete, setPendingDelete] = useState<OtherAsset | null>(null)
@@ -700,6 +704,7 @@ export default function OtherAssetCard({ assets = [], users = [], currentUserID,
                 </div>
               </div>
             )}
+              {canEdit && (
             <button
               onClick={() => setShowAdd(true)}
               className="w-8 h-8 rounded-xl bg-brand-50 hover:bg-brand-100 flex items-center justify-center transition-colors"
@@ -707,13 +712,16 @@ export default function OtherAssetCard({ assets = [], users = [], currentUserID,
             >
               <PlusIcon className="h-4 w-4 text-brand-600" />
             </button>
+              )}
           </div>
         </div>
 
         {safeAssets.length === 0 ? (
           <div className="px-5 py-10 flex flex-col items-center gap-2 text-center">
             <p className="text-sm font-medium text-slate-400">등록된 자산이 없습니다</p>
+            {canEdit && (
             <p className="text-xs text-slate-300">+ 버튼으로 부동산, 예/적금, 대출 등을 추가해보세요</p>
+            )}
           </div>
         ) : (
           <ul className="divide-y divide-slate-50">
@@ -722,9 +730,9 @@ export default function OtherAssetCard({ assets = [], users = [], currentUserID,
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">유동 자산</span>
               </li>
             )}
-            <SortableList ids={liquidAssets.map(a => a.id)} onReorder={handleSectionReorder('liquid')}>
+            <SortableList ids={liquidAssets.map(a => a.id)} onReorder={handleSectionReorder('liquid')} disabled={!canEdit}>
               {liquidAssets.map(asset => (
-                <AssetRow key={asset.id} asset={asset} user={userMap[asset.user_id]} onEdit={() => setEditingAsset(asset)} onDelete={() => setPendingDelete(asset)} />
+                <AssetRow key={asset.id} asset={asset} user={userMap[asset.user_id]} canEdit={canEdit} onEdit={() => setEditingAsset(asset)} onDelete={() => setPendingDelete(asset)} />
               ))}
             </SortableList>
 
@@ -734,9 +742,9 @@ export default function OtherAssetCard({ assets = [], users = [], currentUserID,
                 <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide">인출 불가 자산</span>
               </li>
             )}
-            <SortableList ids={lockedAssets.map(a => a.id)} onReorder={handleSectionReorder('locked')}>
+            <SortableList ids={lockedAssets.map(a => a.id)} onReorder={handleSectionReorder('locked')} disabled={!canEdit}>
               {lockedAssets.map(asset => (
-                <AssetRow key={asset.id} asset={asset} user={userMap[asset.user_id]} onEdit={() => setEditingAsset(asset)} onDelete={() => setPendingDelete(asset)} />
+                <AssetRow key={asset.id} asset={asset} user={userMap[asset.user_id]} canEdit={canEdit} onEdit={() => setEditingAsset(asset)} onDelete={() => setPendingDelete(asset)} />
               ))}
             </SortableList>
 
@@ -745,12 +753,13 @@ export default function OtherAssetCard({ assets = [], users = [], currentUserID,
                 <span className="text-[10px] font-semibold text-rose-400 uppercase tracking-wide">부채 · 대출</span>
               </li>
             )}
-            <SortableList ids={liabilities.map(a => a.id)} onReorder={handleSectionReorder('liability')}>
+            <SortableList ids={liabilities.map(a => a.id)} onReorder={handleSectionReorder('liability')} disabled={!canEdit}>
               {liabilities.map(asset => (
                 <AssetRow
                   key={asset.id}
                   asset={asset}
                   user={userMap[asset.user_id]}
+                  canEdit={canEdit}
                   onEdit={() => setEditingAsset(asset)}
                   onDelete={() => setPendingDelete(asset)}
                   onCreateLoanExpense={onCreateLoanExpense ? () => onCreateLoanExpense(asset.id) : undefined}

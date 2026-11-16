@@ -343,6 +343,8 @@ interface DividendCardProps {
   month: number
   onAdd: (data: CreateDividendRequest) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  /** false 면 배당 등록·삭제를 숨긴다(보기 전용). */
+  canEdit: boolean
 }
 
 export default function DividendCard({
@@ -354,6 +356,7 @@ export default function DividendCard({
   month,
   onAdd,
   onDelete,
+  canEdit,
 }: DividendCardProps) {
   const [showModal, setShowModal] = useState(false)
   const [showAll, setShowAll]     = useState(false)
@@ -411,6 +414,7 @@ export default function DividendCard({
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {canEdit && (
             <button
               onClick={() => setShowModal(true)}
               className="w-8 h-8 rounded-xl bg-brand-50 hover:bg-brand-100 flex items-center justify-center transition-colors"
@@ -418,6 +422,7 @@ export default function DividendCard({
             >
               <PlusIcon className="h-4 w-4 text-brand-600" />
             </button>
+            )}
             <button
               onClick={() => setIsOpen(v => !v)}
               className="w-8 h-8 rounded-xl bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors"
@@ -434,17 +439,19 @@ export default function DividendCard({
         {events.length === 0 ? (
           <div className="px-5 py-6 text-center">
             <p className="text-sm text-slate-400">등록된 배당 이벤트가 없어요</p>
+              {canEdit && (
             <button
               onClick={() => setShowModal(true)}
               className="mt-2 text-xs text-emerald-500 hover:underline"
             >
               첫 배당 등록하기 →
             </button>
+              )}
           </div>
         ) : (
           <>
             {visible.map(d => (
-              <DividendRow key={d.id} event={d} portfolio={portfolio} users={users} onDelete={onDelete} />
+              <DividendRow key={d.id} event={d} portfolio={portfolio} users={users} onDelete={onDelete} canEdit={canEdit} />
             ))}
 
             {events.length > 5 && (
@@ -483,11 +490,13 @@ function DividendRow({
   portfolio,
   users,
   onDelete,
+  canEdit,
 }: {
   event: DividendEvent
   portfolio: StockAssetWithPrice[]
   users: User[]
   onDelete: (id: string) => void
+  canEdit: boolean
 }) {
   const holders = useMemo(() => {
     const userMap = Object.fromEntries(users.map(u => [u.id, u]))
@@ -523,9 +532,11 @@ function DividendRow({
           <p className="text-[10px] text-slate-400">${fmtUSD(d.after_tax_amount)}</p>
         </div>
 
+        {canEdit && (
         <button onClick={() => onDelete(d.id)} title="삭제" className="p-1 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors">
           <TrashIcon className="h-3 w-3" />
         </button>
+        )}
       </div>
 
       {/* Per-holder breakdown */}

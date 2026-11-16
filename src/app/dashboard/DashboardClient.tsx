@@ -534,7 +534,7 @@ export default function DashboardClient() {
       setStartDay(sd)
       // Persist startDay to DB so all users share the same setting.
       // Fire-and-forget: UI responds immediately, DB update runs in background.
-      fetch(`${API_BASE}/api/couple`, {
+      if (levelOf(_perms, 'ledger') === 'edit') fetch(`${API_BASE}/api/couple`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
         body: JSON.stringify({
@@ -1034,6 +1034,7 @@ export default function DashboardClient() {
   const tabs = visibleTabs(perms)
   const currentTab = tabs.find(t => t.key === activeTab) ?? tabs[0]
   const currentSub = currentTab?.subs.find(s => s.key === activeSub) ?? currentTab?.subs[0]
+  const canEdit = (m: MenuKey) => levelOf(perms, m) === 'edit'
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1175,6 +1176,7 @@ export default function DashboardClient() {
 
             {/* 주식 포트폴리오 */}
             <StockPortfolioCard
+              canEdit={canEdit('assets')}
               assets={portfolio}
               users={users}
               summary={portfolioSummary}
@@ -1188,6 +1190,7 @@ export default function DashboardClient() {
 
             {/* 기타 자산 */}
             <OtherAssetCard
+              canEdit={canEdit('assets')}
               assets={otherAssets}
               users={users}
               currentUserID={currentUserID}
@@ -1206,12 +1209,14 @@ export default function DashboardClient() {
         {currentSub?.key === 'ledger' && (
           <div className="space-y-3">
             {/* 네이버페이 결제 카드 */}
-            <NaverPayCard
-              currentUserID={session?.user?.backendUser?.id ?? users[0]?.id ?? ''}
-              transactions={transactions}
-              accessToken={session?.user?.accessToken}
-              onAdd={async (data) => { await handleAddTransaction(data) }}
-            />
+            {canEdit('ledger') && (
+              <NaverPayCard
+                currentUserID={session?.user?.backendUser?.id ?? users[0]?.id ?? ''}
+                transactions={transactions}
+                accessToken={session?.user?.accessToken}
+                onAdd={async (data) => { await handleAddTransaction(data) }}
+              />
+            )}
 
             {/* 예산 현황 + 기간 선택 (맨 위) */}
             {summary && (
@@ -1222,7 +1227,7 @@ export default function DashboardClient() {
                 startDay={startDay}
                 onPeriodChange={handlePeriodChange}
                 budgetLimit={couple?.monthly_budget ?? 0}
-                onUpdateBudget={handleUpdateBudget}
+                onUpdateBudget={canEdit('ledger') ? handleUpdateBudget : undefined}
                 fixedExpenseTotal={fixedExpenses
                   .filter(fe => fe.is_active && fe.kind === 'spending')
                   .reduce((s, fe) => s + fe.amount, 0)}
@@ -1262,13 +1267,14 @@ export default function DashboardClient() {
               budgetLimit={couple?.monthly_budget ?? 0}
               accessToken={session?.user?.accessToken}
               onMonthChange={handleCalendarMonthChange}
-              onAddTransaction={handleAddTransactionOnDate}
-              onUpdateTransaction={handleUpdateTransaction}
-              onDeleteTransaction={handleDeleteTransaction}
+              onAddTransaction={canEdit('ledger') ? handleAddTransactionOnDate : undefined}
+              onUpdateTransaction={canEdit('ledger') ? handleUpdateTransaction : undefined}
+              onDeleteTransaction={canEdit('ledger') ? handleDeleteTransaction : undefined}
             />
 
             {/* 배당 수익 */}
             <DividendCard
+              canEdit={canEdit('ledger')}
               summary={divSummary}
               portfolio={portfolio}
               portfolioSummary={portfolioSummary}
@@ -1281,6 +1287,7 @@ export default function DashboardClient() {
 
             {/* 고정비 관리 + 숨만 쉬어도 나가는 돈 */}
             <FixedExpenseCard
+              canEdit={canEdit('ledger')}
               fixedExpenses={fixedExpenses}
               summary={feSummary}
               users={users}
@@ -1301,6 +1308,7 @@ export default function DashboardClient() {
           <div>
             {tabLoading === 'life' ? <TabSkeleton /> : (
               <ScheduleTab
+                canEdit={canEdit(currentSub?.key === 'diary' ? 'diary' : 'schedule')}
                 schedules={schedules}
                 diaries={diaries}
                 currentUserID={currentUserID}
@@ -1318,7 +1326,7 @@ export default function DashboardClient() {
 
         {/* ══ Tab 4: 로드맵 ══ */}
         {currentSub?.key === 'roadmap' && (
-          <RoadmapTab accessToken={session?.user?.accessToken} prefetched={roadmap} />
+          <RoadmapTab accessToken={session?.user?.accessToken} prefetched={roadmap} canEdit={canEdit('roadmap')} />
         )}
 
       </main>
