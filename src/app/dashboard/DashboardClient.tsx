@@ -40,6 +40,8 @@ const EditStockModal    = dynamic(() => import('@/components/dashboard/EditStock
 const BuySellModal      = dynamic(() => import('@/components/dashboard/BuySellModal'),      { ssr: false })
 const TradeHistoryModal = dynamic(() => import('@/components/dashboard/TradeHistoryModal'), { ssr: false })
 const FamilySettings    = dynamic(() => import('@/components/dashboard/FamilySettings'),    { ssr: false })
+const BabyPhotoTab      = dynamic(() => import('@/components/dashboard/BabyPhotoTab'),      { ssr: false })
+const BabyGrowthTab     = dynamic(() => import('@/components/dashboard/BabyGrowthTab'),     { ssr: false })
 import type {
   User,
   Couple,
@@ -73,6 +75,7 @@ import type {
 import { levelOf, visibleTabs, type TabKey } from '@/lib/menus'
 import { ledgerPeriod, ledgerMonthOf, todayKST } from '@/lib/date'
 import { apiFetch as callApi, latestOnly, ignoreAbort } from '@/lib/api'
+import { attachDiaryPhotos } from '@/lib/media'
 import { Chip } from '@/components/ui/Card'
 import { Toaster, toastError } from '@/components/ui/Toast'
 
@@ -780,15 +783,13 @@ export default function DashboardClient() {
     })
     if (!res.ok) throw new Error(`일기 저장 실패: ${res.status}`)
     const created: DiaryEntry = await res.json()
-    // Upload photos one by one
-    for (const photo of photos) {
-      const form = new FormData()
-      form.append('photo', photo)
-      await fetch(`${API_BASE}/api/diaries/${created.id}/photos`, { method: 'POST', body: form, headers: { Authorization: `Bearer ${_accessToken}` } })
+    // 사진이 실패해도 만들어진 일기는 목록에 보이게 먼저 새로고침하고, 오류는 작성 창에 보인다.
+    try {
+      await attachDiaryPhotos(_accessToken, created.id, photos)
+    } finally {
+      // 새로고침 실패가 사진 오류를 덮지 않게 따로 삼킨다.
+      await handleDiaryEdited().catch(() => {})
     }
-    // Refetch diary to get updated photos
-    const updated = await apiFetch<DiaryEntry[]>('/api/diaries')
-    setDiaries(Array.isArray(updated) ? updated : [])
   }
 
   const handleDiaryEdited = async () => {
@@ -920,12 +921,21 @@ export default function DashboardClient() {
         {/* 2단 메뉴 칩 — 화면이 직접 그리면 여기서는 뺀다(Task 3·5·6) */}
         {currentTab?.key === 'baby' && chipRow}
 
-        {/* ══ 아기 (3단계에서 채움) ══ */}
-        {currentTab?.key === 'baby' && (
-          <div className="bg-white rounded-[22px] p-8 text-center shadow-[0_4px_14px_rgba(120,90,60,.07)]">
-            <p className="text-sm font-semibold text-stone-700">{currentSub?.label}</p>
-            <p className="mt-1 text-xs text-stone-400">곧 열려요. 조금만 기다려 주세요.</p>
-          </div>
+        {/* ══ 아기 ══ */}
+        {currentSub?.key === 'baby_photo' && (
+          <BabyPhotoTab
+            accessToken={session?.user?.accessToken ?? ''}
+            users={users}
+            isOwner={!!perms?.is_owner}
+            canEdit={canEdit('baby_photo')}
+          />
+        )}
+        {currentSub?.key === 'baby_growth' && (
+          <BabyGrowthTab
+            accessToken={session?.user?.accessToken ?? ''}
+            isOwner={!!perms?.is_owner}
+            canEdit={canEdit('baby_growth')}
+          />
         )}
 
         {/* ══ 자산현황 ══ */}
@@ -1003,6 +1013,7 @@ export default function DashboardClient() {
                 schedules={schedules}
                 diaries={diaries}
                 currentUserID={currentUserID}
+                accessToken={session?.user?.accessToken ?? ''}
                 section="diary"
                 canEdit={canEdit('diary')}
                 onAddSchedule={handleAddSchedule}
