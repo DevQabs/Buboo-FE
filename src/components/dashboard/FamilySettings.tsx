@@ -24,7 +24,7 @@ function Header({ small, title, onBack }: { small: string; title: string; onBack
   return (
     <div className="flex items-end justify-between px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+1.25rem)]">
       <div>
-        <small className="block text-[11px] text-stone-400">{small}</small>
+        <small className="block text-xs text-stone-400">{small}</small>
         <b className="text-xl font-extrabold">{title}</b>
       </div>
       <button type="button" onClick={onBack} aria-label="뒤로" className="p-2 text-stone-400">
@@ -34,15 +34,22 @@ function Header({ small, title, onBack }: { small: string; title: string; onBack
   )
 }
 
-function Segment({ value, onChange }: { value: PermLevel; onChange: (v: PermLevel) => void }) {
+function Segment({ label, value, disabled, onChange }: {
+  label: string
+  value: PermLevel
+  disabled: boolean
+  onChange: (v: PermLevel) => void
+}) {
   return (
-    <div className="flex w-[150px] rounded-[10px] bg-[#f5efe6] p-0.5 text-[11px] font-bold">
+    <div role="group" aria-label={label} className="flex w-[150px] rounded-[10px] bg-[#f5efe6] p-0.5 text-xs font-bold">
       {LEVELS.map(l => (
         <button
           key={l.key}
           type="button"
+          aria-pressed={value === l.key}
+          disabled={disabled}
           onClick={() => onChange(l.key)}
-          className={`flex-1 rounded-lg py-1.5 ${value === l.key ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-400'}`}
+          className={`flex-1 rounded-lg py-1.5 disabled:opacity-60 ${value === l.key ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-400'}`}
         >
           {l.label}
         </button>
@@ -79,7 +86,13 @@ function InviteCard({ accessToken }: { accessToken: string }) {
 
   const copy = async () => {
     if (!url) return
-    await navigator.clipboard.writeText(url)
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      setError('복사하지 못했습니다. 링크를 길게 눌러 복사해 주세요')
+      return
+    }
+    setError(null)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -87,14 +100,14 @@ function InviteCard({ accessToken }: { accessToken: string }) {
   return (
     <div className={CARD}>
       <b className="text-sm">초대하기</b>
-      <p className="mb-2 mt-1 text-[11px] text-stone-400">초대할 때 권한 묶음을 고르면 링크에 담겨요</p>
+      <p className="mb-2 mt-1 text-xs text-stone-400">초대할 때 권한 묶음을 고르면 링크에 담겨요</p>
       <div className="flex flex-wrap gap-1.5">
         {PRESETS.map(p => (
           <button
             key={p.key}
             type="button"
             onClick={() => { setPreset(p.key); setUrl(null) }}
-            className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
               preset === p.key ? 'border-brand-500 bg-brand-500 text-white' : 'border-[#eee7dd] bg-white text-stone-500'
             }`}
           >
@@ -110,7 +123,7 @@ function InviteCard({ accessToken }: { accessToken: string }) {
         className="mt-2.5 w-full rounded-xl border border-[#eee7dd] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
       />
       {preset === 'custom' && (
-        <p className="mt-1.5 text-[11px] text-stone-400">가입하면 모든 메뉴가 숨김이에요. 목록에서 눌러 권한을 정해 주세요.</p>
+        <p className="mt-1.5 text-xs text-stone-400">가입하면 모든 메뉴가 숨김이에요. 목록에서 눌러 권한을 정해 주세요.</p>
       )}
       {url ? (
         <>
@@ -120,7 +133,7 @@ function InviteCard({ accessToken }: { accessToken: string }) {
               {copied ? <CheckIcon className="h-4 w-4 text-emerald-500" /> : <ClipboardDocumentIcon className="h-4 w-4" />}
             </button>
           </div>
-          <p className="mt-1.5 text-[11px] text-stone-400">초대 링크 (7일 유효, 한 번만 쓸 수 있어요)</p>
+          <p className="mt-1.5 text-xs text-stone-400">초대 링크 (7일 유효, 한 번만 쓸 수 있어요)</p>
         </>
       ) : (
         <button
@@ -132,7 +145,7 @@ function InviteCard({ accessToken }: { accessToken: string }) {
           {busy ? '만드는 중...' : '초대 링크 만들기'}
         </button>
       )}
-      {error && <p className="mt-1.5 text-[11px] text-rose-500">{error}</p>}
+      {error && <p className="mt-1.5 text-xs text-rose-500">{error}</p>}
     </div>
   )
 }
@@ -169,7 +182,7 @@ function MemberList({ members, error, accessToken, onSelect, onClose }: {
               <span>
                 <b className="text-sm">{m.name}</b>
                 <br />
-                <span className="text-[11px] text-stone-400">{permissionSummary(m)}</span>
+                <span className="text-xs text-stone-400">{permissionSummary(m)}</span>
               </span>
             </span>
             {!m.is_owner && <ChevronRightIcon className="h-4 w-4 text-stone-300" />}
@@ -189,22 +202,29 @@ function MemberDetail({ member, accessToken, onBack, onChanged }: {
 }) {
   const [menus, setMenus] = useState<Record<MenuKey, PermLevel>>(member.menus)
   const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
-  // ponytail: 바뀔 때마다 전체 맵을 바로 저장한다. 아주 빠르게 연달아 누르면 응답 순서가 뒤바뀔 수 있음 — 문제되면 저장 버튼으로.
+  // 바뀔 때마다 전체 맵을 바로 저장한다. 저장 중에는 입력을 잠가 한 번에 하나만 보내므로 되돌리기가 새 값을 덮지 않는다.
   const save = async (next: Record<MenuKey, PermLevel>) => {
+    if (saving) return
     const prev = menus
+    setSaving(true)
     setMenus(next)
     setError(null)
-    const res = await apiFetch(`/api/members/${member.id}/permissions`, accessToken, {
-      method: 'PUT',
-      body: JSON.stringify({ menus: next }),
-    }).catch(() => null)
-    if (!res?.ok) {
-      setMenus(prev)
-      setError('저장하지 못했습니다')
-      return
+    try {
+      const res = await apiFetch(`/api/members/${member.id}/permissions`, accessToken, {
+        method: 'PUT',
+        body: JSON.stringify({ menus: next }),
+      }).catch(() => null)
+      if (!res?.ok) {
+        setMenus(prev)
+        setError('저장하지 못했습니다')
+        return
+      }
+      await onChanged()
+    } finally {
+      setSaving(false)
     }
-    await onChanged()
   }
   const setOne = (m: MenuKey, l: PermLevel) => save({ ...menus, [m]: l })
   const setAll = (subs: MenuKey[], l: PermLevel) => {
@@ -235,7 +255,7 @@ function MemberDetail({ member, accessToken, onBack, onChanged }: {
           {tab.subs.length === 1 ? (
             <div className="flex items-center justify-between">
               <b className="text-sm">{tab.label}</b>
-              <Segment value={menus[tab.subs[0].key]} onChange={l => setOne(tab.subs[0].key, l)} />
+              <Segment label={tab.label} value={menus[tab.subs[0].key]} disabled={saving} onChange={l => setOne(tab.subs[0].key, l)} />
             </div>
           ) : (
             <>
@@ -243,9 +263,10 @@ function MemberDetail({ member, accessToken, onBack, onChanged }: {
                 <b className="text-sm">{tab.label}</b>
                 <select
                   value=""
+                  disabled={saving}
                   onChange={e => setAll(tab.subs.map(s => s.key), e.target.value as PermLevel)}
                   aria-label={`${tab.label} 전체 변경`}
-                  className="bg-transparent text-[11px] text-stone-400 focus:outline-none"
+                  className="bg-transparent text-xs text-stone-400 focus:outline-none"
                 >
                   <option value="" disabled>전체 ▾</option>
                   {LEVELS.map(l => <option key={l.key} value={l.key}>전체 {l.label}</option>)}
@@ -254,14 +275,14 @@ function MemberDetail({ member, accessToken, onBack, onChanged }: {
               {tab.subs.map(s => (
                 <div key={s.key} className="flex items-center justify-between py-1">
                   <span className="text-[13px]">{s.label}</span>
-                  <Segment value={menus[s.key]} onChange={l => setOne(s.key, l)} />
+                  <Segment label={s.label} value={menus[s.key]} disabled={saving} onChange={l => setOne(s.key, l)} />
                 </div>
               ))}
             </>
           )}
         </div>
       ))}
-      <p className="px-4 py-2 text-center text-[11px] text-stone-400">이 사람에게 보이는 하단 탭: {preview}</p>
+      <p className="px-4 py-2 text-center text-xs text-stone-400">이 사람에게 보이는 하단 탭: {preview}</p>
       <div className="px-3">
         <button type="button" onClick={remove} className="w-full rounded-xl py-3 text-sm font-semibold text-rose-500">
           구성원 내보내기
