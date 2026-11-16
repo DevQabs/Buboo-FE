@@ -13,7 +13,7 @@ import { useSession, signOut } from 'next-auth/react'
 import dynamic from 'next/dynamic'
 import Lottie from 'lottie-react'
 import loadingAnimation from '@/assets/loading.json'
-import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, ArchiveBoxIcon, FlagIcon, UserPlusIcon, ArrowRightOnRectangleIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, FlagIcon, UserPlusIcon, ArrowRightOnRectangleIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 // ─── 가계부 탭 (초기 탭) — 정적 import ────────────────────────────────────────
 import SummaryCard from '@/components/dashboard/SummaryCard'
@@ -35,9 +35,8 @@ const OtherAssetCard      = dynamic(() => import('@/components/dashboard/OtherAs
 const FixedExpenseCard = dynamic(() => import('@/components/dashboard/FixedExpenseCard'), { ssr: false, loading: () => <ChunkSkeleton h={100} /> })
 const DividendCard     = dynamic(() => import('@/components/dashboard/DividendCard'),     { ssr: false, loading: () => <ChunkSkeleton h={100} /> })
 
-// ─── 라이프 / 냉장고 탭 — 첫 방문 시 로드 ──────────────────────────────────────
+// ─── 라이프 / 로드맵 탭 — 첫 방문 시 로드 ──────────────────────────────────────
 const ScheduleTab = dynamic(() => import('@/components/dashboard/ScheduleTab'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
-const FridgeTab   = dynamic(() => import('@/components/dashboard/FridgeTab'),   { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 const RoadmapTab  = dynamic(() => import('@/components/dashboard/RoadmapTab'),  { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 type RoadmapPrefetch = import('@/components/dashboard/RoadmapTab').RoadmapPrefetch
 
@@ -73,12 +72,6 @@ import type {
   UpdateScheduleRequest,
   CreateDiaryRequest,
   StockTransaction,
-  FridgeItem,
-  SideDish,
-  CreateFridgeItemRequest,
-  UpdateFridgeItemRequest,
-  CreateSideDishRequest,
-  UpdateSideDishRequest,
   RoadmapProjection,
   RoadmapAssumptionsResponse,
 } from '@/types'
@@ -87,7 +80,7 @@ import type {
 // 프로덕션: 빈 문자열 → /api/* 경로로 → next.config.mjs rewrite가 백엔드로 프록시
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
 
-type ActiveTab = 'wealth' | 'ledger' | 'life' | 'fridge' | 'roadmap'
+type ActiveTab = 'wealth' | 'ledger' | 'life' | 'roadmap'
 
 
 
@@ -171,8 +164,6 @@ export default function DashboardClient() {
   const [calendarData, setCalendarData] = useState<CalendarSummaryResponse | null>(null)
   const [schedules, setSchedules]     = useState<Schedule[]>([])
   const [diaries, setDiaries]         = useState<DiaryEntry[]>([])
-  const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([])
-  const [sideDishes, setSideDishes]   = useState<SideDish[]>([])
   const [loading, setLoading]         = useState(true)
   const [tabLoading, setTabLoading]   = useState<ActiveTab | null>(null)
   const [error, setError]             = useState<string | null>(null)
@@ -292,7 +283,7 @@ export default function DashboardClient() {
 
   // ── initial load ─────────────────────────────────────────────────────────
   // Step 1: couple (tiny JSON) → ledger_start_day 확정
-  // Step 2: 가계부 탭 + users 만 (8개) — wealth/life/fridge 탭은 첫 방문 시 로드
+  // Step 2: 가계부 탭 + users 만 (8개) — wealth/life/roadmap 탭은 첫 방문 시 로드
   const fetchAll = useCallback(async () => {
     try {
       const y = now.getFullYear()
@@ -364,7 +355,7 @@ export default function DashboardClient() {
   }, [fetchAll, status])
 
   // ── Phase 2: UI 표시 직후 나머지 탭 데이터 백그라운드 프리패치 ─────────────────
-  // loading=false 가 되는 순간 wealth/life/fridge 를 조용히 병렬 로드.
+  // loading=false 가 되는 순간 wealth/life/roadmap 를 조용히 병렬 로드.
   // 사용자가 탭을 누를 때 이미 데이터가 준비돼 있으면 스켈레톤 없이 즉시 표시.
   //
   // ★ .preload() 란?
@@ -376,7 +367,7 @@ export default function DashboardClient() {
     ;[
       NetWorthSummaryCard, StockPortfolioCard, OtherAssetCard,
       FixedExpenseCard, DividendCard,
-      ScheduleTab, FridgeTab, RoadmapTab,
+      ScheduleTab, RoadmapTab,
       AddStockModal, EditStockModal, BuySellModal, TradeHistoryModal,
     ].forEach(c => (c as any).preload?.())
 
@@ -425,18 +416,6 @@ export default function DashboardClient() {
           }
         } catch {}
       })(),
-      // ── 냉장고 탭 ──
-      (async () => {
-        try {
-          const [items, dishes] = await Promise.all([
-            apiFetch<FridgeItem[]>('/api/fridge/items'),
-            apiFetch<SideDish[]>('/api/fridge/side-dishes'),
-          ])
-          setFridgeItems(Array.isArray(items) ? items : [])
-          setSideDishes(Array.isArray(dishes) ? dishes : [])
-          loadedTabs.current.add('fridge')
-        } catch {}
-      })(),
     ])
   }, [])
 
@@ -466,13 +445,6 @@ export default function DashboardClient() {
         ])
         setSchedules(Array.isArray(sch) ? sch : [])
         setDiaries(Array.isArray(dia) ? dia : [])
-      } else if (tab === 'fridge') {
-        const [items, dishes] = await Promise.all([
-          apiFetch<FridgeItem[]>('/api/fridge/items'),
-          apiFetch<SideDish[]>('/api/fridge/side-dishes'),
-        ])
-        setFridgeItems(Array.isArray(items) ? items : [])
-        setSideDishes(Array.isArray(dishes) ? dishes : [])
       }
     } catch {
       // 탭 데이터 실패 → 빈 상태 유지
@@ -491,15 +463,7 @@ export default function DashboardClient() {
       return
     }
     // 재방문 → 가벼운 refresh
-    if (activeTab === 'fridge') {
-      Promise.all([
-        apiFetch<FridgeItem[]>('/api/fridge/items'),
-        apiFetch<SideDish[]>('/api/fridge/side-dishes'),
-      ]).then(([items, dishes]) => {
-        setFridgeItems(Array.isArray(items) ? items : [])
-        setSideDishes(Array.isArray(dishes) ? dishes : [])
-      }).catch(() => {})
-    } else if (activeTab === 'life') {
+    if (activeTab === 'life') {
       Promise.all([
         apiFetch<Schedule[]>('/api/schedules'),
         apiFetch<DiaryEntry[]>('/api/diaries'),
@@ -1015,68 +979,6 @@ export default function DashboardClient() {
     setDiaries(d => d.filter(x => x.id !== id))
   }
 
-  // ── fridge handlers ──────────────────────────────────────────────────────
-  const refetchFridge = async () => {
-    const [items, dishes] = await Promise.all([
-      apiFetch<FridgeItem[]>('/api/fridge/items'),
-      apiFetch<SideDish[]>('/api/fridge/side-dishes'),
-    ])
-    setFridgeItems(Array.isArray(items) ? items : [])
-    setSideDishes(Array.isArray(dishes) ? dishes : [])
-  }
-
-  const handleAddFridgeItem = async (data: CreateFridgeItemRequest) => {
-    const res = await fetch(`${API_BASE}/api/fridge/items`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error(`식재료 추가 실패: ${res.status}`)
-    await refetchFridge()
-  }
-
-  const handleUpdateFridgeItem = async (id: string, data: UpdateFridgeItemRequest) => {
-    const res = await fetch(`${API_BASE}/api/fridge/items/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error(`식재료 수정 실패: ${res.status}`)
-    await refetchFridge()
-  }
-
-  const handleDeleteFridgeItem = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/fridge/items/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
-    if (!res.ok) throw new Error(`식재료 삭제 실패: ${res.status}`)
-    setFridgeItems(prev => prev.filter(i => i.id !== id))
-  }
-
-  const handleAddSideDish = async (data: CreateSideDishRequest) => {
-    const res = await fetch(`${API_BASE}/api/fridge/side-dishes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error(`반찬 추가 실패: ${res.status}`)
-    await refetchFridge()
-  }
-
-  const handleUpdateSideDish = async (id: string, data: UpdateSideDishRequest) => {
-    const res = await fetch(`${API_BASE}/api/fridge/side-dishes/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error(`반찬 수정 실패: ${res.status}`)
-    await refetchFridge()
-  }
-
-  const handleDeleteSideDish = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/fridge/side-dishes/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
-    if (!res.ok) throw new Error(`반찬 삭제 실패: ${res.status}`)
-    setSideDishes(prev => prev.filter(d => d.id !== id))
-  }
-
   // ── loading / error screens ───────────────────────────────────────────────
   if (loading) {
     return (
@@ -1345,26 +1247,9 @@ export default function DashboardClient() {
           </div>
         )}
 
-        {/* ══ Tab 4: 냉장고 ══ */}
+        {/* ══ Tab 4: 로드맵 ══ */}
         {activeTab === 'roadmap' && (
           <RoadmapTab accessToken={session?.user?.accessToken} prefetched={roadmap} />
-        )}
-
-        {activeTab === 'fridge' && (
-          <div className="space-y-3">
-            {tabLoading === 'fridge' ? <TabSkeleton /> : (
-              <FridgeTab
-                fridgeItems={fridgeItems}
-                sideDishes={sideDishes}
-                onAddItem={handleAddFridgeItem}
-                onUpdateItem={handleUpdateFridgeItem}
-                onDeleteItem={handleDeleteFridgeItem}
-                onAddDish={handleAddSideDish}
-                onUpdateDish={handleUpdateSideDish}
-                onDeleteDish={handleDeleteSideDish}
-              />
-            )}
-          </div>
         )}
 
       </main>
@@ -1437,21 +1322,6 @@ export default function DashboardClient() {
             <span className={`text-[10px] font-semibold tracking-tight ${
               activeTab === 'life' ? 'text-brand-600' : 'text-slate-400'
             }`}>일정/일기</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('fridge')}
-            className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
-              activeTab === 'fridge' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
-            }`}
-          >
-            <div className={`p-1.5 rounded-xl transition-all duration-200 ${
-              activeTab === 'fridge' ? 'bg-brand-50' : ''
-            }`}>
-              <ArchiveBoxIcon className="h-5 w-5" />
-            </div>
-            <span className={`text-[10px] font-semibold tracking-tight ${
-              activeTab === 'fridge' ? 'text-brand-600' : 'text-slate-400'
-            }`}>냉장고</span>
           </button>
           <button
             onClick={() => setActiveTab('wealth')}

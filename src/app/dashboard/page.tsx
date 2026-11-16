@@ -1,18 +1,5 @@
 /**
- * Dashboard Page — 메인 가계부 대시보드
- *
- * Layout (Mobile-first Bento Grid):
- *
- * ┌─────────────────────────────────────┐
- * │  Header: 커플명 + 날짜             │
- * ├────────────────┬────────────────────┤
- * │  SummaryCard   │  (full-width mobile)│
- * ├─────────────────────────────────────┤
- * │  StockPortfolioCard (collapsible)  │
- * ├─────────────────────────────────────┤
- * │  TransactionList (filterable)      │
- * └─────────────────────────────────────┘
- *        [FAB: + 내역 추가]
+ * Dashboard Page — 서버 셸. 화면과 상태는 DashboardClient 에 있다.
  */
 
 import { Suspense } from 'react'
