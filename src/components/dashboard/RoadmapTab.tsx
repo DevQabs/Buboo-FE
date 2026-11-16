@@ -154,7 +154,7 @@ export default function RoadmapTab({
       {/* ③ 자산 추이 */}
       <div className='bg-white rounded-card shadow-warm px-5 py-4'>
         <div className='flex items-center justify-between mb-3'>
-          <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>자산 추이</p>
+          <p className='text-xs font-semibold text-stone-400 tracking-wide uppercase'>자산 추이</p>
           <div className='flex items-center gap-3'>
             <div className='flex rounded-lg bg-stone-100 p-0.5'>
               {(['month', 'year'] as const).map(s => (
@@ -199,7 +199,7 @@ export default function RoadmapTab({
       {/* ④ 마일스톤 */}
       <div className='bg-white rounded-card shadow-warm px-5 py-4'>
         <div className='flex items-center justify-between mb-3'>
-          <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>마일스톤</p>
+          <p className='text-xs font-semibold text-stone-400 tracking-wide uppercase'>마일스톤</p>
           <div className='flex rounded-lg bg-stone-100 p-0.5'>
             {(['month', 'year'] as const).map(s => (
               <button
@@ -274,8 +274,8 @@ export default function RoadmapTab({
           onClick={() => setShowAssumptions(v => !v)}
           className='w-full flex items-center justify-between'
         >
-          <span className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>가정 자세히 · 해마다 적립 · 배당 종목</span>
-          <span className='text-xs text-slate-400'>{showAssumptions ? '접기' : '펼치기'}</span>
+          <span className='text-xs font-semibold text-stone-400 tracking-wide uppercase'>가정 자세히 · 해마다 적립 · 배당 종목</span>
+          <span className='text-xs text-stone-400'>{showAssumptions ? '접기' : '펼치기'}</span>
         </button>
 
         {showAssumptions && (
