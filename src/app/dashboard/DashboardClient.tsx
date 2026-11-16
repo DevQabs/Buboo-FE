@@ -13,7 +13,7 @@ import { useSession, signOut } from 'next-auth/react'
 import dynamic from 'next/dynamic'
 import Lottie from 'lottie-react'
 import loadingAnimation from '@/assets/loading.json'
-import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, FaceSmileIcon, UserPlusIcon, ArrowRightOnRectangleIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, FaceSmileIcon, UserGroupIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline'
 
 // ─── 가계부 탭 (초기 탭) — 정적 import ────────────────────────────────────────
 import SummaryCard from '@/components/dashboard/SummaryCard'
@@ -46,6 +46,7 @@ const AddStockModal     = dynamic(() => import('@/components/dashboard/AddStockM
 const EditStockModal    = dynamic(() => import('@/components/dashboard/EditStockModal'),    { ssr: false })
 const BuySellModal      = dynamic(() => import('@/components/dashboard/BuySellModal'),      { ssr: false })
 const TradeHistoryModal = dynamic(() => import('@/components/dashboard/TradeHistoryModal'), { ssr: false })
+const FamilySettings    = dynamic(() => import('@/components/dashboard/FamilySettings'),    { ssr: false })
 import type {
   User,
   Couple,
@@ -206,32 +207,9 @@ export default function DashboardClient() {
 
   // ── profile menu ──
   const [showMenu, setShowMenu]       = useState(false)
-  const [inviteUrl, setInviteUrl]     = useState<string | null>(null)
-  const [inviteLoading, setInviteLoading] = useState(false)
-  const [copied, setCopied]           = useState(false)
+  const [showFamily, setShowFamily]   = useState(false)
   const menuRef                       = useRef<HTMLDivElement>(null)
 
-
-  const generateInvite = useCallback(async () => {
-    if (inviteLoading) return
-    setInviteLoading(true)
-    try {
-      const res = await apiFetch<{ code: string }>('/api/auth/invite', { method: 'POST' })
-      const origin = window.location.origin
-      setInviteUrl(`${origin}/invite/${res.code}`)
-    } catch {
-      // ignore
-    } finally {
-      setInviteLoading(false)
-    }
-  }, [inviteLoading])
-
-  const copyInvite = useCallback(() => {
-    if (!inviteUrl) return
-    navigator.clipboard.writeText(inviteUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }, [inviteUrl])
 
   // close menu on outside click
   useEffect(() => {
@@ -1075,46 +1053,23 @@ export default function DashboardClient() {
             </button>
 
             {showMenu && (
-              <div className="absolute right-0 top-10 w-64 bg-white rounded-2xl shadow-lg border border-slate-100 py-1.5 z-60">
-                {/* invite section */}
-                {!inviteUrl ? (
+              <div className="absolute right-0 top-10 w-56 bg-white rounded-2xl shadow-lg border border-slate-100 py-1.5 z-60">
+                {perms?.is_owner && (
                   <button
-                    onClick={generateInvite}
-                    disabled={inviteLoading}
+                    onClick={() => { setShowMenu(false); setShowFamily(true) }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                   >
-                    <UserPlusIcon className="w-4 h-4 text-brand-500" />
-                    {inviteLoading ? '생성 중...' : '파트너 초대하기'}
+                    <UserGroupIcon className="w-4 h-4 text-brand-500" />
+                    가족 구성원
                   </button>
-                ) : (
-                  <div className="px-4 py-3 space-y-2">
-                    <p className="text-xs font-medium text-slate-500">초대 링크 (7일 유효)</p>
-                    <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2">
-                      <span className="text-xs text-slate-600 flex-1 truncate">{inviteUrl}</span>
-                      <button onClick={copyInvite} className="shrink-0 text-brand-500">
-                        {copied
-                          ? <CheckIcon className="w-4 h-4 text-emerald-500" />
-                          : <ClipboardDocumentIcon className="w-4 h-4" />}
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => setInviteUrl(null)}
-                      className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
-                    >
-                      <XMarkIcon className="w-3 h-3" /> 닫기
-                    </button>
-                  </div>
                 )}
-
-                <div className="border-t border-slate-100 mt-1 pt-1">
-                  <button
-                    onClick={() => signOut({ callbackUrl: '/login' })}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-500 hover:bg-rose-50 transition-colors"
-                  >
-                    <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                    로그아웃
-                  </button>
-                </div>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-500 hover:bg-rose-50 transition-colors"
+                >
+                  <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                  로그아웃
+                </button>
               </div>
             )}
           </div>
@@ -1332,6 +1287,16 @@ export default function DashboardClient() {
       </main>
 
       {/* ── Modals ── */}
+      {showFamily && (
+        <FamilySettings
+          accessToken={session?.user?.accessToken ?? ''}
+          onClose={() => {
+            setShowFamily(false)
+            // 내보내기·이름 변경이 헤더 아바타에 반영되도록
+            apiFetch<User[]>('/api/users').then(u => setUsers(withAvatarColors(u))).catch(() => {})
+          }}
+        />
+      )}
       {showAddStock && (
         <AddStockModal
           currentUserID={currentUserID}

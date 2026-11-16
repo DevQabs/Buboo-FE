@@ -9,7 +9,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
 interface InviteInfo {
   couple_id: string
   couple_name: string
-  available_roles: string[]
+  preset: 'spouse' | 'grandparent' | 'custom'
+  nickname: string
   expires_at: string
 }
 
@@ -21,7 +22,6 @@ export default function InvitePage() {
 
   const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null)
   const [inviteError, setInviteError] = useState('')
-  const [role, setRole] = useState<'husband' | 'wife'>('wife')
   const [nickname, setNickname] = useState('')
   const [joining, setJoining] = useState(false)
   const [error, setError] = useState('')
@@ -34,9 +34,7 @@ export default function InvitePage() {
         if (data.error) setInviteError(data.error)
         else {
           setInviteInfo(data)
-          if (data.available_roles?.length === 1) {
-            setRole(data.available_roles[0])
-          }
+          setNickname(data.nickname ?? '')
         }
       })
       .catch(() => setInviteError('초대 정보를 불러올 수 없습니다'))
@@ -121,7 +119,7 @@ export default function InvitePage() {
   return (
     <div className="min-h-screen bg-[#F1F5F9] flex flex-col items-center justify-center px-5">
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 w-full max-w-sm">
-        <h1 className="text-base font-bold text-slate-800 mb-1">커플 초대</h1>
+        <h1 className="text-base font-bold text-slate-800 mb-1">가족 초대</h1>
         <p className="text-xs text-slate-500 mb-6">
           <span className="font-semibold text-slate-700">{inviteInfo.couple_name}</span>에
           합류하시겠습니까?
@@ -137,28 +135,6 @@ export default function InvitePage() {
               placeholder="예: 이다현"
               className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
-          </div>
-        )}
-
-        {inviteInfo.available_roles.length > 1 && (
-          <div className="mb-4">
-            <label className="text-xs font-medium text-slate-500 mb-2 block">내 역할</label>
-            <div className="grid grid-cols-2 gap-2">
-              {inviteInfo.available_roles.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRole(r as 'husband' | 'wife')}
-                  className={`py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                    role === r
-                      ? 'bg-brand-500 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {r === 'husband' ? '남편' : '아내'}
-                </button>
-              ))}
-            </div>
           </div>
         )}
 
