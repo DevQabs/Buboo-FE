@@ -70,12 +70,10 @@ function InviteCard({ accessToken }: { accessToken: string }) {
     setBusy(true)
     setError(null)
     try {
-      const res = await apiFetch('/api/auth/invite', accessToken, {
+      const inv = await apiFetch<{ code: string }>('/api/auth/invite', accessToken, {
         method: 'POST',
         body: JSON.stringify({ preset, nickname: nickname.trim() }),
       })
-      if (!res.ok) throw new Error(String(res.status))
-      const inv: { code: string } = await res.json()
       setUrl(`${window.location.origin}/invite/${inv.code}`)
     } catch {
       setError('초대 링크를 만들지 못했습니다')
@@ -212,11 +210,12 @@ function MemberDetail({ member, accessToken, onBack, onChanged }: {
     setMenus(next)
     setError(null)
     try {
-      const res = await apiFetch(`/api/members/${member.id}/permissions`, accessToken, {
-        method: 'PUT',
-        body: JSON.stringify({ menus: next }),
-      }).catch(() => null)
-      if (!res?.ok) {
+      try {
+        await apiFetch(`/api/members/${member.id}/permissions`, accessToken, {
+          method: 'PUT',
+          body: JSON.stringify({ menus: next }),
+        })
+      } catch {
         setMenus(prev)
         setError('저장하지 못했습니다')
         return
@@ -235,8 +234,9 @@ function MemberDetail({ member, accessToken, onBack, onChanged }: {
 
   const remove = async () => {
     if (!confirm(`${member.name}님을 가족에서 내보낼까요? 이 사람이 남긴 기록은 그대로 남아요.`)) return
-    const res = await apiFetch(`/api/members/${member.id}`, accessToken, { method: 'DELETE' }).catch(() => null)
-    if (!res?.ok) {
+    try {
+      await apiFetch(`/api/members/${member.id}`, accessToken, { method: 'DELETE' })
+    } catch {
       setError('내보내지 못했습니다')
       return
     }
@@ -298,13 +298,12 @@ export default function FamilySettings({ accessToken, onClose }: { accessToken: 
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    const res = await apiFetch('/api/members', accessToken).catch(() => null)
-    if (!res?.ok) {
+    try {
+      setMembers(await apiFetch<Member[]>('/api/members', accessToken))
+      setError(null)
+    } catch {
       setError('구성원을 불러오지 못했습니다')
-      return
     }
-    setError(null)
-    setMembers(await res.json())
   }, [accessToken])
 
   useEffect(() => { load() }, [load])

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { PencilSquareIcon, TrashIcon, XMarkIcon, LockClosedIcon } from '@heroicons/react/24/outline'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { formatAmountInput } from '@/lib/formatNumber'
+import { todayKST } from '@/lib/date'
 import { DragHandle, SortableList, SortableRow } from './SortableList'
 import type {
   OtherAsset,
@@ -126,7 +127,7 @@ function AssetFormModal({ mode, initial, currentUserID, onClose, onSubmit }: Ass
     initial?.maturity_date ? initial.maturity_date.slice(0, 10) : ''
   )
   const [acquiredAt, setAcquiredAt] = useState(
-    initial?.acquired_at ? initial.acquired_at.slice(0, 10) : new Date().toISOString().slice(0, 10)
+    initial?.acquired_at ? initial.acquired_at.slice(0, 10) : todayKST()
   )
   const [loanType, setLoanType] = useState<LoanType>((initial?.loan_type as LoanType) ?? '원리금균등상환')
   const [paymentDay, setPaymentDay] = useState(initial?.payment_day ? String(initial.payment_day) : '25')

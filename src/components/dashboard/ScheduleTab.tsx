@@ -4,6 +4,7 @@ import { useState, useRef, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { getHolidaysForMonth } from '@/lib/koreanHolidays'
 import { lunarCellDay, lunarFullLabel } from '@/lib/lunar'
+import { todayKST } from '@/lib/date'
 import {
   PlusIcon,
   TrashIcon,
@@ -20,7 +21,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function today() {
-  return new Date().toISOString().slice(0, 10)
+  return todayKST()
 }
 
 function calcDDay(dateStr: string): number {

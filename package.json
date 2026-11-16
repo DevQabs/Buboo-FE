@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test src/lib/checks.test.ts",
+    "test": "node --test src/lib/*.test.*",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
