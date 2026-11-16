@@ -64,7 +64,8 @@
 | `Chip` | 화면 안 필터·선택 칩(`min-h-10 py-2.5 text-sm`), 선택 시 `brand-500` 채움 |
 | `Segmented` | 2단 메뉴 전체 폭 세그먼트(칸 같은 폭, `h-11 text-sm font-semibold`) |
 | `IconButton` | 머리 오른쪽 둥근 아이콘 버튼 |
-| `FloatingBar` | 하단 탭 위 입력 바(가계부 금액 입력, 일기 쓰기) |
+| `FloatingBar` | 하단 탭 위 입력 바(일기 쓰기, `components/ui/Card.tsx`) |
+| `QuickEntryBar` | 하단 탭 위 빠른 입력 바(가계부 금액 입력, `components/ledger/QuickEntryBar.tsx`) |
 | `showToast` / `toastError` / `Toaster` | 저장 실패 알림(`Toaster`는 대시보드에 하나) |
 
 ## 아바타 색상
@@ -134,15 +135,17 @@ DB에 `'indigo' | 'rose' | 'emerald' | 'amber' | 'sky'` 저장.
 
 | 요소 | 값 |
 |------|-----|
-| 바텀 내비 높이 | `4rem` (64px) — CSS var `--nav-h` |
-| 메인 콘텐츠 하단 패딩 | `pb-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1rem)]` |
-| FAB bottom | `bottom-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1rem)]` |
+| 바텀 내비 높이 | 실측값 (미측정 시 `4rem`) — CSS var `--nav-h` |
+| 메인 콘텐츠 하단 패딩 | `pb-[calc(var(--nav-h)+1rem)]` |
+| FAB bottom | `bottom-[calc(var(--nav-h)+0.75rem)]` |
 | z-index 계층 | 헤더: `z-40` / 내비+FAB: `z-50` / 모달: `z-60` |
 | Safe area | 바텀 내비 flex컨테이너에 `pb-safe` 적용 |
 | 수평 패딩 | 헤더: `px-5` / 메인 콘텐츠: `px-3` |
 | 카드 간격 | `space-y-3` |
 | 하단 탭바 | `rounded-t-card bg-white shadow-warm-up` |
-| 떠 있는 입력 바 | `FloatingBar` — 탭바 위 `0.75rem`, 화면은 `pb-20`으로 가리지 않게 |
+| 떠 있는 입력 바 | `FloatingBar` / `QuickEntryBar` — 탭바 위 `0.75rem`, 화면은 `pb-20`으로 가리지 않게 |
+
+`--nav-h` 는 `DashboardClient.tsx` 의 ResizeObserver 가 바텀 내비를 실측해 넣는 값이다(safe area 포함, 미측정 시 fallback `4rem`, `globals.css`). 따라서 `var(--nav-h)` 에 `env(safe-area…)` 를 다시 더하지 않는다(`rules.test.mjs` 가 막는다).
 
 ## 포트 & 실행
 
