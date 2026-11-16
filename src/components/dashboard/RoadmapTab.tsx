@@ -1,15 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { Card, PageTitle } from '@/components/ui/Card';
+import { toastError } from '@/components/ui/Toast';
+import { AssumptionSlider, NextMilestoneCard, RoadmapHero } from '@/components/wealth/RoadmapCards';
+import { apiFetch } from '@/lib/api';
+import { todayKST } from '@/lib/date';
+import { contributionFor } from '@/lib/roadmap';
 import type {
   RoadmapAssumptions,
   RoadmapAssumptionsResponse,
   RoadmapDividendCandidate,
   RoadmapProjection,
 } from '@/types';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 const eok = (krw: number) => `${(krw / 100_000_000).toFixed(2)}억`;
 const man = (krw: number) => `${Math.round(krw / 10_000).toLocaleString()}만`;
@@ -41,12 +45,15 @@ export default function RoadmapTab({
   accessToken,
   prefetched,
   canEdit,
+  chips,
 }: {
   accessToken?: string;
   // 대시보드가 미리 받아 둔 데이터. 있으면 첫 화면을 바로 그린다.
   prefetched?: RoadmapPrefetch | null;
   /** false 면 가정 편집 카드를 숨긴다(보기 전용). */
   canEdit: boolean;
+  /** 2단 메뉴 칩 줄(제목 아래) */
+  chips: ReactNode;
 }) {
   const [data, setData] = useState<RoadmapProjection | null>(prefetched?.projection ?? null);
   const [assumptions, setAssumptions] = useState<RoadmapAssumptions | null>(prefetched?.assumptions ?? null);
@@ -57,29 +64,20 @@ export default function RoadmapTab({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const headers = useCallback(
-    (): HeadersInit => ({
-      'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    }),
-    [accessToken],
-  );
-
   const load = useCallback(async () => {
     try {
+      const token = accessToken ?? '';
       const [p, a] = await Promise.all([
-        fetch(`${API_BASE}/api/roadmap/projection`, { headers: headers() }),
-        fetch(`${API_BASE}/api/roadmap/assumptions`, { headers: headers() }),
+        apiFetch<RoadmapProjection>('/api/roadmap/projection', token),
+        apiFetch<RoadmapAssumptionsResponse>('/api/roadmap/assumptions', token),
       ]);
-      if (!p.ok || !a.ok) throw new Error('load failed');
-      setData(await p.json());
-      const body: RoadmapAssumptionsResponse = await a.json();
-      setAssumptions(body.assumptions);
-      setCandidates(body.dividend_candidates ?? []);
+      setData(p);
+      setAssumptions(a.assumptions);
+      setCandidates(a.dividend_candidates ?? []);
     } catch {
       setError('로드맵을 불러오지 못했습니다');
     }
-  }, [headers]);
+  }, [accessToken]);
 
   useEffect(() => {
     if (prefetched) return; // 이미 받아 둔 데이터가 있으면 다시 부르지 않는다
@@ -89,30 +87,26 @@ export default function RoadmapTab({
   async function saveAssumptions(next: RoadmapAssumptions) {
     setSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/api/roadmap/assumptions`, {
-        method: 'PUT', headers: headers(), body: JSON.stringify(next),
-      });
-      if (!res.ok) throw new Error();
+      await apiFetch('/api/roadmap/assumptions', accessToken ?? '', { method: 'PUT', body: JSON.stringify(next) });
       await load();
-    } catch {
-      setError('가정을 저장하지 못했습니다');
+    } catch (e) {
+      toastError('가정 저장', e); // 화면은 그대로 두고 알린다
     } finally {
       setSaving(false);
     }
   }
 
   if (error) {
-    return (
-      <div className='bg-white rounded-3xl shadow-sm border border-slate-100 px-5 py-10 text-center'>
-        <p className='text-sm font-medium text-slate-400'>{error}</p>
-      </div>
-    );
+    return <Card className='px-5 py-10 text-center text-sm font-medium text-stone-400'>{error}</Card>;
   }
   if (!data || !assumptions) {
-    return <div className='bg-white rounded-3xl shadow-sm border border-slate-100 h-40 animate-pulse' />;
+    return <div className='h-40 animate-pulse rounded-card bg-white' />;
   }
 
-  const { goal, current, years } = data;
+  const { years } = data;
+  const thisMonth = todayKST().slice(0, 7);
+  // 저장·해마다 입력으로 기준값이 바뀌면 슬라이더를 처음 값으로 되돌린다
+  const sliderKey = contributionFor(assumptions.contributions, Number(thisMonth.slice(0, 4)));
   // 이번 달 적립은 그 해 계획 월 적립으로 둔다. 주식 순매수 집계는 계좌 안에서
   // 옮긴 돈까지 잡아 실제로 새로 넣은 금액보다 크게 나온다.
   const anchorContributionKRW = years[0]?.monthly_krw ?? 0;
@@ -127,55 +121,22 @@ export default function RoadmapTab({
 
   return (
     <div className='space-y-3'>
-      {/* ① 목표 히어로 */}
-      <div className='rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 text-white px-5 py-5'>
-        <div className='flex items-baseline justify-between'>
-          <p className='text-xs text-slate-300'>{goal.target_date.slice(0, 7).replace('-', '년 ')}월 · 만 {goal.age_at_target}세</p>
-          <p className='text-xs text-slate-300 tabular-nums'>D-{current.days_left.toLocaleString()}</p>
-        </div>
-        <p className='mt-1 text-2xl font-black tabular-nums'>
-          {eok(current.net_worth_krw)}
-          <span className='text-base font-semibold text-slate-400'> / {eok(goal.target_krw)}</span>
-        </p>
-        <div className='mt-3 h-2 rounded-full bg-white/15 overflow-hidden'>
-          <div className='h-full rounded-full bg-brand-300' style={{ width: `${Math.min(100, current.progress_pct)}%` }} />
-        </div>
-        <p className='mt-2 text-xs text-slate-300 tabular-nums'>{current.progress_pct.toFixed(1)}% 달성</p>
-      </div>
-
-      {/* ② 필요 수익률 — 계획은 고정, 지금부터 필요한 값만 실시간.
-          plan 이 없는 건 백엔드가 아직 옛 버전일 때다. 그때는 예전처럼 하나만 보인다. */}
-      <div className='bg-white rounded-3xl shadow-sm border border-slate-100 px-5 py-4'>
-        {data.plan ? (
-          <div className='grid grid-cols-2 gap-4'>
-            <div>
-              <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>계획 수익률</p>
-              <p className='mt-1 text-xl font-black text-slate-800 tabular-nums'>{(data.plan.total_return * 100).toFixed(2)}%</p>
-              <p className='text-[10px] text-slate-400 tabular-nums'>
-                {data.plan.anchor_month.replace('-', '.')} {eok(data.plan.anchor_net_worth_krw)} 출발 · 고정
-              </p>
-            </div>
-            <div>
-              <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>지금부터 필요</p>
-              {/* 계획보다 뒤처지면 더 벌어야 하니 빨강, 앞서면 초록 */}
-              <p className={`mt-1 text-xl font-black tabular-nums ${
-                data.required_total_return > data.plan.total_return ? 'text-rose-500' : 'text-emerald-600'
-              }`}>
-                {(data.required_total_return * 100).toFixed(2)}%
-              </p>
-              <p className='text-[10px] text-slate-400'>현재 순자산 기준</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>필요 수익률</p>
-            <p className='mt-1 text-xl font-black text-slate-800 tabular-nums'>{(data.required_total_return * 100).toFixed(2)}%</p>
-          </>
-        )}
-      </div>
+      <PageTitle eyebrow='자산' title='로드맵' />
+      {chips}
+      <RoadmapHero data={data} thisMonth={thisMonth} />
+      <NextMilestoneCard data={data} />
+      <AssumptionSlider
+        key={sliderKey}
+        data={data}
+        assumptions={assumptions}
+        canEdit={canEdit}
+        saving={saving}
+        thisMonth={thisMonth}
+        onSave={saveAssumptions}
+      />
 
       {/* ③ 자산 추이 */}
-      <div className='bg-white rounded-3xl shadow-sm border border-slate-100 px-5 py-4'>
+      <div className='bg-white rounded-card shadow-warm px-5 py-4'>
         <div className='flex items-center justify-between mb-3'>
           <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>자산 추이</p>
           <div className='flex items-center gap-3'>
@@ -209,7 +170,7 @@ export default function RoadmapTab({
             <Tooltip content={<ChartTooltip />} />
             <Line
               type={scale === 'month' ? 'stepAfter' : 'monotone'}
-              dataKey='plan' stroke='#6366F1' strokeWidth={2} dot={false}
+              dataKey='plan' stroke='#0F4C81' strokeWidth={2} dot={false}
             />
             <Line
               type={scale === 'month' ? 'stepAfter' : 'monotone'}
@@ -220,7 +181,7 @@ export default function RoadmapTab({
       </div>
 
       {/* ④ 마일스톤 */}
-      <div className='bg-white rounded-3xl shadow-sm border border-slate-100 px-5 py-4'>
+      <div className='bg-white rounded-card shadow-warm px-5 py-4'>
         <div className='flex items-center justify-between mb-3'>
           <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>마일스톤</p>
           <div className='flex rounded-lg bg-slate-100 p-0.5'>
@@ -292,12 +253,12 @@ export default function RoadmapTab({
 
       {/* ⑤ 가정 편집 */}
       {canEdit && (
-      <div className='bg-white rounded-3xl shadow-sm border border-slate-100 px-5 py-4'>
+      <div className='bg-white rounded-card shadow-warm px-5 py-4'>
         <button
           onClick={() => setShowAssumptions(v => !v)}
           className='w-full flex items-center justify-between'
         >
-          <span className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>가정</span>
+          <span className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>가정 자세히 · 해마다 적립 · 배당 종목</span>
           <span className='text-xs text-slate-400'>{showAssumptions ? '접기' : '펼치기'}</span>
         </button>
 

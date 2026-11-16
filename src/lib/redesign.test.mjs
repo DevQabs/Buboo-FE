@@ -129,3 +129,34 @@ test('명의 분할은 둘 이상일 때만', () => {
   assert.equal(ownerSplit([{ user_id: 'u1', quantity: 98 }], names), '98주')
   assert.equal(ownerSplit([{ user_id: 'u1', quantity: 0.5 }, { user_id: 'u1', quantity: 1.25 }], names), '1.75주')
 })
+
+// ── Task 6: 로드맵 ──
+import { aheadOfPlan, contributionFor, monthsBetween, nextMilestone, previewReachMonth, shiftContributions } from './roadmap.ts'
+
+const pt = (month, v) => ({ month, projected_net_worth_krw: v })
+
+test('다음 마일스톤은 지금 위 1억 단위, 계획선이 처음 닿는 달', () => {
+  const months = [pt('2026-11', 235e6), pt('2027-02', 295e6), pt('2027-03', 301e6)]
+  assert.deepEqual(nextMilestone(235e6, 500e6, months), { amount: 300e6, month: '2027-03' })
+  assert.deepEqual(nextMilestone(480e6, 500e6, months), { amount: 500e6, month: null })
+  assert.equal(nextMilestone(500e6, 500e6, months), null)
+})
+
+test('계획 대비 앞/뒤는 이번 달 계획선과 비교', () => {
+  assert.equal(aheadOfPlan(238_200_000, [pt('2026-11', 235e6)], '2026-11'), 3_200_000)
+  assert.equal(aheadOfPlan(1, [pt('2026-10', 1)], '2026-11'), null)
+})
+
+test('적립을 늘리면 도달 달이 당겨진다', () => {
+  const base = {
+    startMonth: '2026-10', netWorth: 0, target: 300, annualReturn: 0,
+    contributions: [{ year: 2026, monthly_krw: 100 }, { year: 2027, monthly_krw: 100 }],
+  }
+  assert.equal(previewReachMonth({ ...base, delta: 0 }), '2027-01')
+  assert.equal(previewReachMonth({ ...base, delta: 100 }), '2026-12')
+  assert.equal(previewReachMonth({ ...base, contributions: [], delta: 0, maxMonths: 24 }), null)
+  assert.equal(monthsBetween('2026-12', '2027-01'), 1)
+  assert.deepEqual(shiftContributions([{ year: 2026, monthly_krw: 50 }], -100), [{ year: 2026, monthly_krw: 0 }])
+  assert.equal(contributionFor([{ year: 2026, monthly_krw: 7 }, { year: 2027, monthly_krw: 9 }], 2027), 9)
+  assert.equal(contributionFor([{ year: 2026, monthly_krw: 7 }], 2030), 7) // 그 해가 없으면 첫 해
+})

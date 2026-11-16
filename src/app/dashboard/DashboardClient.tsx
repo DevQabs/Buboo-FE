@@ -918,7 +918,7 @@ export default function DashboardClient() {
         )}
 
         {/* 2단 메뉴 칩 — 화면이 직접 그리면 여기서는 뺀다(Task 3·5·6) */}
-        {currentTab?.key !== 'life' && currentSub?.key !== 'assets' && chipRow}
+        {currentTab?.key === 'baby' && chipRow}
 
         {/* ══ 아기 (3단계에서 채움) ══ */}
         {currentTab?.key === 'baby' && (
@@ -1029,7 +1029,7 @@ export default function DashboardClient() {
 
         {/* ══ Tab 4: 로드맵 ══ */}
         {currentSub?.key === 'roadmap' && (
-          <RoadmapTab accessToken={session?.user?.accessToken} prefetched={roadmap} canEdit={canEdit('roadmap')} />
+          <RoadmapTab accessToken={session?.user?.accessToken} prefetched={roadmap} canEdit={canEdit('roadmap')} chips={chipRow} />
         )}
 
       </main>
