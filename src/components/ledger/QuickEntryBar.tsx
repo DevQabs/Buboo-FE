@@ -178,13 +178,19 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
     setUndoID(null)
     inputRef.current?.focus()
     const seq = ++saveSeq.current
+    const syncFocus = () => { // 저장하는 사이 포커스가 두 칸 모두에서 빠졌다면 자주 쓴 내용 칩이 남지 않게
+      const a = document.activeElement
+      if (a !== inputRef.current && a !== titleRef.current) setFocused(false)
+    }
     try {
       const id = await onSubmit(payload)
       if (seq === saveSeq.current) setUndoID(id) // 늦게 끝난 옛 저장은 되돌리기 대상이 아니다
     } catch {
       setAmount(prev => prev || typed) // 오류 토스트는 대시보드가 띄운다
+      syncFocus()
       return // 저장 실패면 네이버페이를 열지 않는다
     }
+    syncFocus()
     if (thenPay) openNaverPay()
   }
 
@@ -207,18 +213,18 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
   const pickTitle = (t: { title: string; category: string }) => {
     tapHaptic()
     setTitle(t.title)
-    setCategory(t.category)
+    if (cats.includes(t.category)) setCategory(t.category)
     setPillPop(n => n + 1)
   }
 
   // 한글 조합 중 엔터는 글자 확정이라 넘긴다
   const onAmountKey = (e: KeyboardEvent) => {
-    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
     e.preventDefault()
     if (amt > 0) titleRef.current?.focus()
   }
   const onTitleKey = (e: KeyboardEvent) => {
-    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
     e.preventDefault()
     save()
   }
