@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { formatAmountInput, parseAmount } from './formatNumber.ts'
-import { sortCategoriesByUse, readPayMethod } from './ledger.ts'
+import { sortCategoriesByUse, readPayMethod, applySummaryDelta } from './ledger.ts'
 
 test('금액 입력: 숫자만 남기고 천 단위 쉼표, 다시 읽으면 원 금액', () => {
   assert.equal(formatAmountInput('12000'), '12,000')
@@ -32,4 +32,14 @@ test('저장된 결제수단: N페이만 인정, 없거나 이상한 값은 카�
   assert.equal(readPayMethod(null), '카드')
   assert.equal(readPayMethod(undefined), '카드')
   assert.equal(readPayMethod('현금'), '카드')
+})
+
+test('요약 낙관 반영: 그 거래 금액만 더하고 빼며, 다른 거래의 반영은 건드리지 않는다', () => {
+  const base = { total_income: 100, total_expense: 50, balance: 50, other: 1 }
+  const a = applySummaryDelta(base, 'expense', 30)
+  assert.deepEqual(a, { total_income: 100, total_expense: 80, balance: 20, other: 1 })
+  const b = applySummaryDelta(a, 'income', 10)
+  // a 실패 되돌리기: b 의 수입 반영은 남는다(스냅샷 복원이면 사라진다)
+  assert.deepEqual(applySummaryDelta(b, 'expense', -30), { total_income: 110, total_expense: 50, balance: 60, other: 1 })
+  assert.equal(applySummaryDelta(null, 'expense', 30), null)
 })

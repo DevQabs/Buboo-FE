@@ -82,3 +82,16 @@ export const PAY_METHOD_KEY = 'uri-jip.quickEntry.payment'
 export function readPayMethod(raw: string | null | undefined): PayMethod {
   return raw === 'N페이' ? 'N페이' : '카드'
 }
+
+type SummaryTotals = { total_income: number; total_expense: number; balance: number }
+
+/** 요약에 거래 하나의 금액을 더한다(되돌릴 때는 음수). 실패한 거래만 빼야 다른 저장의 반영이 살아남는다. */
+export function applySummaryDelta<S extends SummaryTotals>(s: S | null, type: 'expense' | 'income', amount: number): S | null {
+  if (!s) return s
+  return {
+    ...s,
+    total_income: type === 'income' ? s.total_income + amount : s.total_income,
+    total_expense: type === 'expense' ? s.total_expense + amount : s.total_expense,
+    balance: s.balance + (type === 'income' ? amount : -amount),
+  }
+}

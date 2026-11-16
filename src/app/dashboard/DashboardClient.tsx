@@ -77,6 +77,7 @@ import { levelOf, visibleTabs, type TabKey } from '@/lib/menus'
 import { ledgerPeriod, ledgerMonthOf, todayKST } from '@/lib/date'
 import { apiFetch as callApi, latestOnly, ignoreAbort } from '@/lib/api'
 import { attachDiaryPhotos } from '@/lib/media'
+import { applySummaryDelta } from '@/lib/ledger'
 import { motion, useReducedMotion } from 'framer-motion'
 import { NO_MOTION, SPRING, Segmented, tapHaptic } from '@/components/ui/Card'
 import { Toaster, showToast, toastError } from '@/components/ui/Toast'
@@ -557,9 +558,8 @@ export default function DashboardClient() {
       date, saving_link: p.saving_link,
     }
     const tempID = `temp-${Date.now()}`
-    const optimistic = p.type !== 'saving'
-    const prevSummary = summary
-    if (optimistic) {
+    const optType = p.type === 'saving' ? null : p.type
+    if (optType) {
       const temp: Transaction = {
         id: tempID, couple_id: session?.user?.backendUser?.couple_id ?? '', user_id: p.user_id,
         type: p.type, amount: p.amount, currency: 'KRW', category: p.category, subcategory: '',
@@ -567,20 +567,16 @@ export default function DashboardClient() {
         tags: [], location: null, created_at: date, updated_at: date,
       }
       setTransactions(prev => [temp, ...prev])
-      setSummary(prev => prev && {
-        ...prev,
-        total_income:  p.type === 'income'  ? prev.total_income  + p.amount : prev.total_income,
-        total_expense: p.type === 'expense' ? prev.total_expense + p.amount : prev.total_expense,
-        balance: prev.balance + (p.type === 'income' ? p.amount : -p.amount),
-      })
+      setSummary(prev => applySummaryDelta(prev, optType, p.amount))
     }
     let created: Transaction
     try {
       created = await apiFetch<Transaction>('/api/transactions', { method: 'POST', body: JSON.stringify(body) })
     } catch (e) {
-      if (optimistic) {
+      if (optType) {
         setTransactions(prev => prev.filter(tx => tx.id !== tempID))
-        setSummary(prevSummary)
+        // 이 거래 몫만 뺀다 — 그사이 다른 저장이 반영한 금액은 남긴다
+        setSummary(prev => applySummaryDelta(prev, optType, -p.amount))
       }
       toastError('거래 저장', e)
       throw e
