@@ -112,7 +112,7 @@ export function FloatingBar({ hasNav, onClick, className = '', children }: { has
     <div
       className={`fixed inset-x-0 z-50 px-3 ${
         hasNav
-          ? 'bottom-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+0.75rem)]'
+          ? 'bottom-[calc(var(--nav-h)+0.75rem)]'
           : 'bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)]'
       }`}
     >

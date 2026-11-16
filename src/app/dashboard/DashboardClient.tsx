@@ -182,6 +182,17 @@ export default function DashboardClient() {
   const [showMenu, setShowMenu]       = useState(false)
   const [showFamily, setShowFamily]   = useState(false)
   const menuRef                       = useRef<HTMLDivElement>(null)
+  // 하단 탭 실제 높이(safe area 포함)를 --nav-h 로 — 떠 있는 입력 바·본문 여백이 이 값을 쓴다
+  const navRoRef                      = useRef<ResizeObserver | null>(null)
+  const navRef = useCallback((el: HTMLElement | null) => {
+    navRoRef.current?.disconnect()
+    navRoRef.current = null
+    if (!el) return
+    const set = () => document.documentElement.style.setProperty('--nav-h', `${el.offsetHeight}px`)
+    set()
+    navRoRef.current = new ResizeObserver(set)
+    navRoRef.current.observe(el)
+  }, [])
 
 
   // close menu on outside click
@@ -932,7 +943,7 @@ export default function DashboardClient() {
       <main
         className={`max-w-2xl mx-auto px-3 pt-4 space-y-3 ${
           tabs.length > 1
-            ? 'pb-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1rem)]'
+            ? 'pb-[calc(var(--nav-h)+1rem)]'
             : 'pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]'
         }`}
       >
@@ -1116,7 +1127,7 @@ export default function DashboardClient() {
 
       {/* ── Bottom navigation bar ── */}
       {tabs.length > 1 && (
-        <nav className="fixed bottom-0 inset-x-0 z-50 rounded-t-card bg-white shadow-warm-up">
+        <nav ref={navRef} className="fixed bottom-0 inset-x-0 z-50 rounded-t-card bg-white shadow-warm-up">
           <div className="max-w-2xl mx-auto flex pb-safe">
             {tabs.map(t => {
               const Icon = TAB_ICONS[t.key]
