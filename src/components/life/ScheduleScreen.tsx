@@ -43,7 +43,7 @@ function AgendaRow({ s, today, canEdit, onOpen, onRemove }: {
       </button>
       {badge && <span className={`shrink-0 text-xs font-extrabold tabular-nums ${c.text}`}>{badge}</span>}
       {canEdit && (
-        <button type="button" aria-label="삭제" onClick={onRemove} className="shrink-0 rounded-lg p-1.5 text-stone-300 hover:bg-rose-50 hover:text-rose-400">
+        <button type="button" aria-label="삭제" onClick={onRemove} className="relative before:absolute before:content-[''] before:-inset-2 shrink-0 rounded-lg p-1.5 text-stone-300 hover:bg-rose-50 hover:text-rose-400">
           <TrashIcon className="h-3.5 w-3.5" />
         </button>
       )}
@@ -105,7 +105,7 @@ export default function ScheduleScreen({ schedules, diaries, currentUserID, canE
         eyebrow="일상"
         title="일정"
         right={<>
-          <button type="button" onClick={() => setShowMonth(v => !v)} className="flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium text-stone-500">
+          <button type="button" onClick={() => setShowMonth(v => !v)} className="relative before:absolute before:content-[''] before:-inset-y-3 flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium text-stone-500">
             월 달력 <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${showMonth ? 'rotate-180' : ''}`} />
           </button>
           {canEdit && <IconButton label="일정 추가" onClick={() => setAdding(true)}><PlusIcon className="h-4 w-4" /></IconButton>}
@@ -154,7 +154,7 @@ export default function ScheduleScreen({ schedules, diaries, currentUserID, canE
               {Number(selected.slice(5, 7))}월 {Number(selected.slice(8))}일 · {lunarFullLabel(selected)}
               {holidays[selected] ? ` · ${holidays[selected]}` : ''}
             </SectionLabel>
-            <button type="button" onClick={() => setSelected(today)} className="px-2 text-xs font-medium text-brand-500">오늘로</button>
+            <button type="button" onClick={() => setSelected(today)} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 px-2 text-xs font-medium text-brand-500">오늘로</button>
           </div>
           <Card className="px-3 py-1">{dayList.length > 0 ? rows(dayList) : empty('이 날 일정이 없어요')}</Card>
         </>
@@ -182,7 +182,7 @@ export default function ScheduleScreen({ schedules, diaries, currentUserID, canE
                   type="button"
                   disabled={!canEdit}
                   onClick={() => setEditing(s)}
-                  className={`rounded-2xl px-3 py-1.5 text-xs font-bold ${c.bg} ${c.text}`}
+                  className={`relative before:absolute before:content-[''] before:-inset-y-2 rounded-2xl px-3 py-1.5 text-xs font-bold ${c.bg} ${c.text}`}
                 >
                   {s.dday_label || s.title} {ddayBadge(s, today)}
                 </button>

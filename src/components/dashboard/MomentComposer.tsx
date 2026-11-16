@@ -24,7 +24,7 @@ function Thumb({ src, video, onRemove }: { src: string; video: boolean; onRemove
       {video && <PlayIcon className="absolute inset-0 m-auto h-7 w-7 text-white drop-shadow" />}
       {onRemove && (
         <button type="button" onClick={onRemove} aria-label="빼기"
-          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white">
+          className="before:absolute before:content-[''] before:-inset-2.5 absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white">
           <XMarkIcon className="h-3.5 w-3.5" />
         </button>
       )}

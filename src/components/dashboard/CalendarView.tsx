@@ -145,7 +145,7 @@ export function SavingLinkInline({ stocks, otherAssets, onChange }: SavingLinkIn
       <div className="flex gap-1.5">
         {(['stock', 'deposit', 'general'] as SavingKind[]).map(k => (
           <button key={k} type="button" onClick={() => setKindAndNotify(k)}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${kind === k ? 'bg-brand-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
+            className={`min-h-10 inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-medium transition-all ${kind === k ? 'bg-brand-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
             {{ stock: '주식/크립토', deposit: '예적금', general: '기타저축' }[k]}
           </button>
         ))}
@@ -155,7 +155,7 @@ export function SavingLinkInline({ stocks, otherAssets, onChange }: SavingLinkIn
       <div className="flex gap-1.5 bg-white rounded-lg p-0.5 border border-slate-100">
         {[false, true].map(v => (
           <button key={String(v)} type="button" onClick={() => setIsNewAndNotify(v)}
-            className={`flex-1 py-1 rounded-md text-xs font-medium transition-all ${isNew === v ? 'bg-brand-500 text-white' : 'text-slate-500'}`}>
+            className={`relative before:absolute before:content-[''] before:-inset-y-2 flex-1 py-1 rounded-md text-xs font-medium transition-all ${isNew === v ? 'bg-brand-500 text-white' : 'text-slate-500'}`}>
             {v ? '신규 등록' : '기존 추가'}
           </button>
         ))}
@@ -213,7 +213,7 @@ export function SavingLinkInline({ stocks, otherAssets, onChange }: SavingLinkIn
           <div className="flex gap-1.5">
             {OTHER_ASSET_TYPES.map(t => (
               <button key={t} type="button" onClick={() => { setNewAssetType(t); notify({ newAssetType: t }) }}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${newAssetType === t ? 'bg-brand-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
+                className={`min-h-10 inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-medium transition-all ${newAssetType === t ? 'bg-brand-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
                 {t}
               </button>
             ))}
@@ -434,12 +434,12 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, currentUser
           {onAddTransaction && !showForm && (
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-brand-500 text-white text-xs font-semibold hover:bg-brand-600 transition-colors"
+              className="relative before:absolute before:content-[''] before:-inset-y-1.5 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-brand-500 text-white text-xs font-semibold hover:bg-brand-600 transition-colors"
             >
               <PlusIcon className="h-3 w-3" />추가
             </button>
           )}
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors ml-1">
+          <button onClick={onClose} className="relative before:absolute before:content-[''] before:-inset-2 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors ml-1">
             <XMarkIcon className="h-4 w-4" />
           </button>
         </div>
@@ -454,15 +454,15 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, currentUser
             <div className="flex rounded-lg overflow-hidden border border-slate-200 text-xs font-semibold">
               <button
                 onClick={() => { setTxType('expense'); setCategory(''); setSavingLink(null) }}
-                className={`px-3 py-1.5 transition-colors ${txType === 'expense' ? 'bg-rose-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                className={`relative before:absolute before:content-[''] before:-inset-y-2 px-3 py-1.5 transition-colors ${txType === 'expense' ? 'bg-rose-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
               >지출</button>
               <button
                 onClick={() => { setTxType('income'); setCategory(''); setSavingLink(null) }}
-                className={`px-3 py-1.5 transition-colors ${txType === 'income' ? 'bg-emerald-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                className={`relative before:absolute before:content-[''] before:-inset-y-2 px-3 py-1.5 transition-colors ${txType === 'income' ? 'bg-emerald-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
               >수입</button>
               <button
                 onClick={() => { setTxType('saving'); setCategory('저축/투자'); setSavingLink(null) }}
-                className={`px-3 py-1.5 transition-colors ${txType === 'saving' ? 'bg-brand-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                className={`relative before:absolute before:content-[''] before:-inset-y-2 px-3 py-1.5 transition-colors ${txType === 'saving' ? 'bg-brand-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
               >저축</button>
             </div>
 
@@ -499,7 +499,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, currentUser
                   <button
                     key={c}
                     onClick={() => setCategory(prev => prev === c ? '' : c)}
-                    className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                    className={`min-h-10 inline-flex items-center justify-center text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
                       category === c
                         ? txType === 'expense' ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
                         : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300'
@@ -511,7 +511,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, currentUser
                 <button
                   type="button"
                   onClick={() => setShowCatManager(true)}
-                  className="text-xs px-2 py-1 rounded-full text-slate-400 border border-dashed border-slate-200 hover:border-slate-300 hover:text-slate-500 transition-colors"
+                  className="min-h-10 inline-flex items-center justify-center text-xs px-2 py-1 rounded-full text-slate-400 border border-dashed border-slate-200 hover:border-slate-300 hover:text-slate-500 transition-colors"
                   title="카테고리 관리"
                 >
                   <Cog6ToothIcon className="h-3.5 w-3.5" />
@@ -608,7 +608,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, currentUser
                     <div className="flex flex-wrap gap-1">
                       {editCats.map(c => (
                         <button key={c} onClick={() => setEditCategory(c)}
-                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${editCategory === c ? 'bg-brand-500 text-white border-brand-500' : 'border-slate-200 text-slate-500'}`}>
+                          className={`min-h-10 inline-flex items-center justify-center text-[10px] px-2 py-0.5 rounded-full border transition-colors ${editCategory === c ? 'bg-brand-500 text-white border-brand-500' : 'border-slate-200 text-slate-500'}`}>
                           {c}
                         </button>
                       ))}
@@ -627,7 +627,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, currentUser
                       <CheckIcon className="h-3 w-3" /> 저장
                     </button>
                     <button onClick={() => setEditingTxId(null)}
-                      className="px-3 py-1.5 bg-slate-100 text-slate-500 rounded-lg text-xs hover:bg-slate-200">
+                      className="relative before:absolute before:content-[''] before:-inset-y-1.5 px-3 py-1.5 bg-slate-100 text-slate-500 rounded-lg text-xs hover:bg-slate-200">
                       취소
                     </button>
                   </div>
@@ -675,7 +675,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, currentUser
                           setEditTxUserId(tx.user_id)
                           setEditSaving(isSaving)
                         }}
-                        className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-brand-500"
+                        className="relative before:absolute before:content-[''] before:-inset-2 p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-brand-500"
                       >
                         <PencilIcon className="h-3.5 w-3.5" />
                       </button>
@@ -683,7 +683,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, currentUser
                     {onDeleteTransaction && (
                       <button
                         onClick={() => onDeleteTransaction(tx.id)}
-                        className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-rose-500"
+                        className="relative before:absolute before:content-[''] before:-inset-2.5 p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-rose-500"
                       >
                         <TrashIcon className="h-3.5 w-3.5" />
                       </button>
@@ -799,7 +799,7 @@ export default function CalendarView({
       {/* ── Month navigator + stats ── */}
       <div className="px-3 pt-3 pb-2">
         <div className="flex items-center justify-between">
-          <button onClick={goPrev} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+          <button onClick={goPrev} className="relative before:absolute before:content-[''] before:-inset-2.5 p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
           <div className="flex items-center gap-3 text-xs">
@@ -816,7 +816,7 @@ export default function CalendarView({
               </span>
             )}
           </div>
-          <button onClick={goNext} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+          <button onClick={goNext} className="relative before:absolute before:content-[''] before:-inset-2.5 p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
             <ChevronRightIcon className="h-4 w-4" />
           </button>
         </div>

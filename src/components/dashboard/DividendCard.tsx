@@ -128,7 +128,7 @@ function AddDividendModal({ portfolio, portfolioSummary, users, onClose, onSave 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <h2 className="text-base font-bold text-slate-800">배당 이벤트 등록</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
+          <button onClick={onClose} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
@@ -417,7 +417,7 @@ export default function DividendCard({
             {canEdit && (
             <button
               onClick={() => setShowModal(true)}
-              className="w-8 h-8 rounded-xl bg-brand-50 hover:bg-brand-100 flex items-center justify-center transition-colors"
+              className="relative before:absolute before:content-[''] before:-inset-1.5 w-8 h-8 rounded-xl bg-brand-50 hover:bg-brand-100 flex items-center justify-center transition-colors"
               aria-label="배당 등록"
             >
               <PlusIcon className="h-4 w-4 text-brand-600" />
@@ -425,7 +425,7 @@ export default function DividendCard({
             )}
             <button
               onClick={() => setIsOpen(v => !v)}
-              className="w-8 h-8 rounded-xl bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors"
+              className="relative before:absolute before:content-[''] before:-inset-1.5 w-8 h-8 rounded-xl bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors"
               aria-label={isOpen ? '접기' : '펼치기'}
             >
               <ChevronDownIcon className={`h-4 w-4 text-emerald-700 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -442,7 +442,7 @@ export default function DividendCard({
               {canEdit && (
             <button
               onClick={() => setShowModal(true)}
-              className="mt-2 text-xs text-emerald-500 hover:underline"
+              className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 mt-2 text-xs text-emerald-500 hover:underline"
             >
               첫 배당 등록하기 →
             </button>
@@ -533,7 +533,7 @@ function DividendRow({
         </div>
 
         {canEdit && (
-        <button onClick={() => onDelete(d.id)} title="삭제" className="p-1 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors">
+        <button onClick={() => onDelete(d.id)} title="삭제" className="relative before:absolute before:content-[''] before:-inset-2.5 p-1 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-rose-50 transition-colors">
           <TrashIcon className="h-3 w-3" />
         </button>
         )}

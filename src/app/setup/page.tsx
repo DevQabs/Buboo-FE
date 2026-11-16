@@ -89,7 +89,7 @@ export default function SetupPage() {
                   key={r}
                   type="button"
                   onClick={() => setRole(r)}
-                  className={`py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                  className={`min-h-11 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                     role === r
                       ? 'bg-brand-500 text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'

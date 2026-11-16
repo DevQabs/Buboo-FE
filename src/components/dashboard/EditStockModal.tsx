@@ -65,7 +65,7 @@ export default function EditStockModal({ asset, onClose, onEdit }: EditStockModa
             <h3 className="text-base font-bold text-slate-800">주식 수정</h3>
             <p className="text-xs text-slate-400 mt-0.5 font-mono">{asset.symbol} · {asset.exchange}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+          <button onClick={onClose} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 text-slate-400 hover:text-slate-600 transition-colors">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>

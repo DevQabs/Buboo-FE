@@ -128,7 +128,7 @@ function InviteCard({ accessToken }: { accessToken: string }) {
         <>
           <div className="mt-2.5 flex items-center gap-2 rounded-xl bg-[#f5efe6] px-3 py-2">
             <span className="flex-1 truncate text-xs text-stone-600">{url}</span>
-            <button type="button" onClick={copy} aria-label="링크 복사" className="shrink-0 text-brand-600">
+            <button type="button" onClick={copy} aria-label="링크 복사" className="relative before:absolute before:content-[''] before:-inset-3 shrink-0 text-brand-600">
               {copied ? <CheckIcon className="h-4 w-4 text-emerald-500" /> : <ClipboardDocumentIcon className="h-4 w-4" />}
             </button>
           </div>

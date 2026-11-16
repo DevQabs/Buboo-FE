@@ -163,11 +163,11 @@ function SavingLinkForm({ stocks, otherAssets, initial, onChange }: SavingLinkFo
       {/* Existing vs New */}
       <div className="flex gap-2 bg-white rounded-lg p-0.5 border border-slate-100">
         <button type="button" onClick={() => setIsNew(false)}
-          className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${!isNew ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-500'}`}>
+          className={`relative before:absolute before:content-[''] before:-inset-y-2 flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${!isNew ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-500'}`}>
           기존 자산에 추가
         </button>
         <button type="button" onClick={() => setIsNew(true)}
-          className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${isNew ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-500'}`}>
+          className={`relative before:absolute before:content-[''] before:-inset-y-2 flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${isNew ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-500'}`}>
           신규 자산 등록
         </button>
       </div>
@@ -347,7 +347,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
                     type="button"
                     onClick={() => setOwner(o)}
                     title={OWNER_LABEL[o]}
-                    className={`w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${owner === o ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-40'}`}
+                    className={`relative before:absolute before:content-[''] before:-inset-2 w-7 h-7 rounded-full text-white text-xs font-bold transition-all ${owner === o ? 'ring-2 ring-offset-1 ring-brand-500 scale-110' : 'opacity-40'}`}
                     style={{ backgroundColor: bgColor }}
                   >
                     {label}
@@ -355,7 +355,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
                 )
               })}
             </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
+            <button onClick={onClose} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
           </div>
         </div>
 
@@ -368,14 +368,14 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
               <button
                 type="button"
                 onClick={() => { setKind('spending'); setSavingLink(null) }}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${kind === 'spending' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
+                className={`relative before:absolute before:content-[''] before:-inset-y-1 flex-1 py-2 rounded-lg text-sm font-medium transition-all ${kind === 'spending' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
               >
                 지출 고정비
               </button>
               <button
                 type="button"
                 onClick={() => { setKind('saving'); if (owner === 'joint') setOwner('husband') }}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${kind === 'saving' ? 'bg-brand-500 text-white shadow' : 'text-slate-500'}`}
+                className={`relative before:absolute before:content-[''] before:-inset-y-1 flex-1 py-2 rounded-lg text-sm font-medium transition-all ${kind === 'saving' ? 'bg-brand-500 text-white shadow' : 'text-slate-500'}`}
               >
                 저축 고정비
               </button>
@@ -403,7 +403,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
                     key={c}
                     type="button"
                     onClick={() => setCategory(c)}
-                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                    className={`min-h-10 inline-flex items-center justify-center text-xs px-2.5 py-1 rounded-full border transition-colors ${
                       category === c
                         ? 'bg-brand-500 text-white border-brand-500'
                         : 'border-slate-200 text-slate-500 hover:border-brand-100'
@@ -523,7 +523,7 @@ function FeMenu({
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(v => !v)}
-        className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+        className="relative before:absolute before:content-[''] before:-inset-2 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
       >
         <EllipsisVerticalIcon className="h-4 w-4" />
       </button>
@@ -615,7 +615,7 @@ export default function FixedExpenseCard({
             {canEdit && (
             <button
               onClick={() => { setEditingFe(null); setShowModal(true) }}
-              className="w-8 h-8 rounded-xl bg-white/60 hover:bg-white/90 flex items-center justify-center transition-colors"
+              className="relative before:absolute before:content-[''] before:-inset-1.5 w-8 h-8 rounded-xl bg-white/60 hover:bg-white/90 flex items-center justify-center transition-colors"
               aria-label="고정비 추가"
             >
               <PlusIcon className="h-4 w-4 text-amber-700" />
@@ -623,7 +623,7 @@ export default function FixedExpenseCard({
             )}
             <button
               onClick={() => setIsOpen(v => !v)}
-              className="w-8 h-8 rounded-xl bg-amber-100 hover:bg-amber-200 flex items-center justify-center transition-colors"
+              className="relative before:absolute before:content-[''] before:-inset-1.5 w-8 h-8 rounded-xl bg-amber-100 hover:bg-amber-200 flex items-center justify-center transition-colors"
               aria-label={isOpen ? '접기' : '펼치기'}
             >
               <ChevronDownIcon className={`h-4 w-4 text-amber-700 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -640,7 +640,7 @@ export default function FixedExpenseCard({
               {canEdit && (
             <button
               onClick={() => { setEditingFe(null); setShowModal(true) }}
-              className="mt-2 text-xs text-brand-500 hover:underline"
+              className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 mt-2 text-xs text-brand-500 hover:underline"
             >
               첫 고정비 추가하기 →
             </button>

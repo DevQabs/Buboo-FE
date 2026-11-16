@@ -130,8 +130,8 @@ export default function DiaryScreen({
               <div className="mt-2 flex justify-end gap-1">
                 {confirmDel === d.id ? (
                   <>
-                    <button type="button" onClick={() => remove(d.id)} className="rounded-lg bg-rose-500 px-2.5 py-1 text-xs font-medium text-white">삭제</button>
-                    <button type="button" onClick={() => setConfirmDel(null)} className="rounded-lg bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">취소</button>
+                    <button type="button" onClick={() => remove(d.id)} className="relative before:absolute before:content-[''] before:-inset-y-2.5 rounded-lg bg-rose-500 px-2.5 py-1 text-xs font-medium text-white">삭제</button>
+                    <button type="button" onClick={() => setConfirmDel(null)} className="relative before:absolute before:content-[''] before:-inset-y-2.5 rounded-lg bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">취소</button>
                   </>
                 ) : (
                   <>

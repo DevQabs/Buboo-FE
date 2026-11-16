@@ -206,7 +206,7 @@ function AssetFormModal({ mode, initial, currentUserID, onClose, onSubmit }: Ass
           <h3 className="text-base font-bold text-slate-800">
             {mode === 'add' ? '자산 추가' : '자산 수정'}
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+          <button onClick={onClose} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 text-slate-400 hover:text-slate-600 transition-colors">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
@@ -221,7 +221,7 @@ function AssetFormModal({ mode, initial, currentUserID, onClose, onSubmit }: Ass
                   key={t}
                   type="button"
                   onClick={() => handleTypeChange(t)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  className={`min-h-10 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     assetType === t
                       ? t === '대출' ? 'bg-rose-500 text-white' : 'bg-brand-600 text-white'
                       : t === '대출' ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -246,7 +246,7 @@ function AssetFormModal({ mode, initial, currentUserID, onClose, onSubmit }: Ass
               <button
                 type="button"
                 onClick={() => setIsLocked(v => !v)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+                className={`relative before:absolute before:content-[''] before:-inset-y-2.5 relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
                   isLocked ? 'bg-amber-500' : 'bg-slate-200'
                 }`}
               >
@@ -282,7 +282,7 @@ function AssetFormModal({ mode, initial, currentUserID, onClose, onSubmit }: Ass
                     key={c}
                     type="button"
                     onClick={() => setCurrency(c)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                    className={`min-h-10 inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
                       currency === c ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
@@ -354,7 +354,7 @@ function AssetFormModal({ mode, initial, currentUserID, onClose, onSubmit }: Ass
                     key={lt}
                     type="button"
                     onClick={() => setLoanType(lt)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    className={`min-h-10 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                       loanType === lt ? 'bg-rose-500 text-white' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'
                     }`}
                   >
@@ -609,7 +609,7 @@ function AssetRow({ asset, user, canEdit, onEdit, onDelete, onCreateLoanExpense,
       <div className="relative flex-shrink-0">
         <button
           onClick={() => setMenuOpen(v => !v)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
+          className="relative before:absolute before:content-[''] before:-inset-2 w-7 h-7 rounded-lg flex items-center justify-center text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
           aria-label="더보기"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
@@ -708,7 +708,7 @@ export default function OtherAssetCard({ assets = [], users = [], currentUserID,
               {canEdit && (
             <button
               onClick={() => setShowAdd(true)}
-              className="w-8 h-8 rounded-xl bg-brand-50 hover:bg-brand-100 flex items-center justify-center transition-colors"
+              className="relative before:absolute before:content-[''] before:-inset-1.5 w-8 h-8 rounded-xl bg-brand-50 hover:bg-brand-100 flex items-center justify-center transition-colors"
               aria-label="자산 추가"
             >
               <PlusIcon className="h-4 w-4 text-brand-600" />

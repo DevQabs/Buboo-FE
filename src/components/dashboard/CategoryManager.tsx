@@ -42,7 +42,7 @@ export default function CategoryManager({
       >
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-800">카테고리 관리</h3>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button type="button" onClick={onClose} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 text-slate-400 hover:text-slate-600">
             <XMarkIcon className="h-4 w-4" />
           </button>
         </div>
@@ -54,7 +54,7 @@ export default function CategoryManager({
             {expenseCategories.map(c => (
               <span key={c} className="flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-600 rounded-full text-xs font-medium">
                 {c}
-                <button type="button" onClick={() => onRemove('expense', c)} className="text-rose-300 hover:text-rose-500 leading-none">
+                <button type="button" onClick={() => onRemove('expense', c)} className="relative before:absolute before:content-[''] before:-inset-3 text-rose-300 hover:text-rose-500 leading-none">
                   <XMarkIcon className="h-3 w-3" />
                 </button>
               </span>
@@ -86,7 +86,7 @@ export default function CategoryManager({
             {incomeCategories.map(c => (
               <span key={c} className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">
                 {c}
-                <button type="button" onClick={() => onRemove('income', c)} className="text-emerald-300 hover:text-emerald-500 leading-none">
+                <button type="button" onClick={() => onRemove('income', c)} className="relative before:absolute before:content-[''] before:-inset-3 text-emerald-300 hover:text-emerald-500 leading-none">
                   <XMarkIcon className="h-3 w-3" />
                 </button>
               </span>

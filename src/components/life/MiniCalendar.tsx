@@ -40,13 +40,13 @@ export default function MiniCalendar({
   return (
     <div className="rounded-card bg-white p-4 shadow-warm">
       <div className="flex items-center justify-between mb-3">
-        <button onClick={onPrev} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
+        <button onClick={onPrev} className="relative before:absolute before:content-[''] before:-inset-2.5 p-1 rounded-lg hover:bg-slate-100 transition-colors">
           <ChevronLeftIcon className="h-4 w-4 text-slate-400" />
         </button>
         <span className="text-sm font-bold text-slate-800">
           {year}년 {month}월
         </span>
-        <button onClick={onNext} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
+        <button onClick={onNext} className="relative before:absolute before:content-[''] before:-inset-2.5 p-1 rounded-lg hover:bg-slate-100 transition-colors">
           <ChevronRightIcon className="h-4 w-4 text-slate-400" />
         </button>
       </div>

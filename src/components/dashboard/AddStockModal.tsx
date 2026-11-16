@@ -82,7 +82,7 @@ export default function AddStockModal({ currentUserID, exchangeRate = 0, onClose
         {/* Header */}
         <div className='flex items-center justify-between'>
           <h3 className='text-base font-bold text-slate-800'>주식 추가</h3>
-          <button onClick={onClose} className='text-slate-400 hover:text-slate-600 transition-colors'>
+          <button onClick={onClose} className='relative before:absolute before:content-[""] before:-inset-y-3 before:-inset-x-2 text-slate-400 hover:text-slate-600 transition-colors'>
             <XMarkIcon className='h-5 w-5' />
           </button>
         </div>

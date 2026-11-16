@@ -115,7 +115,7 @@ export default function TradeHistoryModal({ transactions, users, exchangeRate, o
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
           <h3 className="text-base font-bold text-slate-800">매매 이력</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+          <button onClick={onClose} className="relative before:absolute before:content-[''] before:-inset-1.5 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
             <XMarkIcon className="w-4 h-4 text-slate-500" />
           </button>
         </div>
@@ -203,7 +203,7 @@ export default function TradeHistoryModal({ transactions, users, exchangeRate, o
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+              className={`min-h-10 inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
                 filter === f ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
               }`}
             >

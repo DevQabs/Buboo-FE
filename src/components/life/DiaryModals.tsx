@@ -106,7 +106,7 @@ export function AddDiaryModal({ currentUserID, initialDate, onClose, onSave }: {
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100 shrink-0">
           <h2 className="text-base font-bold text-stone-800">일기 쓰기</h2>
-          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 text-xl">×</button>
+          <button onClick={onClose} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 text-stone-400 hover:text-stone-600 text-xl">×</button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           <div className="grid grid-cols-2 gap-2">
@@ -141,7 +141,7 @@ export function AddDiaryModal({ currentUserID, initialDate, onClose, onSave }: {
                 <div key={i} className="relative w-20 h-20">
                   <img src={src} alt="" className="w-full h-full object-cover rounded-xl border border-stone-100" />
                   <button onClick={() => removePhoto(i)}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center">
+                    className="before:absolute before:content-[''] before:-inset-3 absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center">
                     <XMarkIcon className="h-3 w-3" />
                   </button>
                 </div>
@@ -237,7 +237,7 @@ export function EditDiaryModal({ diary, onClose, onSave, onDeletePhoto }: {
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100 shrink-0">
           <h2 className="text-base font-bold text-stone-800">일기 수정</h2>
-          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 text-xl">×</button>
+          <button onClick={onClose} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 text-stone-400 hover:text-stone-600 text-xl">×</button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           <div className="flex items-center gap-2 px-3 py-2 bg-stone-50 rounded-xl">
@@ -266,7 +266,7 @@ export function EditDiaryModal({ diary, onClose, onSave, onDeletePhoto }: {
                 <div key={p} className="relative w-20 h-20">
                   <img src={keySrc(p)} alt="" className="w-full h-full object-cover rounded-xl border border-stone-100" />
                   <button onClick={() => handleDeleteExisting(p)}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center">
+                    className="before:absolute before:content-[''] before:-inset-3 absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center">
                     <XMarkIcon className="h-3 w-3" />
                   </button>
                 </div>
@@ -275,7 +275,7 @@ export function EditDiaryModal({ diary, onClose, onSave, onDeletePhoto }: {
                 <div key={i} className="relative w-20 h-20">
                   <img src={src} alt="" className="w-full h-full object-cover rounded-xl border border-amber-100" />
                   <button onClick={() => removeNewPhoto(i)}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center">
+                    className="before:absolute before:content-[''] before:-inset-3 absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center">
                     <XMarkIcon className="h-3 w-3" />
                   </button>
                 </div>

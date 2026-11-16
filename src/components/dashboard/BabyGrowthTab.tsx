@@ -166,7 +166,7 @@ function Growth({ accessToken, baby, canEdit }: { accessToken: string; baby: Bab
         <div className="mb-2 flex rounded-[10px] bg-sand p-0.5 text-xs font-bold">
           {METRICS.map(m => (
             <button key={m.key} type="button" onClick={() => setMetric(m.key)}
-              className={`flex-1 rounded-lg py-1.5 ${metric === m.key ? 'bg-white text-brand-500 shadow-sm' : 'text-stone-400'}`}>
+              className={`relative before:absolute before:content-[''] before:-inset-y-2 flex-1 rounded-lg py-1.5 ${metric === m.key ? 'bg-white text-brand-500 shadow-sm' : 'text-stone-400'}`}>
               {m.short}
             </button>
           ))}

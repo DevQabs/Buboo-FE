@@ -57,7 +57,7 @@ export function AddScheduleModal({ currentUserID, initialDate, onClose, onSave }
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <h2 className="text-base font-bold text-slate-800">일정 추가</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">×</button>
+          <button onClick={onClose} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 text-slate-400 hover:text-slate-600 text-xl">×</button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           <div>
@@ -91,7 +91,7 @@ export function AddScheduleModal({ currentUserID, initialDate, onClose, onSave }
             <div className="flex gap-2">
               {(Object.keys(COLOR_MAP) as ScheduleColor[]).map(c => (
                 <button key={c} onClick={() => setColor(c)}
-                  className={`w-7 h-7 rounded-full transition-all ${COLOR_MAP[c].dot} ${color === c ? 'ring-2 ring-offset-1 ring-slate-400 scale-110' : ''}`} />
+                  className={`relative before:absolute before:content-[''] before:-inset-2 w-7 h-7 rounded-full transition-all ${COLOR_MAP[c].dot} ${color === c ? 'ring-2 ring-offset-1 ring-slate-400 scale-110' : ''}`} />
               ))}
             </div>
           </div>
@@ -183,7 +183,7 @@ export function EditScheduleModal({ schedule, onClose, onSave }: {
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <h2 className="text-base font-bold text-slate-800">일정 수정</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">×</button>
+          <button onClick={onClose} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 text-slate-400 hover:text-slate-600 text-xl">×</button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           <div>
@@ -215,7 +215,7 @@ export function EditScheduleModal({ schedule, onClose, onSave }: {
             <div className="flex gap-2">
               {(Object.keys(COLOR_MAP) as ScheduleColor[]).map(c => (
                 <button key={c} onClick={() => setColor(c)}
-                  className={`w-7 h-7 rounded-full transition-all ${COLOR_MAP[c].dot} ${color === c ? 'ring-2 ring-offset-1 ring-slate-400 scale-110' : ''}`} />
+                  className={`relative before:absolute before:content-[''] before:-inset-2 w-7 h-7 rounded-full transition-all ${COLOR_MAP[c].dot} ${color === c ? 'ring-2 ring-offset-1 ring-slate-400 scale-110' : ''}`} />
               ))}
             </div>
           </div>

@@ -161,7 +161,7 @@ export default function RoadmapTab({
                 <button
                   key={s}
                   onClick={() => setScale(s)}
-                  className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-colors ${
+                  className={`relative before:absolute before:content-[''] before:-inset-y-3 px-2 py-0.5 rounded-md text-[10px] font-semibold transition-colors ${
                     scale === s ? 'bg-white text-stone-700 shadow-sm' : 'text-stone-400'
                   }`}
                 >
@@ -205,7 +205,7 @@ export default function RoadmapTab({
               <button
                 key={s}
                 onClick={() => setTableScale(s)}
-                className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-colors ${
+                className={`relative before:absolute before:content-[''] before:-inset-y-3 px-2 py-0.5 rounded-md text-[10px] font-semibold transition-colors ${
                   tableScale === s ? 'bg-white text-stone-700 shadow-sm' : 'text-stone-400'
                 }`}
               >

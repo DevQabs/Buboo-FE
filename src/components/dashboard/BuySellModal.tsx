@@ -105,7 +105,7 @@ export default function BuySellModal({ asset, mode, exchangeRate = 0, onClose, o
               <p className="text-xs text-slate-400">{asset.name} · 보유 {asset.quantity}주</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+          <button onClick={onClose} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 text-slate-400 hover:text-slate-600 transition-colors">
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
@@ -131,7 +131,7 @@ export default function BuySellModal({ asset, mode, exchangeRate = 0, onClose, o
                 <button
                   type="button"
                   onClick={() => setQuantity(String(maxQty))}
-                  className="ml-2 text-brand-500 hover:underline"
+                  className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 ml-2 text-brand-500 hover:underline"
                 >
                   전량 ({maxQty})
                 </button>
