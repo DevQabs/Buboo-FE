@@ -549,7 +549,7 @@ export default function DashboardClient() {
   // ── 거래 추가: 입력 시트·달력 공용 ─────────────────────────────────────────
   // 지출·수입은 화면에 먼저 넣고, 저장이 실패하면 되돌린 뒤 토스트를 띄우고 던진다(설계서 9.C-12).
   // 저축은 자산이 같이 바뀌어 서버 결과로만 그린다.
-  // 만든 거래 id 를 돌려준다(빠른 입력의 되돌리기).
+  // 만든 거래 id 를 저장 직후 돌려준다(빠른 입력의 되돌리기·N페이). 목록 새로고침은 뒤에서 돈다.
   const handleAddTransaction = async (p: AddTransactionPayload): Promise<string> => {
     const date = `${p.date}T12:00:00+09:00` // 한국 정오 — UTC 로 넘어가 전날이 되지 않게
     const body = {
@@ -588,7 +588,11 @@ export default function DashboardClient() {
       fetchCalendarTransactions(calendarYear, calendarMonth),
     ]
     if (p.type === 'saving') refetches.push(refetchPortfolio(), refetchAssets())
-    await Promise.allSettled(refetches)
+    // 새로고침은 기다리지 않는다 — id 를 바로 돌려야 N페이가 탭 직후에 열리고 되돌리기도 바로 뜬다
+    void Promise.allSettled(refetches).then(rs => {
+      const failed = rs.find((r): r is PromiseRejectedResult => r.status === 'rejected' && (r.reason as Error)?.name !== 'AbortError')
+      if (failed) toastError('새로고침', failed.reason)
+    })
     return created.id
   }
 
