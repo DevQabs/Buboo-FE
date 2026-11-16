@@ -6,7 +6,7 @@ import { Suspense } from 'react'
 import DashboardClient from './DashboardClient'
 
 export const metadata = {
-  title: '대시보드 | 부부 가계부',
+  title: '대시보드',
 }
 
 export default function DashboardPage() {

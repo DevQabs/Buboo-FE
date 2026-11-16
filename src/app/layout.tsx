@@ -3,10 +3,10 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    default: '부부 가계부',
-    template: '%s | 부부 가계부',
+    default: '우리집',
+    template: '%s | 우리집',
   },
-  description: '부부가 함께 쓰는 가계부 & 자산 관리',
+  description: '우리 가족의 가계부·육아·자산을 한곳에서',
   manifest: '/manifest.json',
   icons: {
     icon: [
@@ -23,7 +23,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  // 모바일 상태바 색상 (웹뷰 앱 대비)
+  viewportFit: 'cover',
+  // 모바일 상태바 색상 (웹뷰 앱 대비) — manifest theme_color 와 같은 값
   themeColor: '#0F4C81',
 }
 

@@ -1017,7 +1017,7 @@ export default function DashboardClient() {
             </div>
             <div>
               <h1 className="text-sm font-bold text-slate-900 leading-tight">
-                {couple?.name ?? '우리 가계부'}
+                {couple?.name ?? '우리집'}
               </h1>
               <p className="text-[10px] text-slate-400">
                 {now.getFullYear()}.{String(now.getMonth() + 1).padStart(2,'0')}.{String(now.getDate()).padStart(2,'0')}

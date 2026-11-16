@@ -15,8 +15,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#F1F5F9] flex flex-col items-center justify-center px-5">
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 w-full max-w-sm">
         <div className="mb-8">
-          <h1 className="text-xl font-black text-slate-800 mb-1">부부 가계부</h1>
-          <p className="text-sm text-slate-500">부부가 함께 쓰는 자산 관리</p>
+          <h1 className="text-xl font-black text-slate-800 mb-1">우리집</h1>
+          <p className="text-sm text-slate-500">우리 가족의 가계부·육아·자산을 한곳에서</p>
         </div>
 
         <button
