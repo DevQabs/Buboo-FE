@@ -84,7 +84,7 @@ export default function EntrySheet({ currentUserID, accessToken, transactions, s
         category: type === 'saving' ? '저축/투자' : activeCategory,
         title: title.trim() || (thenPay ? '네이버페이 결제' : ''),
         date,
-        payment_method: 'card',
+        payment_method: '카드',
         saving_link: savingLink ?? undefined,
       })
     } catch (e) {

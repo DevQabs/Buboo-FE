@@ -13,9 +13,10 @@ export function fixedSpendingTotal(list: Pick<FixedExpense, 'is_active' | 'kind'
   return list.filter(fe => fe.is_active && fe.kind === 'spending').reduce((s, fe) => s + fe.amount, 0)
 }
 
-/** 오늘(포함) 이후의 고정비·배당 일정, 날짜순. */
-export function upcomingEvents(events: CalendarEvent[], today: string): CalendarEvent[] {
-  return events.filter(e => e.date >= today).sort((a, b) => a.date.localeCompare(b.date))
+/** 가계부 기간 [startDate, endDate) 안에서 오늘(포함) 이후의 고정비·배당 일정, 날짜순. */
+export function upcomingEvents(events: CalendarEvent[], today: string, startDate: string, endDate: string): CalendarEvent[] {
+  const from = today > startDate ? today : startDate
+  return events.filter(e => e.date >= from && e.date < endDate).sort((a, b) => a.date.localeCompare(b.date))
 }
 
 export interface DayGroup { date: string; items: Transaction[]; net: number }

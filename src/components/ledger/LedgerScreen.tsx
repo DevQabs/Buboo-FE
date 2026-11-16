@@ -2,7 +2,7 @@
 
 // 가계부 A (시안 ledger-a): 하루 예산 → 곧 나갈/들어올 돈 → 날짜별 내역 → 카테고리 분석·배당·고정비.
 // 달력은 머리 아이콘으로 펼친다. 입력은 하단 고정 바 → 입력 시트.
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { FloatingBar, IconButton, PageTitle, SectionLabel } from '@/components/ui/Card'
@@ -12,10 +12,11 @@ import UpcomingStrip from './UpcomingStrip'
 import LedgerFeed from './LedgerFeed'
 import CategoryBreakdownCard from './CategoryBreakdownCard'
 import EntrySheet from './EntrySheet'
+import { apiFetch } from '@/lib/api'
 import { daysLeftInPeriod, ledgerPeriod, todayKST } from '@/lib/date'
 import { categoryBreakdown, fixedSpendingTotal, sortCategoriesByUse, upcomingEvents } from '@/lib/ledger'
 import type {
-  CalendarSummaryResponse, Couple, CreateDividendRequest, CreateFixedExpenseRequest, DividendYearlySummary,
+  CalendarEvent, CalendarSummaryResponse, Couple, CreateDividendRequest, CreateFixedExpenseRequest, DividendYearlySummary,
   FixedExpense, FixedExpenseSummary, MonthlySummary, OtherAsset, PortfolioSummary, StockAssetWithPrice,
   Transaction, UpdateFixedExpenseRequest, User,
 } from '@/types'
@@ -74,7 +75,21 @@ export default function LedgerScreen(p: LedgerScreenProps) {
   const fixed = fixedSpendingTotal(p.fixedExpenses)
   const variable = p.summary?.total_expense ?? 0
   const breakdown = useMemo(() => categoryBreakdown(p.transactions, p.fixedExpenses), [p.transactions, p.fixedExpenses])
-  const upcoming = upcomingEvents(p.calendarData?.events ?? [], today)
+  // 곧 나갈/들어올 돈은 달력 달이 아니라 가계부 기간 기준. 시작일이 1일이 아니면 기간이 두 달에 걸친다.
+  // 달력 요약이 다시 불리면(고정비·배당 변경) 같이 다시 읽는다.
+  const [periodEvents, setPeriodEvents] = useState<CalendarEvent[]>([])
+  useEffect(() => {
+    if (!p.accessToken) return
+    const months = p.startDay === 1 ? [startDate] : [startDate, endDate]
+    let alive = true
+    Promise.all(months.map(d => apiFetch<CalendarSummaryResponse>(
+      `/api/transactions/calendar-summary?year=${Number(d.slice(0, 4))}&month=${Number(d.slice(5, 7))}`, p.accessToken!,
+    )))
+      .then(rs => { if (alive) setPeriodEvents(rs.flatMap(r => r?.events ?? [])) })
+      .catch(() => { if (alive) setPeriodEvents([]) })
+    return () => { alive = false }
+  }, [startDate, endDate, p.startDay, p.accessToken, p.calendarData])
+  const upcoming = upcomingEvents(periodEvents, today, startDate, endDate)
   const usedCategories = Array.from(new Set(p.transactions.filter(t => t.type === 'expense' && t.category).map(t => t.category)))
   const hint = sortCategoriesByUse(usedCategories, p.transactions, 'expense')[0] ?? '지출'
 

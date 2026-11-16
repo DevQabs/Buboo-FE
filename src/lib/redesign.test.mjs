@@ -34,6 +34,8 @@ test('하루 쓸 돈 = 남은 예산 ÷ 남은 일수, 100원 아래 버림', ()
   assert.deepEqual(dailyAllowance(2_000_000, 970_000, 14), { remaining: 1_030_000, perDay: 73_500 })
   assert.deepEqual(dailyAllowance(1_000_000, 1_200_000, 10), { remaining: -200_000, perDay: 0 })
   assert.deepEqual(dailyAllowance(1_000_000, 0, 0), { remaining: 1_000_000, perDay: 0 })
+  assert.deepEqual(dailyAllowance(0, 0, 14), { remaining: 0, perDay: 0 })
+  assert.deepEqual(dailyAllowance(0, 50_000, 14), { remaining: -50_000, perDay: 0 })
 })
 
 test('곧 나갈 돈은 오늘 포함 이후만, 날짜순', () => {
@@ -42,7 +44,21 @@ test('곧 나갈 돈은 오늘 포함 이후만, 날짜순', () => {
     { date: '2026-11-10', type: 'fixed_expense', title: '통신', amount: 50_000 },
     { date: '2026-11-18', type: 'dividend', title: 'SCHD', amount: 41_000 },
   ]
-  assert.deepEqual(upcomingEvents(ev, '2026-11-18').map(e => e.title), ['SCHD', '대출이자'])
+  assert.deepEqual(upcomingEvents(ev, '2026-11-18', '2026-11-01', '2026-12-01').map(e => e.title), ['SCHD', '대출이자'])
+})
+
+test('곧 나갈 돈은 가계부 기간 안만: 기간 끝 이후·지난 기간은 빼고, 다음 달 날짜도 기간 안이면 넣는다', () => {
+  const ev = [
+    { date: '2026-11-28', type: 'fixed_expense', title: '통신', amount: 50_000 },
+    { date: '2026-12-10', type: 'fixed_expense', title: '대출이자', amount: 280_000 },
+    { date: '2026-12-25', type: 'fixed_expense', title: '보험', amount: 90_000 },
+  ]
+  // 25일 시작: 11-25 ~ 12-25(끝 제외)
+  assert.deepEqual(upcomingEvents(ev, '2026-11-27', '2026-11-25', '2026-12-25').map(e => e.title), ['통신', '대출이자'])
+  // 지난 기간을 보고 있으면 곧 올 돈이 없다
+  assert.deepEqual(upcomingEvents(ev, '2026-11-27', '2026-10-25', '2026-11-25'), [])
+  // 다음 기간을 보고 있으면 기간 시작부터
+  assert.deepEqual(upcomingEvents(ev, '2026-11-27', '2026-12-25', '2027-01-25').map(e => e.title), ['보험'])
 })
 
 test('내역은 한국 날짜로 묶고 최근 날짜·최근 거래가 먼저', () => {
