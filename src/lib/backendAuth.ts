@@ -8,11 +8,13 @@ type AuthPath = '/api/auth/callback' | '/api/auth/setup'
 // Only the Next.js server holds INTERNAL_API_SECRET, so the browser can no
 // longer claim to be someone else.
 export async function callBackendAuth(path: AuthPath, body: Record<string, unknown>) {
+  const secret = process.env.INTERNAL_API_SECRET
+  if (!secret) throw new Error('INTERNAL_API_SECRET is not set')
   const res = await fetch(`${API_URL}${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Internal-Secret': process.env.INTERNAL_API_SECRET ?? '',
+      'X-Internal-Secret': secret,
     },
     body: JSON.stringify(body),
     cache: 'no-store',

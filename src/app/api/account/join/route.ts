@@ -7,15 +7,19 @@ export async function POST(req: Request) {
   const googleSub = session?.user?.googleSub
   if (!googleSub) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const body = await req.json().catch(() => ({}))
-  if (typeof body.invite_code !== 'string' || body.invite_code === '') {
-    return NextResponse.json({ error: 'invite_code required' }, { status: 400 })
+  try {
+    const body = await req.json().catch(() => ({}))
+    if (typeof body.invite_code !== 'string' || body.invite_code === '') {
+      return NextResponse.json({ error: 'invite_code required' }, { status: 400 })
+    }
+    const { status, data } = await callBackendAuth('/api/auth/callback', {
+      google_email: session.user.googleEmail ?? session.user.email ?? '',
+      google_sub: googleSub,
+      invite_code: body.invite_code,
+      nickname: body.nickname,
+    })
+    return NextResponse.json(data, { status })
+  } catch {
+    return NextResponse.json({ error: 'server misconfigured' }, { status: 500 })
   }
-  const { status, data } = await callBackendAuth('/api/auth/callback', {
-    google_email: session.user.googleEmail ?? session.user.email ?? '',
-    google_sub: googleSub,
-    invite_code: body.invite_code,
-    nickname: body.nickname,
-  })
-  return NextResponse.json(data, { status })
 }
