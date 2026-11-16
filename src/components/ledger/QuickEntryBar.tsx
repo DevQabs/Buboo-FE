@@ -4,7 +4,7 @@
 // 금액이 들어가면 바로 위에 카테고리·저장 패널이 올라온다. 저장 뒤에도 키패드를 그대로 두어 다음 건을 잇는다.
 // 저축은 자산 연동 양식이 필요해 입력 시트(EntrySheet)로 넘긴다.
 import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
-import { Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { CheckIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
 import { motion, useReducedMotion } from 'framer-motion'
 import { SPRING, NO_MOTION, tapHaptic } from '@/components/ui/Card'
 import { useCategories } from '@/hooks/useCategories'
@@ -142,6 +142,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
   }
 
   const pickMethod = (m: PayMethod) => {
+    if (m !== method) tapHaptic()
     setMethod(m)
     try { localStorage.setItem(PAY_METHOD_KEY, m) } catch { /* 저장소 막힘: 이번 화면에서만 유지 */ }
   }
@@ -264,16 +265,30 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
                 {type === 'expense' && (
                   <div className="flex shrink-0 gap-1.5">
                     {(['카드', 'N페이'] as const).map(m => (
+                      // 고른 칩은 저장 버튼(brand)과 다른 색으로 채우고 링·체크를 붙여, 무엇이 골라졌는지 한눈에 보이게 한다
                       <button
                         key={m}
                         type="button"
                         {...keepFocusTap(() => pickMethod(m))}
                         aria-pressed={method === m}
-                        className={`h-12 rounded-xl border px-4 text-sm font-semibold transition-colors ${
-                          method === m ? 'border-brand-500 bg-brand-500 text-white' : 'border-line bg-white text-stone-500'
+                        className={`h-12 min-h-10 rounded-xl border px-3 text-sm font-semibold transition-colors ${
+                          method !== m
+                            ? 'border-line bg-white text-stone-400'
+                            : m === 'N페이'
+                              ? 'border-emerald-600 bg-emerald-600 text-white ring-2 ring-emerald-200 ring-offset-1'
+                              : 'border-stone-700 bg-stone-700 text-white ring-2 ring-stone-300 ring-offset-1'
                         }`}
                       >
-                        {m}
+                        <motion.span
+                          key={method === m ? 'on' : 'off'}
+                          initial={reduceMotion || method !== m ? false : { scale: 0.7 }}
+                          animate={{ scale: 1 }}
+                          transition={reduceMotion ? NO_MOTION : SPRING}
+                          className="flex items-center gap-1"
+                        >
+                          {method === m && <CheckIcon aria-hidden className="h-4 w-4" strokeWidth={3} />}
+                          {m}
+                        </motion.span>
                       </button>
                     ))}
                   </div>
