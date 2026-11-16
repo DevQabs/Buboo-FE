@@ -1,7 +1,7 @@
 'use client'
 
 // 일기 A (시안 diary-a): 한 달 기분 색 띠 + 사진 표지 카드 피드 + 하단 "오늘 하루는 어땠어요?".
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { ChevronLeftIcon, ChevronRightIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { Card, FloatingBar, IconButton, PageTitle } from '@/components/ui/Card'
@@ -9,6 +9,7 @@ import StorageWarning from '@/components/ui/StorageWarning'
 import { toastError } from '@/components/ui/Toast'
 import { AddDiaryModal, EditDiaryModal, MOOD_LABEL, MOOD_TONE, PhotoLightbox, photoSrc } from './DiaryModals'
 import { todayKST } from '@/lib/date'
+import { MEDIA_ERROR_RELOAD_GAP_MS, MEDIA_STALE_MS } from '@/lib/mediaRules'
 import { lunarFullLabel } from '@/lib/lunar'
 import type { CreateDiaryRequest, DiaryEntry, DiaryMood, UpdateDiaryRequest, User } from '@/types'
 
@@ -20,6 +21,10 @@ interface DiaryScreenProps {
   accessToken: string
   /** 저장 공간 사용량은 owner 전용 API 라 owner 일 때만 부른다 */
   isOwner: boolean
+  /** 일기 목록을 받은 시각. 사진 주소(presigned, 1시간)가 만료됐는지 가늠한다 */
+  photosLoadedAt: number
+  /** 목록을 다시 받아 사진 주소를 새로 한다 */
+  onReloadPhotos: () => Promise<void>
   canEdit: boolean
   hasNav: boolean
   /** 2단 메뉴 칩 줄(제목 아래) */
@@ -31,7 +36,7 @@ interface DiaryScreenProps {
 }
 
 export default function DiaryScreen({
-  diaries, users, currentUserID, accessToken, isOwner, canEdit, hasNav, chips, onAdd, onUpdate, onDeletePhoto, onDelete,
+  diaries, users, currentUserID, accessToken, isOwner, photosLoadedAt, onReloadPhotos, canEdit, hasNav, chips, onAdd, onUpdate, onDeletePhoto, onDelete,
 }: DiaryScreenProps) {
   const today = todayKST()
   const [ym, setYm] = useState(today.slice(0, 7)) // "YYYY-MM"
@@ -40,6 +45,23 @@ export default function DiaryScreen({
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
+
+  // 사진 주소 만료 대비(BabyPhotoTab 과 같은 방식): 깨진 사진이 나오면 60초 간격으로 한 번,
+  // 오래 숨겨 뒀다 돌아오면 50분이 지났을 때 목록을 다시 받는다. 여러 장이 한꺼번에 깨져도 한 번만.
+  const reloadAt = useRef(0)
+  const lastLoad = () => Math.max(photosLoadedAt, reloadAt.current)
+  const reload = () => { reloadAt.current = Date.now(); onReloadPhotos() }
+  const onPhotoError = () => { if (Date.now() - lastLoad() > MEDIA_ERROR_RELOAD_GAP_MS) reload() }
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && Date.now() - Math.max(photosLoadedAt, reloadAt.current) > MEDIA_STALE_MS) {
+        reloadAt.current = Date.now()
+        onReloadPhotos()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [photosLoadedAt, onReloadPhotos])
 
   const [y, m] = ym.split('-').map(Number)
   const daysInMonth = new Date(y, m, 0).getDate()
@@ -101,7 +123,7 @@ export default function DiaryScreen({
           {d.photo_urls.length > 0 && (
             <button type="button" className="relative block w-full" onClick={() => setLightbox(photoSrc(d.photo_urls[0]))}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photoSrc(d.photo_urls[0])} alt="" className="h-44 w-full object-cover" />
+              <img src={photoSrc(d.photo_urls[0])} alt="" onError={onPhotoError} className="h-44 w-full object-cover" />
               {d.photo_urls.length > 1 && (
                 <span className="absolute bottom-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-xs text-white">+{d.photo_urls.length - 1}</span>
               )}
@@ -124,7 +146,7 @@ export default function DiaryScreen({
               <div className="mt-2 flex flex-wrap gap-2">
                 {d.photo_urls.slice(1).map((ph, k) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img key={d.photos[k + 1] ?? k} src={photoSrc(ph)} alt="" onClick={() => setLightbox(photoSrc(ph))} className="h-20 w-20 cursor-pointer rounded-xl object-cover" />
+                  <img key={d.photos[k + 1] ?? k} src={photoSrc(ph)} alt="" onError={onPhotoError} onClick={() => setLightbox(photoSrc(ph))} className="h-20 w-20 cursor-pointer rounded-xl object-cover" />
                 ))}
               </div>
             )}

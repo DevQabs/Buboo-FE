@@ -168,6 +168,7 @@ export default function DashboardClient() {
   const [calendarData, setCalendarData] = useState<CalendarSummaryResponse | null>(null)
   const [schedules, setSchedules]     = useState<Schedule[]>([])
   const [diaries, setDiaries]         = useState<DiaryEntry[]>([])
+  const [diariesAt, setDiariesAt]     = useState(0) // 일기 목록(사진 presigned 주소)을 받은 시각
   const [loading, setLoading]         = useState(true)
   const [tabLoading, setTabLoading]   = useState<ActiveTab | null>(null)
   const [error, setError]             = useState<string | null>(null)
@@ -374,7 +375,7 @@ export default function DashboardClient() {
         try {
           const [sch, dia] = await fetchLife()
           setSchedules(Array.isArray(sch) ? sch : [])
-          setDiaries(Array.isArray(dia) ? dia : [])
+          setDiaries(Array.isArray(dia) ? dia : []); setDiariesAt(Date.now())
           loadedTabs.current.add('life')
         } catch {}
       })(),
@@ -419,7 +420,7 @@ export default function DashboardClient() {
       } else if (tab === 'life') {
         const [sch, dia] = await fetchLife()
         setSchedules(Array.isArray(sch) ? sch : [])
-        setDiaries(Array.isArray(dia) ? dia : [])
+        setDiaries(Array.isArray(dia) ? dia : []); setDiariesAt(Date.now())
       }
     } catch {
       // 탭 데이터 실패 → 빈 상태 유지
@@ -441,7 +442,7 @@ export default function DashboardClient() {
     if (activeTab === 'life') {
       fetchLife().then(([sch, dia]) => {
         setSchedules(Array.isArray(sch) ? sch : [])
-        setDiaries(Array.isArray(dia) ? dia : [])
+        setDiaries(Array.isArray(dia) ? dia : []); setDiariesAt(Date.now())
       }).catch(() => {})
     } else if (activeTab === 'ledger') {
       const { startDate, endDate } = ledgerPeriod(summaryYear, summaryMonth, startDay)
@@ -815,6 +816,7 @@ export default function DashboardClient() {
     try {
       const list = await apiFetch<DiaryEntry[]>('/api/diaries')
       setDiaries(Array.isArray(list) ? list : [])
+      setDiariesAt(Date.now())
     } catch (e) {
       toastError('일기 목록 새로고침', e)
     }
@@ -1053,6 +1055,8 @@ export default function DashboardClient() {
               currentUserID={currentUserID}
               accessToken={session?.user?.accessToken ?? ''}
               isOwner={!!perms?.is_owner}
+              photosLoadedAt={diariesAt}
+              onReloadPhotos={refetchDiaries}
               canEdit={canEdit('diary')}
               hasNav={tabs.length > 1}
               chips={chipRow}

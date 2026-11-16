@@ -5,6 +5,11 @@ export const MAX_VIDEO_SEC = 30
 /** 서버 maxObjectBytes(100 << 20)와 같은 값 */
 export const MAX_FILE_BYTES = 100 * 1024 * 1024
 
+/** presigned 주소는 1시간 유효 — 화면이 이보다 오래 열려 있었으면 다시 받는다 */
+export const MEDIA_STALE_MS = 50 * 60_000
+/** 마지막으로 받은 지 이보다 짧으면 깨진 미디어로 다시 받지 않는다(진짜 깨진 파일로 무한 반복 방지) */
+export const MEDIA_ERROR_RELOAD_GAP_MS = 60_000
+
 export function fitWithin(w: number, h: number, max: number): { width: number; height: number } {
   const s = Math.min(1, max / Math.max(w, h))
   return { width: Math.round(w * s), height: Math.round(h * s) }

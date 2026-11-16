@@ -3,17 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon, PlayIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { apiFetch } from '@/lib/api'
-import { daysSinceBirth } from '@/lib/mediaRules'
+import { daysSinceBirth, MEDIA_ERROR_RELOAD_GAP_MS, MEDIA_STALE_MS } from '@/lib/mediaRules'
 import { BabyGate, CARD } from './BabyProfile'
 import MomentComposer from './MomentComposer'
 import type { Baby, BabyMedia, BabyMoment, User } from '@/types'
 
 const monthDay = (d: string) => `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}일`
 
-/** presigned 주소는 1시간 유효 — 화면이 이보다 오래 열려 있었으면 다시 받는다 */
-const STALE_MS = 50 * 60_000
-/** 마지막으로 받은 지 이보다 짧으면 깨진 미디어로 다시 받지 않는다(진짜 깨진 파일로 무한 반복 방지) */
-const ERROR_RELOAD_GAP_MS = 60_000
 
 function MediaThumb({ media, className, onClick, onError }: { media: BabyMedia; className: string; onClick: () => void; onError: () => void }) {
   return (
@@ -130,7 +126,7 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
   // 주소 만료 대비: 오래 숨겨 뒀다 돌아오면 다시 받는다
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && Date.now() - loadedAt.current > STALE_MS) load()
+      if (document.visibilityState === 'visible' && Date.now() - loadedAt.current > MEDIA_STALE_MS) load()
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
@@ -138,7 +134,7 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
 
   // 미디어가 안 열리면(주소 만료 등) 한 번 다시 받는다. 여러 장이 한꺼번에 깨져도 한 번만.
   const onMediaError = useCallback(() => {
-    if (Date.now() - loadedAt.current > ERROR_RELOAD_GAP_MS) load()
+    if (Date.now() - loadedAt.current > MEDIA_ERROR_RELOAD_GAP_MS) load()
   }, [load])
   const viewerMedia = viewer && moments?.find(m => m.id === viewer.momentId)?.media
 
