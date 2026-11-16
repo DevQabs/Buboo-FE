@@ -73,11 +73,11 @@ test('저장 공간 단계', () => {
   assert.equal(usageLevel(9_500_000_000, 8_000_000_000, 9_500_000_000), 'full')
 })
 
-test('성장 표준표: 0개월부터 1개월 간격, 3 < 50 < 97, 50백분위는 줄지 않는다', () => {
+test('성장 표준표: 0~35개월 1개월 간격, 3 < 50 < 97, 50백분위는 줄지 않는다', () => {
   for (const sex of ['male', 'female'] as const) {
     for (const metric of ['height', 'weight', 'head'] as const) {
       const rows = GROWTH_STANDARD[sex][metric]
-      assert.ok(rows.length >= 36, `${sex} ${metric}: 0~35개월 이상`)
+      assert.equal(rows.length, 36, `${sex} ${metric}: 0~35개월`)
       rows.forEach(([m, p3, p50, p97], i) => {
         assert.equal(m, i, `${sex} ${metric}: ${i}번째 행은 ${i}개월`)
         assert.ok(p3 < p50 && p50 < p97, `${sex} ${metric} ${m}개월: 백분위 순서`)

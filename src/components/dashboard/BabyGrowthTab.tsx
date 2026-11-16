@@ -33,12 +33,13 @@ function GrowthForm({ accessToken, record, onClose, onSaved }: {
   const [memo, setMemo] = useState(record?.memo ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const parse = (s: string) => (s.trim() === '' ? null : Number(s))
+  // 서버처럼 먼저 반올림한다: 키·머리둘레 소수 1자리, 몸무게 2자리
+  const parse = (s: string, scale: number) => (s.trim() === '' ? null : Math.round(Number(s) * scale) / scale)
 
   const save = async () => {
     const body = {
       measured_on: date, memo,
-      height_cm: parse(vals.height_cm), weight_kg: parse(vals.weight_kg), head_cm: parse(vals.head_cm),
+      height_cm: parse(vals.height_cm, 10), weight_kg: parse(vals.weight_kg, 100), head_cm: parse(vals.head_cm, 10),
     }
     const nums = [body.height_cm, body.weight_kg, body.head_cm]
     if (nums.every(v => v == null)) { setError('키·몸무게·머리둘레 중 하나는 입력해 주세요'); return }
@@ -64,8 +65,8 @@ function GrowthForm({ accessToken, record, onClose, onSaved }: {
     try {
       await apiFetch(`/api/baby/growth/${record.id}`, accessToken, { method: 'DELETE' })
       await onSaved()
-    } catch {
-      setError('지우지 못했어요')
+    } catch (e) {
+      setError((e as Error).message || '지우지 못했어요')
     }
   }
 
@@ -120,9 +121,9 @@ function Growth({ accessToken, baby, canEdit }: { accessToken: string; baby: Bab
   const cur = METRICS.find(m => m.key === metric) ?? METRICS[1]
   const list = useMemo(() => rows ?? [], [rows])
 
+  const lastAge = list.length ? ageInMonths(baby.birth_date, list[list.length - 1].measured_on) : 0
   const data = useMemo(() => {
-    const last = list.length ? ageInMonths(baby.birth_date, list[list.length - 1].measured_on) : 0
-    const xMax = Math.min(36, Math.max(6, Math.ceil(last) + 2))
+    const xMax = Math.min(35, Math.max(6, Math.ceil(lastAge) + 2))
     const pts: Point[] = []
     for (let m = 0; m <= xMax; m++) {
       const s = standardAt(baby.sex, metric, m)
@@ -130,10 +131,11 @@ function Growth({ accessToken, baby, canEdit }: { accessToken: string; baby: Bab
     }
     for (const r of list) {
       const v = r[cur.field]
-      if (v != null) pts.push({ m: ageInMonths(baby.birth_date, r.measured_on), value: v })
+      const m = ageInMonths(baby.birth_date, r.measured_on)
+      if (v != null && m <= xMax) pts.push({ m, value: v })
     }
     return pts.sort((a, b) => a.m - b.m)
-  }, [list, baby, metric, cur.field])
+  }, [list, lastAge, baby, metric, cur.field])
 
   const latest = latestDelta(list, r => r[cur.field])
   const latestRow = [...list].reverse().find(r => r[cur.field] != null)
@@ -183,6 +185,7 @@ function Growth({ accessToken, baby, canEdit }: { accessToken: string; baby: Bab
         <div className="text-xs text-stone-400">
           음영 = 또래 표준 범위(질병관리청 2017 성장도표 3~97 백분위)
           {latest && std && ` · 현재 ${bandLabel(latest.value, std)}`}
+          {lastAge > 35 && <div>표준 범위는 35개월까지만 있어요</div>}
         </div>
       </div>
 

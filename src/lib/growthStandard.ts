@@ -1,15 +1,13 @@
 // 또래 표준 성장 곡선 (설계서 6.2)
-// 출처: 질병관리청·대한소아청소년과학회 「2017 소아청소년 성장도표」는 36개월 미만의 신장·체중·머리둘레에
-//       WHO Child Growth Standards(2006)를 그대로 썼다(Kim JH et al., "The 2017 Korean National Growth Charts
-//       for children and adolescents: development, improvement, and prospects", Korean J Pediatr 2018;61(5):135-149,
-//       https://pmc.ncbi.nlm.nih.gov/articles/PMC5976563/ 의 구성 표). 질병관리청 성장도표 누리집
-//       (https://knhanes.kdca.go.kr/knhanes/grtcht/main.do)의 내려받기 파일은 스크립트로 받을 수 없어서,
-//       같은 값인 WHO 공식 백분위 표(Month 행의 P3·P50·P97 열)에서 옮겼다. 내려받은 날 2026-11-16.
+// 출처: KDCA 2017 성장도표는 0–35개월에 WHO 기준을 쓴다 (Kim JH et al., Korean J Pediatr 2018;61(5):135-149, Table 3,
+//       https://pmc.ncbi.nlm.nih.gov/articles/PMC5976563/). 36개월부터는 국내 자료로 만든 별도 표라 여기 넣지 않는다.
+//       질병관리청 성장도표 누리집(https://knhanes.kdca.go.kr/knhanes/grtcht/main.do)의 내려받기 파일은 스크립트로
+//       받을 수 없어서, 같은 값인 WHO 공식 백분위 표(Month 행의 P3·P50·P97 열)에서 옮겼다. 내려받은 날 2026-11-16.
 //   키   0~23개월(누운키, length): https://cdn.who.int/media/docs/default-source/child-growth/child-growth-standards/indicators/length-height-for-age/tab_lhfa_{boys,girls}_p_0_2.xlsx
-//       24~36개월(선키, height):  https://cdn.who.int/media/docs/default-source/child-growth/child-growth-standards/indicators/length-height-for-age/tab_lhfa_{boys,girls}_p_2_5.xlsx
+//       24~35개월(선키, height):  https://cdn.who.int/media/docs/default-source/child-growth/child-growth-standards/indicators/length-height-for-age/tab_lhfa_{boys,girls}_p_2_5.xlsx
 //   몸무게: https://cdn.who.int/media/docs/default-source/child-growth/child-growth-standards/indicators/weight-for-age/tab_wfa_{boys,girls}_p_0_5.xlsx
 //   머리둘레: https://cdn.who.int/media/docs/default-source/child-growth/child-growth-standards/indicators/head-circumference-for-age/tab_hcfa_{boys,girls}_p_0_5.xlsx
-// 남/여 0~36개월 신장·체중·머리둘레의 3·50·97 백분위. 숫자는 표에서 그대로 옮겼다(36개월은 국내 3~18세 표와 맞닿는 경계값).
+// 남/여 0~35개월 신장·체중·머리둘레의 3·50·97 백분위. 숫자는 표에서 그대로 옮겼다.
 // 런타임 import 금지 — checks.test.ts 가 node 로 바로 돌린다.
 import type { BabySex } from '@/types'
 
@@ -56,7 +54,6 @@ export const GROWTH_STANDARD: Record<BabySex, Record<Metric, readonly StdRow[]>>
       [33, 87.4, 94.1, 100.8],
       [34, 88.0, 94.8, 101.5],
       [35, 88.5, 95.4, 102.3],
-      [36, 89.1, 96.1, 103.1],
     ],
     weight: [
       [0, 2.5, 3.3, 4.3],
@@ -95,7 +92,6 @@ export const GROWTH_STANDARD: Record<BabySex, Record<Metric, readonly StdRow[]>>
       [33, 11.1, 13.8, 17.3],
       [34, 11.2, 14.0, 17.6],
       [35, 11.3, 14.2, 17.8],
-      [36, 11.4, 14.3, 18.0],
     ],
     head: [
       [0, 32.1, 34.5, 36.9],
@@ -134,7 +130,6 @@ export const GROWTH_STANDARD: Record<BabySex, Record<Metric, readonly StdRow[]>>
       [33, 46.6, 49.2, 51.9],
       [34, 46.6, 49.3, 52.0],
       [35, 46.7, 49.4, 52.0],
-      [36, 46.8, 49.5, 52.1],
     ],
   },
   female: {
@@ -175,7 +170,6 @@ export const GROWTH_STANDARD: Record<BabySex, Record<Metric, readonly StdRow[]>>
       [33, 86.0, 92.9, 99.8],
       [34, 86.7, 93.6, 100.6],
       [35, 87.3, 94.4, 101.4],
-      [36, 87.9, 95.1, 102.2],
     ],
     weight: [
       [0, 2.4, 3.2, 4.2],
@@ -214,7 +208,6 @@ export const GROWTH_STANDARD: Record<BabySex, Record<Metric, readonly StdRow[]>>
       [33, 10.5, 13.3, 17.0],
       [34, 10.7, 13.5, 17.3],
       [35, 10.8, 13.7, 17.6],
-      [36, 11.0, 13.9, 17.8],
     ],
     head: [
       [0, 31.7, 33.9, 36.1],
@@ -253,7 +246,6 @@ export const GROWTH_STANDARD: Record<BabySex, Record<Metric, readonly StdRow[]>>
       [33, 45.6, 48.2, 50.9],
       [34, 45.7, 48.3, 51.0],
       [35, 45.8, 48.4, 51.1],
-      [36, 45.9, 48.5, 51.2],
     ],
   },
 }
