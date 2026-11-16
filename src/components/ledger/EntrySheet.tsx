@@ -1,6 +1,6 @@
 'use client'
 
-// 하단 입력 바를 누르면 뜨는 입력 시트(시안 ledger-a). 지출/수입/저축, 저축 자산 연동, 날짜, 카테고리 관리.
+// 입력 시트(시안 ledger-a). 빠른 입력 바에서 저축을 고르면 연다(저축 자산 연동). 지출/수입으로 바꿔 넣을 수도 있다.
 // 네이버페이 앱은 저장이 성공한 뒤에만 연다(설계서 9.C-12).
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
@@ -21,8 +21,8 @@ const TYPES: { key: TxType; label: string }[] = [
   { key: 'saving', label: '저축' },
 ]
 
-// NaverPayCard 에서 옮김
-function openNaverPay() {
+// NaverPayCard 에서 옮김. 빠른 입력 바도 쓴다
+export function openNaverPay() {
   const a = document.createElement('a')
   a.href = 'naverpayapp://showservicemenu?idNo=1lvRp&menuName=payment'
   a.style.display = 'none'
@@ -38,14 +38,17 @@ interface EntrySheetProps {
   transactions: Transaction[]
   stocks: StockAssetWithPrice[]
   otherAssets: OtherAsset[]
+  /** 처음 고른 종류·금액(빠른 입력 바에서 넘어올 때) */
+  initialType?: TxType
+  initialAmount?: string
   onClose: () => void
   /** 실패하면 던진다(대시보드가 낙관적 반영을 되돌리고 토스트를 띄운다) */
-  onSubmit: (p: AddTransactionPayload) => Promise<void>
+  onSubmit: (p: AddTransactionPayload) => Promise<unknown>
 }
 
-export default function EntrySheet({ currentUserID, accessToken, transactions, stocks, otherAssets, onClose, onSubmit }: EntrySheetProps) {
-  const [type, setType] = useState<TxType>('expense')
-  const [amount, setAmount] = useState('')
+export default function EntrySheet({ currentUserID, accessToken, transactions, stocks, otherAssets, initialType = 'expense', initialAmount = '', onClose, onSubmit }: EntrySheetProps) {
+  const [type, setType] = useState<TxType>(initialType)
+  const [amount, setAmount] = useState(initialAmount)
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('')
   const [date, setDate] = useState(todayKST())

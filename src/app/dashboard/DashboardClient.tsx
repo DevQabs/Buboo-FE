@@ -548,7 +548,8 @@ export default function DashboardClient() {
   // ── 거래 추가: 입력 시트·달력 공용 ─────────────────────────────────────────
   // 지출·수입은 화면에 먼저 넣고, 저장이 실패하면 되돌린 뒤 토스트를 띄우고 던진다(설계서 9.C-12).
   // 저축은 자산이 같이 바뀌어 서버 결과로만 그린다.
-  const handleAddTransaction = async (p: AddTransactionPayload) => {
+  // 만든 거래 id 를 돌려준다(빠른 입력의 되돌리기).
+  const handleAddTransaction = async (p: AddTransactionPayload): Promise<string> => {
     const date = `${p.date}T12:00:00+09:00` // 한국 정오 — UTC 로 넘어가 전날이 되지 않게
     const body = {
       user_id: p.user_id, type: p.type, amount: p.amount, currency: 'KRW',
@@ -573,8 +574,9 @@ export default function DashboardClient() {
         balance: prev.balance + (p.type === 'income' ? p.amount : -p.amount),
       })
     }
+    let created: Transaction
     try {
-      await apiFetch<Transaction>('/api/transactions', { method: 'POST', body: JSON.stringify(body) })
+      created = await apiFetch<Transaction>('/api/transactions', { method: 'POST', body: JSON.stringify(body) })
     } catch (e) {
       if (optimistic) {
         setTransactions(prev => prev.filter(tx => tx.id !== tempID))
@@ -591,6 +593,7 @@ export default function DashboardClient() {
     ]
     if (p.type === 'saving') refetches.push(refetchPortfolio(), refetchAssets())
     await Promise.allSettled(refetches)
+    return created.id
   }
 
   // ── update/delete transaction ─────────────────────────────────────────────────

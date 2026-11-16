@@ -1,20 +1,21 @@
 'use client'
 
 // 가계부 A (시안 ledger-a): 하루 예산 → 곧 나갈/들어올 돈 → 날짜별 내역 → 카테고리 분석·배당·고정비.
-// 달력은 머리 아이콘으로 펼친다. 입력은 하단 고정 바 → 입력 시트.
+// 달력은 머리 아이콘으로 펼친다. 입력은 하단 바에 금액을 바로 넣는다(저축만 입력 시트).
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
-import { FloatingBar, IconButton, PageTitle, SectionLabel } from '@/components/ui/Card'
+import { IconButton, PageTitle, SectionLabel } from '@/components/ui/Card'
 import CalendarView, { type AddTransactionPayload } from '@/components/dashboard/CalendarView'
 import AllowanceHero from './AllowanceHero'
 import UpcomingStrip from './UpcomingStrip'
 import LedgerFeed from './LedgerFeed'
 import CategoryBreakdownCard from './CategoryBreakdownCard'
 import EntrySheet from './EntrySheet'
+import QuickEntryBar from './QuickEntryBar'
 import { apiFetch } from '@/lib/api'
 import { daysLeftInPeriod, ledgerPeriod, todayKST } from '@/lib/date'
-import { categoryBreakdown, fixedSpendingTotal, sortCategoriesByUse, upcomingEvents } from '@/lib/ledger'
+import { categoryBreakdown, fixedSpendingTotal, upcomingEvents } from '@/lib/ledger'
 import type {
   CalendarEvent, CalendarSummaryResponse, Couple, CreateDividendRequest, CreateFixedExpenseRequest, DividendYearlySummary,
   FixedExpense, FixedExpenseSummary, MonthlySummary, OtherAsset, PortfolioSummary, StockAssetWithPrice,
@@ -54,7 +55,8 @@ export interface LedgerScreenProps {
   onPeriodChange: (p: { year: number; month: number; startDay: number }) => void
   onMonthChange: (year: number, month: number) => void
   onUpdateBudget: (amount: number) => Promise<void>
-  onAddTransaction: (p: AddTransactionPayload) => Promise<void>
+  /** 만든 거래 id 를 돌려준다(빠른 입력의 되돌리기) */
+  onAddTransaction: (p: AddTransactionPayload) => Promise<string>
   onUpdateTransaction: (id: string, data: TxEdit) => Promise<void>
   onDeleteTransaction: (id: string) => Promise<void>
   onAddDividend: (d: CreateDividendRequest) => Promise<void>
@@ -67,7 +69,8 @@ export interface LedgerScreenProps {
 export default function LedgerScreen(p: LedgerScreenProps) {
   const [showCalendar, setShowCalendar] = useState(false)
   const [focusDate, setFocusDate] = useState<string | null>(null)
-  const [sheetOpen, setSheetOpen] = useState(false)
+  /** 저축 입력 시트에 넘길 금액. null 이면 닫힘 */
+  const [savingSheet, setSavingSheet] = useState<string | null>(null)
 
   const today = todayKST()
   const { startDate, endDate } = ledgerPeriod(p.summaryYear, p.summaryMonth, p.startDay)
@@ -90,8 +93,6 @@ export default function LedgerScreen(p: LedgerScreenProps) {
     return () => { alive = false }
   }, [startDate, endDate, p.startDay, p.accessToken, p.calendarData])
   const upcoming = upcomingEvents(periodEvents, today, startDate, endDate)
-  const usedCategories = Array.from(new Set(p.transactions.filter(t => t.type === 'expense' && t.category).map(t => t.category)))
-  const hint = sortCategoriesByUse(usedCategories, p.transactions, 'expense')[0] ?? '지출'
 
   const goMonth = (d: number) => {
     const m = p.calendarMonth + d
@@ -150,7 +151,7 @@ export default function LedgerScreen(p: LedgerScreenProps) {
           budgetLimit={budget}
           accessToken={p.accessToken}
           onMonthChange={p.onMonthChange}
-          onAddTransaction={p.canEdit ? p.onAddTransaction : undefined}
+          onAddTransaction={p.canEdit ? async q => { await p.onAddTransaction(q) } : undefined}
           onUpdateTransaction={p.canEdit ? p.onUpdateTransaction : undefined}
           onDeleteTransaction={p.canEdit ? p.onDeleteTransaction : undefined}
         />
@@ -190,20 +191,27 @@ export default function LedgerScreen(p: LedgerScreenProps) {
       />
 
       {p.canEdit && (
-        <FloatingBar hasNav={p.hasNav} onClick={() => setSheetOpen(true)} className="bg-brand-500 font-bold text-white shadow-bar">
-          <span>+ 금액 입력</span>
-          <span className="font-medium text-white/60">{hint} · 카드</span>
-        </FloatingBar>
+        <QuickEntryBar
+          hasNav={p.hasNav}
+          currentUserID={p.currentUserID}
+          accessToken={p.accessToken}
+          transactions={p.transactions}
+          onSubmit={p.onAddTransaction}
+          onDelete={p.onDeleteTransaction}
+          onOpenSaving={setSavingSheet}
+        />
       )}
 
-      {sheetOpen && (
+      {p.canEdit && savingSheet !== null && (
         <EntrySheet
+          initialType="saving"
+          initialAmount={savingSheet}
           currentUserID={p.currentUserID}
           accessToken={p.accessToken}
           transactions={p.transactions}
           stocks={p.portfolio}
           otherAssets={p.otherAssets}
-          onClose={() => setSheetOpen(false)}
+          onClose={() => setSavingSheet(null)}
           onSubmit={p.onAddTransaction}
         />
       )}
