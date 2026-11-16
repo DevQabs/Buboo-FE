@@ -5,6 +5,8 @@ import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, ClipboardDocumentIcon } f
 import { apiFetch } from '@/lib/api'
 import { TABS, permissionSummary, visibleTabs } from '@/lib/menus'
 import StorageWarning from '@/components/ui/StorageWarning'
+import { Section } from '@/components/ui/Loading'
+import type { SectionState } from '@/lib/loadState'
 import type { InvitePreset, Member, MenuKey, PermLevel } from '@/types'
 
 const CARD = 'mx-3 mb-2.5 rounded-[22px] bg-white p-4 shadow-[0_4px_14px_rgba(120,90,60,.07)]'
@@ -149,8 +151,9 @@ function InviteCard({ accessToken }: { accessToken: string }) {
   )
 }
 
-function MemberList({ members, error, accessToken, onSelect, onClose }: {
+function MemberList({ members, section, error, accessToken, onSelect, onClose }: {
   members: Member[]
+  section: SectionState
   error: string | null
   accessToken: string
   onSelect: (id: string) => void
@@ -161,7 +164,9 @@ function MemberList({ members, error, accessToken, onSelect, onClose }: {
       <Header small="설정" title="가족 구성원" onBack={onClose} />
       {error && <p className="px-4 pb-2 text-xs text-rose-500">{error}</p>}
       <StorageWarning accessToken={accessToken} className={CARD} />
-      <div className={`${CARD} py-1.5`}>
+      <div className="mx-3 mb-2.5">
+      <Section s={section} minH={120}>
+      <div className={`${CARD} !mx-0 !mb-0 py-1.5`}>
         {members.map((m, i) => (
           <button
             key={m.id}
@@ -188,6 +193,8 @@ function MemberList({ members, error, accessToken, onSelect, onClose }: {
             {!m.is_owner && <ChevronRightIcon className="h-4 w-4 text-stone-300" />}
           </button>
         ))}
+      </div>
+      </Section>
       </div>
       <InviteCard accessToken={accessToken} />
     </>
@@ -295,22 +302,30 @@ function MemberDetail({ member, accessToken, onBack, onChanged }: {
 }
 
 export default function FamilySettings({ accessToken, onClose }: { accessToken: string; onClose: () => void }) {
-  const [members, setMembers] = useState<Member[]>([])
+  const [members, setMembers] = useState<Member[] | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
+    setBusy(true)
+    setError(null)
     try {
       setMembers(await apiFetch<Member[]>('/api/members', accessToken))
-      setError(null)
     } catch {
-      setError('구성원을 불러오지 못했습니다')
+      setError('구성원을 새로 고치지 못했습니다') // 이미 받은 목록이 있을 때만 글로 보인다
+    } finally {
+      setBusy(false)
     }
   }, [accessToken])
 
   useEffect(() => { load() }, [load])
 
-  const selected = members.find(m => m.id === selectedId)
+  const selected = members?.find(m => m.id === selectedId)
+  const section: SectionState = {
+    view: members ? (busy ? 'refreshing' : 'content') : error ? 'error' : 'spinner',
+    onRetry: load,
+  }
 
   return (
     <div className="fixed inset-0 z-[70] overflow-y-auto bg-[#FBF8F3] pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] text-stone-800">
@@ -318,7 +333,7 @@ export default function FamilySettings({ accessToken, onClose }: { accessToken: 
         {selected ? (
           <MemberDetail key={selected.id} member={selected} accessToken={accessToken} onBack={() => setSelectedId(null)} onChanged={load} />
         ) : (
-          <MemberList members={members} error={error} accessToken={accessToken} onSelect={setSelectedId} onClose={onClose} />
+          <MemberList members={members ?? []} section={section} error={members ? error : null} accessToken={accessToken} onSelect={setSelectedId} onClose={onClose} />
         )}
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Card, PageTitle } from '@/components/ui/Card';
 import { toastError } from '@/components/ui/Toast';
+import { SectionError, SectionLoading, Spinner } from '@/components/ui/Loading';
 import { AssumptionSlider, NextMilestoneCard, RoadmapHero } from '@/components/wealth/RoadmapCards';
 import { apiFetch } from '@/lib/api';
 import { todayKST } from '@/lib/date';
@@ -65,6 +66,7 @@ export default function RoadmapTab({
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       const token = accessToken ?? '';
       const [p, a] = await Promise.all([
@@ -99,23 +101,16 @@ export default function RoadmapTab({
   // 로딩·오류 중에도 제목과 칩(자산현황/로드맵)은 보인다
   const header = (
     <>
-      <PageTitle eyebrow='자산' title='로드맵' />
+      <PageTitle eyebrow='자산' title='로드맵' right={saving ? <Spinner size='sm' label='새로 고치는 중' /> : undefined} />
       {chips}
     </>
   );
-  if (error) {
-    return (
-      <div className='space-y-3'>
-        {header}
-        <Card className='px-5 py-10 text-center text-sm font-medium text-stone-400'>{error}</Card>
-      </div>
-    );
-  }
+  // 처음 받기 실패만 화면을 바꾼다. 저장 뒤 다시 받기가 실패하면 있던 화면을 그대로 둔다
   if (!data || !assumptions) {
     return (
       <div className='space-y-3'>
         {header}
-        <div className='h-40 animate-pulse rounded-card bg-white' />
+        {error ? <SectionError minH={240} onRetry={load} /> : <SectionLoading minH={240} />}
       </div>
     );
   }

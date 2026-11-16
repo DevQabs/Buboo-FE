@@ -2,6 +2,7 @@
 
 import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
+import { SectionError, SectionLoading } from '@/components/ui/Loading'
 import { todayKST } from '@/lib/date'
 import { daysSinceBirth } from '@/lib/mediaRules'
 import type { Baby, BabySex } from '@/types'
@@ -38,6 +39,7 @@ export function useBaby(accessToken: string) {
   const [baby, setBaby] = useState<Baby | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
   const reload = useCallback(async () => {
+    setError(null) // 다시 시도: 아직 못 받았으면 스피너로, 받은 프로필은 그대로 둔다
     try {
       setBaby(await apiFetch<Baby | null>('/api/baby', accessToken))
       setError(null)
@@ -131,15 +133,8 @@ export function BabyGate({ accessToken, isOwner, children }: {
   const { baby, error, reload } = useBaby(accessToken)
   const [editing, setEditing] = useState(false)
 
-  if (error) {
-    return (
-      <div className="flex items-center gap-2 px-1 text-xs">
-        <span className="text-rose-500">{error}</span>
-        <button type="button" onClick={reload} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 font-semibold text-brand-500">다시 시도</button>
-      </div>
-    )
-  }
-  if (baby === undefined) return null
+  if (error) return <SectionError minH={120} onRetry={reload} />
+  if (baby === undefined) return <SectionLoading minH={120} />
   if (baby === null || editing) {
     if (!isOwner) {
       return (

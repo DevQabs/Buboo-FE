@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon, PlayIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { apiFetch } from '@/lib/api'
+import { Section } from '@/components/ui/Loading'
 import { babyAgeLabel, MEDIA_ERROR_RELOAD_GAP_MS, MEDIA_STALE_MS } from '@/lib/mediaRules'
 import { BabyGate, CARD } from './BabyProfile'
 import MomentComposer from './MomentComposer'
@@ -106,6 +107,8 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
 }) {
   const [moments, setMoments] = useState<BabyMoment[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [busy, setBusy] = useState(false)
   // 뷰어는 기록 id 로 들고 있어 다시 받은 새 주소를 바로 쓴다
   const [viewer, setViewer] = useState<{ momentId: string; index: number } | null>(null)
   const loadedAt = useRef(0)
@@ -113,13 +116,18 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
 
   const load = useCallback(async () => {
     loadedAt.current = Date.now()
+    setBusy(true)
+    setLoadFailed(false)
     try {
       // 서버는 빈 목록·빈 media 를 null 로 줄 수 있다(Go nil 슬라이스)
       const ms = (await apiFetch<BabyMoment[] | null>('/api/baby/moments', accessToken)) ?? []
       setMoments(ms.map(m => ({ ...m, media: m.media ?? [] })))
       setError(null)
     } catch {
-      setError('사진일기를 불러오지 못했어요')
+      setLoadFailed(true)
+      setError('사진일기를 새로 고치지 못했어요') // 이미 받은 목록이 있을 때만 보인다
+    } finally {
+      setBusy(false)
     }
   }, [accessToken])
   useEffect(() => { load() }, [load])
@@ -160,7 +168,12 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
           + 오늘의 순간 남기기
         </button>
       )}
-      {error && <p className="px-1 text-xs text-rose-500">{error}</p>}
+      {moments && error && <p className="px-1 text-xs text-rose-500">{error}</p>}
+      <Section minH={200} s={{
+        view: moments ? (busy ? 'refreshing' : 'content') : loadFailed ? 'error' : 'spinner',
+        onRetry: load,
+      }}>
+      <div className="space-y-3 empty:hidden">
       {moments?.length === 0 && (
         <div className={`${CARD} p-8 text-center`}>
           <p className="text-sm font-semibold text-stone-700">아직 기록이 없어요</p>
@@ -180,6 +193,8 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
           onMediaError={onMediaError}
         />
       ))}
+      </div>
+      </Section>
       {viewer && viewerMedia && viewerMedia.length > 0 && (
         <MediaViewer media={viewerMedia} index={Math.min(viewer.index, viewerMedia.length - 1)}
           label={`${babyAgeLabel(baby.birth_date, viewerMoment.date)} · ${monthDay(viewerMoment.date)}`}

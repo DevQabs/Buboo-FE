@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Area, ComposedChart, Line, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 import { apiFetch } from '@/lib/api'
+import { Section } from '@/components/ui/Loading'
 import { type Metric, ageInMonths, bandLabel, latestDelta, standardAt } from '@/lib/growthStandard'
 import { todayKST } from '@/lib/date'
 import { BabyGate, CARD, localToday } from './BabyProfile'
@@ -106,15 +107,19 @@ function GrowthForm({ accessToken, record, onClose, onSaved }: {
 function Growth({ accessToken, baby, canEdit }: { accessToken: string; baby: Baby; canEdit: boolean }) {
   const [rows, setRows] = useState<BabyGrowth[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
   const [metric, setMetric] = useState<Metric>('weight')
   const [form, setForm] = useState<BabyGrowth | 'new' | null>(null)
 
   const load = useCallback(async () => {
+    setBusy(true)
+    setError(null)
     try {
       setRows((await apiFetch<BabyGrowth[] | null>('/api/baby/growth', accessToken)) ?? [])
-      setError(null)
     } catch {
-      setError('성장 기록을 불러오지 못했어요')
+      setError('성장 기록을 새로 고치지 못했어요') // 이미 받은 기록이 있을 때만 글로 보인다
+    } finally {
+      setBusy(false)
     }
   }, [accessToken])
   useEffect(() => { load() }, [load])
@@ -153,8 +158,13 @@ function Growth({ accessToken, baby, canEdit }: { accessToken: string; baby: Bab
 
   return (
     <>
-      {error && <p className="px-1 text-xs text-rose-500">{error}</p>}
+      {rows && error && <p className="px-1 text-xs text-rose-500">{error}</p>}
 
+      <Section minH={300} s={{
+        view: rows ? (busy ? 'refreshing' : 'content') : error ? 'error' : 'spinner',
+        onRetry: load,
+      }}>
+      <div className="space-y-3">
       {/* 최근 측정 3칸 + 직전 대비 증감 */}
       <div className="grid grid-cols-3 gap-2">
         {METRICS.map(m => {
@@ -223,6 +233,8 @@ function Growth({ accessToken, baby, canEdit }: { accessToken: string; baby: Bab
           ))}
         </div>
       )}
+      </div>
+      </Section>
 
       {form && (
         <GrowthForm
