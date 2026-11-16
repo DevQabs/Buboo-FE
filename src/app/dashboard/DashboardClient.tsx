@@ -79,6 +79,8 @@ import type {
   MyPermissions,
 } from '@/types'
 import { levelOf, visibleTabs, type TabKey } from '@/lib/menus'
+import { ledgerPeriod, ledgerMonthOf, todayKST } from '@/lib/date'
+import { latestOnly, ignoreAbort } from '@/lib/api'
 
 // 개발: NEXT_PUBLIC_API_URL=http://localhost:8090 으로 직접 호출
 // 프로덕션: 빈 문자열 → /api/* 경로로 → next.config.mjs rewrite가 백엔드로 프록시
@@ -107,8 +109,9 @@ let _accessToken = ''
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
+    // 옵션 없으면 no-store, 있으면 넘긴 cache 를 따른다(signal 만 넘겨도 cache 는 기본값)
     cache: options ? undefined : 'no-store',
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${_accessToken}`,
@@ -134,25 +137,6 @@ function fetchLife(): Promise<[Schedule[], DiaryEntry[]]> {
   ])
 }
 
-/** Build the start/end date strings for a given display-month + startDay. */
-function buildDateRange(year: number, month: number, startDay: number): { startDate: string; endDate: string } {
-  if (startDay === 1) {
-    // calendar month: Jan 1 → Feb 1 (exclusive)
-    const endYear  = month === 12 ? year + 1 : year
-    const endMonth = month === 12 ? 1 : month + 1
-    return {
-      startDate: `${year}-${String(month).padStart(2, '0')}-01`,
-      endDate:   `${endYear}-${String(endMonth).padStart(2, '0')}-01`,
-    }
-  }
-  // salary-cycle month: e.g. startDay=25 → Dec 25 ~ Jan 24
-  const prevMonth = month === 1 ? 12 : month - 1
-  const prevYear  = month === 1 ? year - 1 : year
-  return {
-    startDate: `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`,
-    endDate:   `${year}-${String(month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`,
-  }
-}
 
 // ─── 탭 로딩 스켈레톤 ─────────────────────────────────────────────────────────
 function TabSkeleton() {
@@ -257,36 +241,40 @@ export default function DashboardClient() {
   }, [portfolioSummary, otherAssets])
 
   // ── fetch summary by period ───────────────────────────────────────────────
-  const fetchSummary = useCallback(async (y: number, m: number, sd: number) => {
-    const { startDate, endDate } = buildDateRange(y, m, sd)
+  const fetchSummary = useCallback(async (y: number, m: number, sd: number, signal?: AbortSignal) => {
+    const { startDate, endDate } = ledgerPeriod(y, m, sd)
     const data = await apiFetch<MonthlySummary>(
-      `/api/summary?start_date=${startDate}&end_date=${endDate}`
+      `/api/summary?start_date=${startDate}&end_date=${endDate}`, { signal, cache: 'no-store' }
     )
     setSummary(data)
   }, [])
 
   // ── fetch calendar summary ────────────────────────────────────────────────
-  const fetchCalendarTransactions = useCallback(async (y: number, m: number) => {
+  const fetchCalendarTransactions = useCallback(async (y: number, m: number, signal?: AbortSignal) => {
     const nextM = m === 12 ? 1 : m + 1
     const nextY = m === 12 ? y + 1 : y
     const [d1, d2] = await Promise.all([
-      apiFetch<Transaction[]>(`/api/transactions?year=${y}&month=${m}`),
-      apiFetch<Transaction[]>(`/api/transactions?year=${nextY}&month=${nextM}`),
+      apiFetch<Transaction[]>(`/api/transactions?year=${y}&month=${m}`, { signal, cache: 'no-store' }),
+      apiFetch<Transaction[]>(`/api/transactions?year=${nextY}&month=${nextM}`, { signal, cache: 'no-store' }),
     ])
     const all = [...(Array.isArray(d1) ? d1 : []), ...(Array.isArray(d2) ? d2 : [])]
     const seen = new Set<string>()
     setCalendarTransactions(all.filter(tx => { if (seen.has(tx.id)) return false; seen.add(tx.id); return true }))
   }, [])
 
-  const fetchCalendar = useCallback(async (y: number, m: number) => {
+  const fetchCalendar = useCallback(async (y: number, m: number, signal?: AbortSignal) => {
     const data = await apiFetch<CalendarSummaryResponse>(
-      `/api/transactions/calendar-summary?year=${y}&month=${m}`
+      `/api/transactions/calendar-summary?year=${y}&month=${m}`, { signal, cache: 'no-store' }
     )
     setCalendarData(data)
   }, [])
 
-  const fetchTransactions = useCallback(async (y: number, m: number) => {
-    const data = await apiFetch<Transaction[]>(`/api/transactions?year=${y}&month=${m}`)
+  // 요약·카테고리 집계와 같은 가계부 기간의 거래
+  const fetchTransactions = useCallback(async (y: number, m: number, sd: number, signal?: AbortSignal) => {
+    const { startDate, endDate } = ledgerPeriod(y, m, sd)
+    const data = await apiFetch<Transaction[]>(
+      `/api/transactions?start_date=${startDate}&end_date=${endDate}`, { signal, cache: 'no-store' }
+    )
     setTransactions(Array.isArray(data) ? data : [])
   }, [])
 
@@ -314,14 +302,11 @@ export default function DashboardClient() {
       setCalendarYear(y)
       setCalendarMonth(m)
 
-      const todayDate = now.getDate()
-      const periodMonth = (dbStartDay > 1 && todayDate >= dbStartDay) ? m + 1 : m
-      const periodYear  = periodMonth > 12 ? y + 1 : y
-      const adjMonth    = periodMonth > 12 ? 1 : periodMonth
+      const { year: periodYear, month: adjMonth } = ledgerMonthOf(todayKST(), dbStartDay)
       setSummaryYear(periodYear)
       setSummaryMonth(adjMonth)
 
-      const { startDate, endDate } = buildDateRange(periodYear, adjMonth, dbStartDay)
+      const { startDate, endDate } = ledgerPeriod(periodYear, adjMonth, dbStartDay)
 
       // 가계부를 못 보는 사람(예: 조부모)은 구성원 목록만 받는다
       if (!canSee('ledger')) {
@@ -334,7 +319,7 @@ export default function DashboardClient() {
       const nextCalY = m === 12 ? y + 1 : y
       const [usersData, txData, summaryData, feData, feSummaryData, divData, calData, calTxCur, calTxNext] = await Promise.all([
         apiFetch<User[]>('/api/users'),
-        apiFetch<Transaction[]>(`/api/transactions?year=${periodYear}&month=${adjMonth}`),
+        apiFetch<Transaction[]>(`/api/transactions?start_date=${startDate}&end_date=${endDate}`),
         apiFetch<MonthlySummary>(`/api/summary?start_date=${startDate}&end_date=${endDate}`),
         apiFetch<FixedExpense[]>('/api/fixed-expenses'),
         apiFetch<FixedExpenseSummary>(`/api/fixed-expenses/summary?year=${periodYear}&month=${adjMonth}`),
@@ -477,9 +462,9 @@ export default function DashboardClient() {
         setDiaries(Array.isArray(dia) ? dia : [])
       }).catch(() => {})
     } else if (activeTab === 'ledger') {
-      const { startDate, endDate } = buildDateRange(summaryYear, summaryMonth, startDay)
+      const { startDate, endDate } = ledgerPeriod(summaryYear, summaryMonth, startDay)
       Promise.all([
-        apiFetch<Transaction[]>(`/api/transactions?year=${summaryYear}&month=${summaryMonth}`),
+        apiFetch<Transaction[]>(`/api/transactions?start_date=${startDate}&end_date=${endDate}`),
         apiFetch<MonthlySummary>(`/api/summary?start_date=${startDate}&end_date=${endDate}`),
         apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`),
         apiFetch<FixedExpense[]>('/api/fixed-expenses'),
@@ -504,6 +489,9 @@ export default function DashboardClient() {
     }
   }, [activeTab, loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 월을 빠르게 넘기면 늦게 온 옛 달 응답이 새 달 화면을 덮는다. 직전 요청을 취소한다.
+  const nextMonthSignal = useMemo(() => latestOnly(), [])
+
   // ── period change handler ─────────────────────────────────────────────────
   const handlePeriodChange = useCallback(
     ({ year, month, startDay: sd }: { year: number; month: number; startDay: number }) => {
@@ -523,13 +511,14 @@ export default function DashboardClient() {
         .then(r => r.ok ? r.json() : null)
         .then(updated => { if (updated) setCouple(updated) })
         .catch(() => { /* non-critical, UI already updated */ })
-      fetchSummary(year, month, sd)
-      fetchCalendar(year, month)
-      fetchTransactions(year, month)
+      const signal = nextMonthSignal()
+      fetchSummary(year, month, sd, signal).catch(ignoreAbort)
+      fetchCalendar(year, month, signal).catch(ignoreAbort)
+      fetchTransactions(year, month, sd, signal).catch(ignoreAbort)
       refetchDividends(year, month)
       refetchFixedExpenses(year, month)
     },
-    [fetchSummary, fetchCalendar, fetchTransactions, couple] // eslint-disable-line react-hooks/exhaustive-deps
+    [fetchSummary, fetchCalendar, fetchTransactions, couple, nextMonthSignal] // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   // ── calendar month change — calendar display + summary period both update ──
@@ -538,13 +527,14 @@ export default function DashboardClient() {
     setCalendarMonth(month)
     setSummaryYear(year)
     setSummaryMonth(month)
-    fetchCalendar(year, month)
-    fetchSummary(year, month, startDay)
-    fetchTransactions(year, month)
-    fetchCalendarTransactions(year, month)
+    const signal = nextMonthSignal()
+    fetchCalendar(year, month, signal).catch(ignoreAbort)
+    fetchSummary(year, month, startDay, signal).catch(ignoreAbort)
+    fetchTransactions(year, month, startDay, signal).catch(ignoreAbort)
+    fetchCalendarTransactions(year, month, signal).catch(ignoreAbort)
     refetchDividends(year, month)
     refetchFixedExpenses(year, month)
-  }, [fetchCalendar, fetchSummary, fetchTransactions, fetchCalendarTransactions, startDay]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchCalendar, fetchSummary, fetchTransactions, fetchCalendarTransactions, startDay, nextMonthSignal]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── portfolio refetch ─────────────────────────────────────────────────────
   const refetchPortfolio = async () => {
@@ -605,7 +595,7 @@ export default function DashboardClient() {
         throw new Error(body || `저축 등록 실패: ${res.status}`)
       }
       await Promise.all([
-        fetchTransactions(summaryYear, summaryMonth),
+        fetchTransactions(summaryYear, summaryMonth, startDay),
         refetchPortfolio(),
         refetchAssets(),
         fetchSummary(summaryYear, summaryMonth, startDay),
@@ -672,7 +662,7 @@ export default function DashboardClient() {
     })
     if (!res.ok) throw new Error(`거래 수정 실패: ${res.status}`)
     await Promise.all([
-      fetchTransactions(summaryYear, summaryMonth),
+      fetchTransactions(summaryYear, summaryMonth, startDay),
       fetchSummary(summaryYear, summaryMonth, startDay),
       apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`).then(d => setCalendarData(d)),
       fetchCalendarTransactions(calendarYear, calendarMonth),
@@ -719,7 +709,7 @@ export default function DashboardClient() {
     if (!res.ok) throw new Error(`거래 추가 실패: ${res.status}`)
 
     const refetches: Promise<unknown>[] = [
-      fetchTransactions(summaryYear, summaryMonth),
+      fetchTransactions(summaryYear, summaryMonth, startDay),
       apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`).then(d => setCalendarData(d)),
       fetchSummary(summaryYear, summaryMonth, startDay),
       fetchCalendarTransactions(calendarYear, calendarMonth),
@@ -919,7 +909,7 @@ export default function DashboardClient() {
     if (!res.ok) throw new Error(`배당 등록 실패: ${res.status}`)
     await Promise.all([
       refetchDividends(calendarYear, calendarMonth),
-      fetchTransactions(summaryYear, summaryMonth),
+      fetchTransactions(summaryYear, summaryMonth, startDay),
       fetchSummary(summaryYear, summaryMonth, startDay),
     ])
   }
