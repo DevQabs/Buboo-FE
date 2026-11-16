@@ -65,7 +65,7 @@ function BabyProfileForm({ accessToken, initial, onSaved, onCancel }: {
     <div className={`${CARD} space-y-3 p-4`}>
       <b className="text-sm">{initial ? '아기 정보 고치기' : '아기를 등록해 주세요'}</b>
       <input value={name} onChange={e => setName(e.target.value)} placeholder="이름(태명도 좋아요)" className={input} />
-      <label className="block text-[11px] text-stone-400">
+      <label className="block text-xs text-stone-400">
         생일
         <input type="date" value={birth} max={localToday()} onChange={e => setBirth(e.target.value)} className={`${input} mt-1`} />
       </label>
@@ -74,7 +74,7 @@ function BabyProfileForm({ accessToken, initial, onSaved, onCancel }: {
           <Chip key={s} on={sex === s} onClick={() => setSex(s)}>{s === 'female' ? '여아' : '남아'}</Chip>
         ))}
       </div>
-      <p className="text-[11px] text-stone-400">성별은 성장 화면의 또래 표준 곡선을 고르는 데만 써요.</p>
+      <p className="text-xs text-stone-400">성별은 성장 화면의 또래 표준 곡선을 고르는 데만 써요.</p>
       {error && <p className="text-xs text-rose-500">{error}</p>}
       <div className="flex gap-2">
         {onCancel && (
@@ -123,12 +123,12 @@ export function BabyGate({ accessToken, isOwner, children }: {
         <div className="h-[38px] w-[38px] shrink-0 rounded-full bg-gradient-to-br from-[#fde2e4] to-[#cde5f5]" />
         <div className="flex-1">
           <b className="text-[13px]">{baby.name}</b>
-          <div className="text-[11px] text-stone-400">
+          <div className="text-xs text-stone-400">
             {baby.birth_date.replaceAll('-', '.')} 출생 · 생후 {daysSinceBirth(baby.birth_date, localToday())}일
           </div>
         </div>
         {isOwner && (
-          <button type="button" onClick={() => setEditing(true)} className="text-[11px] text-stone-400">수정</button>
+          <button type="button" onClick={() => setEditing(true)} className="text-xs text-stone-400">수정</button>
         )}
       </div>
       {children(baby)}

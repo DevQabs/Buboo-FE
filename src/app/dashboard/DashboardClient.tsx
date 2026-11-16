@@ -837,7 +837,8 @@ export default function DashboardClient() {
     try {
       await attachDiaryPhotos(_accessToken, created.id, photos)
     } finally {
-      await handleDiaryEdited()
+      // 새로고침 실패가 사진 오류를 덮지 않게 따로 삼킨다.
+      await handleDiaryEdited().catch(() => {})
     }
   }
 

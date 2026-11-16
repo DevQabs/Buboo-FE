@@ -73,7 +73,7 @@ function MomentCard({ m, days, author, canEdit, onOpen, onEdit, onDelete }: {
     <div className="overflow-hidden rounded-[24px] bg-white shadow-warm">
       {first && <MediaThumb media={first} className="h-[260px] w-full" onClick={() => onOpen(0)} />}
       <div className="px-3.5 py-2.5">
-        <div className="flex items-center justify-between text-[11px] text-stone-400">
+        <div className="flex items-center justify-between text-xs text-stone-400">
           <span>생후 {days}일 · {monthDay(m.date)}{author && ` · ${author}`}</span>
           {canEdit && (
             <span className="flex gap-2.5">

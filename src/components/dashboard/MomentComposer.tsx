@@ -133,7 +133,7 @@ export default function MomentComposer({ accessToken, moment, onClose, onSaved }
       <div className="mx-auto max-w-2xl space-y-3 px-3">
         <div className="flex items-end justify-between px-1 pb-1 pt-[calc(env(safe-area-inset-top,0px)+1.25rem)]">
           <div>
-            <small className="block text-[11px] text-stone-400">사진일기</small>
+            <small className="block text-xs text-stone-400">사진일기</small>
             <b className="text-xl font-extrabold">{moment ? '기록 고치기' : '오늘의 순간'}</b>
           </div>
           <button type="button" onClick={onClose} disabled={busy} aria-label="닫기" className="p-2 text-stone-400">
@@ -154,12 +154,12 @@ export default function MomentComposer({ accessToken, moment, onClose, onSaved }
             <button type="button" onClick={() => fileRef.current?.click()} disabled={busy}
               className="flex aspect-square flex-col items-center justify-center rounded-[18px] border-2 border-dashed border-line text-stone-400">
               <PhotoIcon className="h-6 w-6" />
-              <span className="text-[11px]">사진·영상</span>
+              <span className="text-xs">사진·영상</span>
             </button>
           </div>
           <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="hidden"
             onChange={e => { const list = Array.from(e.target.files ?? []); e.target.value = ''; addFiles(list) }} />
-          <p className="text-[11px] text-stone-400">영상은 30초까지 올릴 수 있어요.</p>
+          <p className="text-xs text-stone-400">영상은 30초까지 올릴 수 있어요.</p>
         </div>
         {error && <p className="px-1 text-xs text-rose-500">{error}</p>}
         <button type="button" onClick={save} disabled={busy}

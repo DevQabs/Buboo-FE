@@ -17,9 +17,13 @@ export async function prepareImage(file: File): Promise<{ blob: Blob; contentTyp
     const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
-    canvas.getContext('2d')?.drawImage(bmp, 0, 0, width, height)
+    const ctx = canvas.getContext('2d')
+    // 그릴 수 없으면 빈 JPEG 대신 원본을 올린다.
+    if (ctx) ctx.drawImage(bmp, 0, 0, width, height)
     bmp.close()
-    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85))
+    const blob = ctx ? await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85)) : null
+    // 큰 캔버스 메모리를 바로 푼다(모바일에서 여러 장 연속 처리).
+    canvas.width = canvas.height = 0
     if (blob) return { blob, contentType: 'image/jpeg' }
   } catch {
     // 해독 못 함 → 원본
