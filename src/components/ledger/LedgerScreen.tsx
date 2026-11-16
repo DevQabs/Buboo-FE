@@ -90,7 +90,7 @@ export default function LedgerScreen(p: LedgerScreenProps) {
   const [upLoad, setUpLoad] = useState<'loading' | 'error' | 'ok'>('loading')
   const [upRetry, setUpRetry] = useState(0)
   useEffect(() => {
-    if (!p.accessToken) return
+    if (!p.accessToken) { setUpLoad('ok'); setPeriodEvents(e => e ?? []); return } // 부를 수 없으면 빈 목록(숨김)
     const months = p.startDay === 1 ? [startDate] : [startDate, endDate]
     let alive = true
     setUpLoad('loading')
@@ -185,7 +185,7 @@ export default function LedgerScreen(p: LedgerScreenProps) {
         <CategoryBreakdownCard items={breakdown} total={variable + fixed} />
       </Section>
 
-      <Section s={p.sections.dividends}>
+      <Section s={p.sections.dividends} minH={140}>
       <DividendCard
         summary={p.divSummary}
         portfolio={p.portfolio}
@@ -199,7 +199,7 @@ export default function LedgerScreen(p: LedgerScreenProps) {
       />
       </Section>
 
-      <Section s={p.sections.fixed}>
+      <Section s={p.sections.fixed} minH={140}>
       <FixedExpenseCard
         fixedExpenses={p.fixedExpenses}
         summary={p.feSummary}

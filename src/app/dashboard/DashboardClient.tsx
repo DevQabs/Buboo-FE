@@ -304,10 +304,12 @@ export default function DashboardClient() {
     const jobs: Promise<unknown>[] = []
     if (tab === 'ledger' && ledger && canSee('ledger')) {
       const { y, m, sd, calY, calM } = ledger
+      // 배당 카드의 보유자별 금액이 종목 목록을 쓴다 — 자산 탭이 아직 안 받았으면 같이 받는다
       jobs.push(
         fetchTransactions(y, m, sd), fetchSummary(y, m, sd), fetchFixed(y, m),
         refetchDividends(calY, calM), fetchCalendar(calY, calM), fetchCalendarTransactions(calY, calM),
       )
+      if (!loadedTabs.current.has('wealth')) jobs.push(fetchHoldings().then(() => { loadedTabs.current.add('wealth') }))
     } else if (tab === 'wealth' && canSeeHoldings()) {
       jobs.push(fetchHoldings())
     } else if (tab === 'life') {
@@ -392,7 +394,8 @@ export default function DashboardClient() {
         if (rs.every(r => r.status === 'fulfilled')) loadedTabs.current.add('ledger')
       })(),
       // ── 종목·자산 (자산 탭, 가계부 공용) ── 실패해도 탭 진입 시 다시 시도
-      first !== 'wealth' && canSeeHoldings() && fetchHoldings().then(() => { loadedTabs.current.add('wealth') }),
+      // 가계부가 보이면 가계부 로드가 이미 받는다
+      first !== 'wealth' && !visible.has('ledger') && canSeeHoldings() && fetchHoldings().then(() => { loadedTabs.current.add('wealth') }),
       // ── 일상 탭 ──
       first !== 'life' && visible.has('life') && Promise.all([fetchSchedules(), fetchDiaries()])
         .then(() => { loadedTabs.current.add('life') }),
@@ -414,8 +417,11 @@ export default function DashboardClient() {
   }, [loadTab, fetchHoldings, fetchSchedules, fetchDiaries])
 
   // ── 탭 전환: 첫 방문이면 카드별 로드, 재방문이면 가벼운 refresh(받은 카드는 그대로 두고 머리에 작은 스피너) ──
+  const firstShown = useRef(true)
   useEffect(() => {
     if (loading) return // 초기 로딩 완료 전 무시
+    // 첫 화면 탭은 fetchAll 이 이미 받고 있다 — 다시 부르지 않는다
+    if (firstShown.current) { firstShown.current = false; return }
     if (!loadedTabs.current.has(activeTab)) {
       loadedTabs.current.add(activeTab)
       loadTab(activeTab, { y: summaryYear, m: summaryMonth, sd: startDay, calY: calendarYear, calM: calendarMonth })
@@ -458,8 +464,8 @@ export default function DashboardClient() {
       fetchSummary(year, month, sd, signal).catch(ignoreAbort)
       fetchCalendar(year, month, signal).catch(ignoreAbort)
       fetchTransactions(year, month, sd, signal).catch(ignoreAbort)
-      refetchDividends(year, month)
-      refetchFixedExpenses(year, month)
+      refetchDividends(year, month).catch(ignoreAbort)
+      refetchFixedExpenses(year, month).catch(ignoreAbort)
     },
     [fetchSummary, fetchCalendar, fetchTransactions, couple, nextMonthSignal] // eslint-disable-line react-hooks/exhaustive-deps
   )
@@ -475,8 +481,8 @@ export default function DashboardClient() {
     fetchSummary(year, month, startDay, signal).catch(ignoreAbort)
     fetchTransactions(year, month, startDay, signal).catch(ignoreAbort)
     fetchCalendarTransactions(year, month, signal).catch(ignoreAbort)
-    refetchDividends(year, month)
-    refetchFixedExpenses(year, month)
+    refetchDividends(year, month).catch(ignoreAbort)
+    refetchFixedExpenses(year, month).catch(ignoreAbort)
   }, [fetchCalendar, fetchSummary, fetchTransactions, fetchCalendarTransactions, startDay, nextMonthSignal]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── portfolio refetch ─────────────────────────────────────────────────────
@@ -838,6 +844,14 @@ export default function DashboardClient() {
     view: sectionView(loads[key]),
     onRetry: () => { retry().catch(() => {}) },
   })
+  // 여러 데이터를 같이 쓰는 카드: 모두 와야 보이고, 다시 시도는 실패한 것만 다시 부른다
+  const secAll = (...parts: [string, () => Promise<unknown>][]): SectionState => ({
+    view: mergeViews(...parts.map(([k]) => sectionView(loads[k]))),
+    onRetry: () => { for (const [k, retry] of parts) if (sectionView(loads[k]) === 'error') retry().catch(() => {}) },
+  })
+  const retrySummary = () => fetchSummary(summaryYear, summaryMonth, startDay)
+  const retryTx = () => fetchTransactions(summaryYear, summaryMonth, startDay)
+  const retryFe = () => fetchFixed(summaryYear, summaryMonth)
   // 2단 메뉴 세그먼트. 하나뿐이면 숨김. 시안처럼 화면 제목 아래에 두려고 화면에 prop 으로 넘긴다.
   const chipRow = currentTab && currentTab.subs.length > 1 ? (
     <Segmented items={currentTab.subs} value={currentSub?.key} onChange={setActiveSub} />
@@ -991,14 +1005,14 @@ export default function DashboardClient() {
             feSummary={feSummary}
             divSummary={divSummary}
             sections={{
-              summary: sec('summary', () => fetchSummary(summaryYear, summaryMonth, startDay)),
-              feed: sec('tx', () => fetchTransactions(summaryYear, summaryMonth, startDay)),
-              breakdown: { view: mergeViews(sectionView(loads.tx), sectionView(loads.fe)), onRetry: () => {
-                if (sectionView(loads.tx) === 'error') fetchTransactions(summaryYear, summaryMonth, startDay).catch(() => {})
-                if (sectionView(loads.fe) === 'error') fetchFixed(summaryYear, summaryMonth).catch(() => {})
-              } },
-              dividends: sec('div', () => refetchDividends(calendarYear, calendarMonth)),
-              fixed: sec('fe', () => fetchFixed(summaryYear, summaryMonth)),
+              // 하루 예산 = 예산 - 변동 지출(summary) - 고정비(fe)
+              summary: secAll(['summary', retrySummary], ['fe', retryFe]),
+              feed: sec('tx', retryTx),
+              // 카테고리 = 거래(tx) + 고정비(fe), 합계 = 변동 지출(summary) + 고정비
+              breakdown: secAll(['tx', retryTx], ['fe', retryFe], ['summary', retrySummary]),
+              // 배당 행의 보유자별 금액이 종목 목록(holdings)을 쓴다
+              dividends: secAll(['div', () => refetchDividends(calendarYear, calendarMonth)], ['holdings', fetchHoldings]),
+              fixed: sec('fe', retryFe),
               calendar: sec('cal', () => Promise.all([fetchCalendar(calendarYear, calendarMonth), fetchCalendarTransactions(calendarYear, calendarMonth)])),
             }}
             portfolio={portfolio}
