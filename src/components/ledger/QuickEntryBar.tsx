@@ -5,6 +5,8 @@
 // 저축은 자산 연동 양식이 필요해 입력 시트(EntrySheet)로 넘긴다.
 import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { motion, useAnimate, useReducedMotion } from 'framer-motion'
+import { SPRING, NO_MOTION, tapHaptic } from '@/components/ui/Card'
 import { useCategories } from '@/hooks/useCategories'
 import CategoryManager from '@/components/dashboard/CategoryManager'
 import type { AddTransactionPayload } from '@/components/dashboard/CalendarView'
@@ -87,6 +89,8 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
   const [barH, setBarH] = useState(0)
   const saveSeq = useRef(0) // 마지막으로 시작한 저장 번호 — 되돌리기는 이 저장만 가리킨다
   const keyboard = useKeyboardInset()
+  const reduceMotion = useReducedMotion()
+  const [chipRow, animate] = useAnimate()
   const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories(accessToken)
 
   const cats = useMemo(
@@ -109,6 +113,15 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+
+  // 고른 칩이 보글 부풀었다(1.15) 스프링으로 돌아온다
+  const pickCategory = (c: string) => {
+    setCategory(c)
+    tapHaptic()
+    if (reduceMotion) return
+    const chip = `[data-cat="${CSS.escape(c)}"]`
+    animate(chip, { scale: 1.15 }, { duration: 0.08 }).then(() => animate(chip, { scale: 1 }, SPRING))
+  }
 
   const pickMethod = (m: PayMethod) => {
     setMethod(m)
@@ -229,12 +242,13 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
               )}
 
               <div className="flex items-center gap-1.5">
-                <div className="no-scrollbar flex flex-1 gap-1.5 overflow-x-auto">
+                <div ref={chipRow} className="no-scrollbar -my-1 flex flex-1 gap-1.5 overflow-x-auto py-1">
                   {cats.map(c => (
                     <button
                       key={c}
                       type="button"
-                      {...keepFocusTap(() => setCategory(c))}
+                      data-cat={c}
+                      {...keepFocusTap(() => pickCategory(c))}
                       className={`h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition-colors ${
                         activeCategory === c ? 'border-brand-500 bg-brand-500 text-white' : 'border-line bg-white text-stone-500'
                       }`}
@@ -279,6 +293,17 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
 
           <label className="flex w-full items-center gap-2 rounded-[18px] bg-brand-500 px-4 text-white shadow-bar">
             <span className="text-lg font-bold text-white/70">+</span>
+            {amt > 0 && (
+              <motion.span
+                key={activeCategory}
+                initial={reduceMotion ? false : { scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={reduceMotion ? NO_MOTION : SPRING}
+                className="shrink-0 rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold text-white"
+              >
+                {activeCategory}
+              </motion.span>
+            )}
             <input
               ref={inputRef}
               inputMode="numeric"
