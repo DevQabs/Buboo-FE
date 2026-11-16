@@ -272,7 +272,7 @@ function AddDividendModal({ portfolio, portfolioSummary, users, onClose, onSave 
                     {fmtKRW(calc.krw)}
                   </p>
                   <p className="text-[10px] text-slate-400 mt-0.5">
-                    가계부 '수입' 내역으로 등록됩니다
+                    가계부 &apos;수입&apos; 내역으로 등록됩니다
                   </p>
                 </div>
 

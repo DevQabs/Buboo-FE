@@ -378,7 +378,6 @@ export default function DashboardClient() {
       FixedExpenseCard, DividendCard,
       ScheduleTab, FridgeTab, RoadmapTab,
       AddStockModal, EditStockModal, BuySellModal, TradeHistoryModal,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ].forEach(c => (c as any).preload?.())
 
     await Promise.allSettled([
