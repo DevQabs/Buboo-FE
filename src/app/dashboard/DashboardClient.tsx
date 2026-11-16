@@ -1052,6 +1052,7 @@ export default function DashboardClient() {
               users={users}
               currentUserID={currentUserID}
               accessToken={session?.user?.accessToken ?? ''}
+              isOwner={!!perms?.is_owner}
               canEdit={canEdit('diary')}
               hasNav={tabs.length > 1}
               chips={chipRow}

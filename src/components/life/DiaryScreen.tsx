@@ -18,6 +18,8 @@ interface DiaryScreenProps {
   currentUserID: string
   /** 저장 공간 경고(owner 만 보임) */
   accessToken: string
+  /** 저장 공간 사용량은 owner 전용 API 라 owner 일 때만 부른다 */
+  isOwner: boolean
   canEdit: boolean
   hasNav: boolean
   /** 2단 메뉴 칩 줄(제목 아래) */
@@ -29,7 +31,7 @@ interface DiaryScreenProps {
 }
 
 export default function DiaryScreen({
-  diaries, users, currentUserID, accessToken, canEdit, hasNav, chips, onAdd, onUpdate, onDeletePhoto, onDelete,
+  diaries, users, currentUserID, accessToken, isOwner, canEdit, hasNav, chips, onAdd, onUpdate, onDeletePhoto, onDelete,
 }: DiaryScreenProps) {
   const today = todayKST()
   const [ym, setYm] = useState(today.slice(0, 7)) // "YYYY-MM"
@@ -73,7 +75,7 @@ export default function DiaryScreen({
         </>}
       />
       {chips}
-      {canEdit && accessToken && <StorageWarning accessToken={accessToken} className="rounded-card bg-white p-4 shadow-warm" />}
+      {isOwner && accessToken && <StorageWarning accessToken={accessToken} className="rounded-card bg-white p-4 shadow-warm" />}
 
       {/* 한 달 기분 띠 */}
       <Card className="px-3 py-2.5">
