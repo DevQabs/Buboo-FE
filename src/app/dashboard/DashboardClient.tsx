@@ -44,6 +44,7 @@ const BuySellModal      = dynamic(() => import('@/components/dashboard/BuySellMo
 const TradeHistoryModal = dynamic(() => import('@/components/dashboard/TradeHistoryModal'), { ssr: false })
 const FamilySettings    = dynamic(() => import('@/components/dashboard/FamilySettings'),    { ssr: false })
 const BabyPhotoTab      = dynamic(() => import('@/components/dashboard/BabyPhotoTab'),      { ssr: false })
+const BabyGrowthTab     = dynamic(() => import('@/components/dashboard/BabyGrowthTab'),     { ssr: false })
 import type {
   User,
   Couple,
@@ -980,12 +981,12 @@ export default function DashboardClient() {
             canEdit={canEdit('baby_photo')}
           />
         )}
-        {/* 성장 자리 표시 — Task 9 가 바꾼다 */}
         {currentSub?.key === 'baby_growth' && (
-          <div className="bg-white rounded-[22px] p-8 text-center shadow-[0_4px_14px_rgba(120,90,60,.07)]">
-            <p className="text-sm font-semibold text-stone-700">성장</p>
-            <p className="mt-1 text-xs text-stone-400">곧 열려요. 조금만 기다려 주세요.</p>
-          </div>
+          <BabyGrowthTab
+            accessToken={session?.user?.accessToken ?? ''}
+            isOwner={!!perms?.is_owner}
+            canEdit={canEdit('baby_growth')}
+          />
         )}
 
         {/* ══ Tab 1: 자산 현황 ══ */}
