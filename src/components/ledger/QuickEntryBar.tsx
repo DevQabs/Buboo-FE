@@ -3,7 +3,7 @@
 // 가계부 빠른 입력: 하단 바가 곧 금액 입력 칸이다. 누르면 바로 숫자 키패드가 뜨고,
 // 금액이 들어가면 바로 위에 카테고리·저장 패널이 올라온다. 저장 뒤에도 키패드를 그대로 두어 다음 건을 잇는다.
 // 저축은 자산 연동 양식이 필요해 입력 시트(EntrySheet)로 넘긴다.
-import { useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
 import { useCategories } from '@/hooks/useCategories'
 import CategoryManager from '@/components/dashboard/CategoryManager'
@@ -30,8 +30,17 @@ interface QuickEntryBarProps {
   onOpenSaving: (amount: string) => void
 }
 
-// 패널 버튼을 눌러도 금액 칸 포커스(키패드)가 빠지지 않게
-const keepFocus = (e: PointerEvent) => e.preventDefault()
+// 패널 버튼: 눌러도 금액 칸 포커스(키패드)가 빠지지 않게 pointerdown 기본 동작을 막고,
+// 동작은 click 이 아니라 pointerup 에서 한다. 누르는 사이 바가 움직이면(바 bottom 이 키보드 높이를 따른다)
+// 떼는 자리가 다른 요소라 click 이 오지 않는다. 터치 pointerup 은 누른 버튼으로 온다(암묵 포인터 캡처).
+// Enter/Space 로 누르면 포인터가 없어 click(detail 0)으로 받는다.
+function keepFocusTap(fn: () => void) {
+  return {
+    onPointerDown: (e: PointerEvent) => e.preventDefault(),
+    onPointerUp: (e: PointerEvent) => { if (e.button === 0) fn() },
+    onClick: (e: MouseEvent) => { if (e.detail === 0) fn() },
+  }
+}
 
 // 안드로이드 화면 키보드 높이. 키보드가 레이아웃이 아니라 화면(visual viewport)만 줄이므로 직접 띄운다.
 function useKeyboardInset(): number {
@@ -54,7 +63,7 @@ function useKeyboardInset(): number {
 // 보이는 알약은 작게, 누르는 칸은 44px
 function Toggle({ on, onClick, keep = false, children }: { on: boolean; onClick: () => void; keep?: boolean; children: ReactNode }) {
   return (
-    <button type="button" onPointerDown={keep ? keepFocus : undefined} onClick={onClick} className="h-11 shrink-0 px-0.5">
+    <button type="button" {...(keep ? keepFocusTap(onClick) : { onClick })} className="h-11 shrink-0 px-0.5">
       <span className={`block rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${on ? 'bg-brand-500 text-white' : 'bg-sand text-stone-500'}`}>
         {children}
       </span>
@@ -181,7 +190,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
           {undoID && (
             <div role="status" className="flex items-center justify-between self-center rounded-full bg-stone-800 py-1 pl-4 pr-1 text-sm text-white shadow-warm">
               <span>저장됨</span>
-              <button type="button" onPointerDown={keepFocus} onClick={undo} className="ml-3 h-11 rounded-full px-3 font-semibold text-white/90">
+              <button type="button" {...keepFocusTap(undo)} className="ml-3 h-11 rounded-full px-3 font-semibold text-white/90">
                 되돌리기
               </button>
             </div>
@@ -225,8 +234,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
                     <button
                       key={c}
                       type="button"
-                      onPointerDown={keepFocus}
-                      onClick={() => setCategory(c)}
+                      {...keepFocusTap(() => setCategory(c))}
                       className={`h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition-colors ${
                         activeCategory === c ? 'border-brand-500 bg-brand-500 text-white' : 'border-line bg-white text-stone-500'
                       }`}
@@ -247,8 +255,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
                       <button
                         key={m}
                         type="button"
-                        onPointerDown={keepFocus}
-                        onClick={() => pickMethod(m)}
+                        {...keepFocusTap(() => pickMethod(m))}
                         aria-pressed={method === m}
                         className={`h-12 rounded-xl border px-4 text-sm font-semibold transition-colors ${
                           method === m ? 'border-brand-500 bg-brand-500 text-white' : 'border-line bg-white text-stone-500'
@@ -261,8 +268,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
                 )}
                 <button
                   type="button"
-                  onPointerDown={keepFocus}
-                  onClick={() => save()}
+                  {...keepFocusTap(() => save())}
                   className="h-12 flex-1 rounded-xl bg-brand-500 text-base font-bold text-white transition-colors hover:bg-brand-600"
                 >
                   저장

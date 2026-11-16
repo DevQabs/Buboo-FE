@@ -13,6 +13,8 @@ const RULES = [
   ['이모지', /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u],
   // --nav-h 는 safe area 를 이미 포함한 실제 탭 높이다(DashboardClient 가 재서 넣는다) — 더하면 두 번 센다
   ['--nav-h 에 safe area 이중 합산', /var\(--nav-h\)\s*\+\s*env\(safe-area/],
+  // pointerdown 을 막고 onClick 에 동작을 걸면 누르는 사이 바가 움직일 때 click 이 사라진다 — keepFocusTap(QuickEntryBar) 꼴로
+  ['onPointerDown 에서 preventDefault/keepFocus', /onPointerDown=\{[^}]*(?:keepFocus\b|preventDefault)/],
 ]
 
 // 백엔드 호출은 apiFetch 를 거친다(토큰·res.ok·서버 오류 문구). 직접 fetch 는 아래 파일만:
@@ -55,6 +57,9 @@ test('검사 패턴은 클래스는 잡고 색 키 데이터는 통과시킨다'
   assert.ok(RULES[3][1].test('★'))
   assert.ok(RULES[4][1].test("pb-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1rem)]"))
   assert.ok(!RULES[4][1].test("bottom-[calc(var(--nav-h)+0.75rem)]"))
+  assert.ok(RULES[5][1].test('<button onPointerDown={keepFocus} onClick={f}>'))
+  assert.ok(RULES[5][1].test('onPointerDown={e => e.preventDefault()}'))
+  assert.ok(!RULES[5][1].test('{...keepFocusTap(() => f())}'))
   assert.ok(RAW_FETCH.test("fetch(`${API_BASE}/x`)"))
   assert.ok(!RAW_FETCH.test("apiFetch('/x', t)"))
   assert.ok(!RAW_FETCH.test('refetch()'))
