@@ -27,3 +27,8 @@ export function formatMan(v: number): string {
   if (abs >= 10_000) return `${sign}${Math.round(abs / 10_000).toLocaleString('ko-KR')}만`
   return `${sign}${Math.round(abs).toLocaleString('ko-KR')}원`
 }
+
+/** 입력 칸 문자열(쉼표 포함)을 원 금액으로. 숫자가 아니면 0 */
+export function parseAmount(s: string): number {
+  return Number(s.replace(/[^0-9]/g, '')) || 0
+}
