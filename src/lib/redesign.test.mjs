@@ -160,3 +160,10 @@ test('적립을 늘리면 도달 달이 당겨진다', () => {
   assert.equal(contributionFor([{ year: 2026, monthly_krw: 7 }, { year: 2027, monthly_krw: 9 }], 2027), 9)
   assert.equal(contributionFor([{ year: 2026, monthly_krw: 7 }], 2030), 7) // 그 해가 없으면 첫 해
 })
+
+test('이미 목표 이상이면 시작 달(달성), 마이너스 수익률은 못 닿을 수 있다', () => {
+  const o = { startMonth: '2026-11', target: 300, contributions: [], delta: 0, maxMonths: 24 }
+  assert.equal(previewReachMonth({ ...o, netWorth: 300, annualReturn: 0 }), '2026-11')
+  assert.equal(previewReachMonth({ ...o, netWorth: 200, annualReturn: -0.1 }), null)
+  assert.equal(previewReachMonth({ ...o, netWorth: 0, annualReturn: -0.1, contributions: [{ year: 2026, monthly_krw: 400 }] }), '2026-12')
+})

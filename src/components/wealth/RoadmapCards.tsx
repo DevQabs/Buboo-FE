@@ -11,6 +11,7 @@ const ymLabel = (ym: string) => `${ym.slice(0, 4)}년 ${Number(ym.slice(5, 7))}�
 
 export function RoadmapHero({ data, thisMonth }: { data: RoadmapProjection; thisMonth: string }) {
   const pct = Math.max(0, Math.min(100, data.current.progress_pct))
+  const reached = data.current.net_worth_krw >= data.goal.target_krw
   const ahead = aheadOfPlan(data.current.net_worth_krw, data.months ?? [], thisMonth)
   return (
     <Card className="px-4 py-5 text-center">
@@ -20,7 +21,7 @@ export function RoadmapHero({ data, thisMonth }: { data: RoadmapProjection; this
       >
         <div className="flex h-[104px] w-[104px] flex-col items-center justify-center rounded-full bg-white">
           <span className="text-2xl font-black tabular-nums text-brand-500">{data.current.progress_pct.toFixed(1)}%</span>
-          <span className="text-xs text-stone-400">{formatMan(data.goal.target_krw)} 목표</span>
+          <span className="text-xs text-stone-400">{formatMan(data.goal.target_krw)} {reached ? '달성' : '목표'}</span>
         </div>
       </div>
       <p className="mt-2 text-sm text-stone-700">
@@ -121,7 +122,7 @@ export function AssumptionSlider({ data, assumptions, canEdit, saving, thisMonth
         className="mt-2 w-full accent-brand-500"
       />
       <p className="mt-1 text-xs text-stone-500">
-        {after ? `목표 도달 ${ymLabel(after)} 예상` : '50년 안에 닿지 않아요'}
+        {after === thisMonth ? '목표 달성' : after ? `목표 도달 ${ymLabel(after)} 예상` : '50년 안에 닿지 않아요'}
         {faster != null && faster !== 0 && (
           <span className={faster > 0 ? 'text-emerald-600' : 'text-rose-500'}> · {Math.abs(faster)}개월 {faster > 0 ? '빨라요' : '늦어요'}</span>
         )}

@@ -25,6 +25,7 @@ export function contributionFor(cs: RoadmapContribution[], year: number): number
 
 /**
  * 월 적립을 delta 만큼 바꿨을 때 목표에 닿는 달("YYYY-MM")을 어림한다. 못 닿으면 null.
+ * 이미 목표 이상이면 startMonth(달성).
  * 그 해 적립이 없으면 0 — 서버 service.monthlyContribution 과 같은 규칙.
  * ponytail: 배당 일정·종목별 성장을 빼고 연 수익률 하나로 굴리는 어림이다. 정확한 궤적은
  * 저장 뒤 서버 계획선(service.Project)이 다시 낸다. 화면은 delta=0 과 같은 식으로 견줘 차이만 보인다.
@@ -38,6 +39,7 @@ export function previewReachMonth(o: {
   delta: number
   maxMonths?: number
 }): string | null {
+  if (o.netWorth >= o.target) return o.startMonth
   const growth = Math.pow(1 + o.annualReturn, 1 / 12)
   let [y, m] = o.startMonth.split('-').map(Number)
   let v = o.netWorth

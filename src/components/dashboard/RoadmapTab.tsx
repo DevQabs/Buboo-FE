@@ -96,11 +96,28 @@ export default function RoadmapTab({
     }
   }
 
+  // 로딩·오류 중에도 제목과 칩(자산현황/로드맵)은 보인다
+  const header = (
+    <>
+      <PageTitle eyebrow='자산' title='로드맵' />
+      {chips}
+    </>
+  );
   if (error) {
-    return <Card className='px-5 py-10 text-center text-sm font-medium text-stone-400'>{error}</Card>;
+    return (
+      <div className='space-y-3'>
+        {header}
+        <Card className='px-5 py-10 text-center text-sm font-medium text-stone-400'>{error}</Card>
+      </div>
+    );
   }
   if (!data || !assumptions) {
-    return <div className='h-40 animate-pulse rounded-card bg-white' />;
+    return (
+      <div className='space-y-3'>
+        {header}
+        <div className='h-40 animate-pulse rounded-card bg-white' />
+      </div>
+    );
   }
 
   const { years } = data;
@@ -121,8 +138,7 @@ export default function RoadmapTab({
 
   return (
     <div className='space-y-3'>
-      <PageTitle eyebrow='자산' title='로드맵' />
-      {chips}
+      {header}
       <RoadmapHero data={data} thisMonth={thisMonth} />
       <NextMilestoneCard data={data} />
       <AssumptionSlider
@@ -140,13 +156,13 @@ export default function RoadmapTab({
         <div className='flex items-center justify-between mb-3'>
           <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>자산 추이</p>
           <div className='flex items-center gap-3'>
-            <div className='flex rounded-lg bg-slate-100 p-0.5'>
+            <div className='flex rounded-lg bg-stone-100 p-0.5'>
               {(['month', 'year'] as const).map(s => (
                 <button
                   key={s}
                   onClick={() => setScale(s)}
                   className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-colors ${
-                    scale === s ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400'
+                    scale === s ? 'bg-white text-stone-700 shadow-sm' : 'text-stone-400'
                   }`}
                 >
                   {s === 'year' ? '연도' : '월'}
@@ -184,13 +200,13 @@ export default function RoadmapTab({
       <div className='bg-white rounded-card shadow-warm px-5 py-4'>
         <div className='flex items-center justify-between mb-3'>
           <p className='text-xs font-semibold text-slate-400 tracking-wide uppercase'>마일스톤</p>
-          <div className='flex rounded-lg bg-slate-100 p-0.5'>
+          <div className='flex rounded-lg bg-stone-100 p-0.5'>
             {(['month', 'year'] as const).map(s => (
               <button
                 key={s}
                 onClick={() => setTableScale(s)}
                 className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-colors ${
-                  tableScale === s ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400'
+                  tableScale === s ? 'bg-white text-stone-700 shadow-sm' : 'text-stone-400'
                 }`}
               >
                 {s === 'year' ? '연도' : '월'}
