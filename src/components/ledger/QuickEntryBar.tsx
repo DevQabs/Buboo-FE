@@ -4,7 +4,7 @@
 // 금액이 들어가면 바로 위에 카테고리·저장 패널이 올라온다. 저장 뒤에도 키패드를 그대로 두어 다음 건을 잇는다.
 // 저축은 자산 연동 양식이 필요해 입력 시트(EntrySheet)로 넘긴다.
 import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
-import { CheckIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { Cog6ToothIcon } from '@heroicons/react/24/outline'
 import { motion, useReducedMotion } from 'framer-motion'
 import { SPRING, NO_MOTION, tapHaptic } from '@/components/ui/Card'
 import { useCategories } from '@/hooks/useCategories'
@@ -129,7 +129,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
     return () => ro.disconnect()
   }, [])
 
-  // 금액 옆 알약을 누르면 선택판이 열리고 닫힌다. 칩을 고르면 접히고 알약이 다시 부푼다.
+  // 바 오른쪽 카테고리 알약을 누르면 선택판이 열리고 닫힌다. 칩을 고르면 접히고 알약이 다시 부푼다.
   const togglePicker = () => {
     tapHaptic()
     setPickerOpen(v => !v)
@@ -155,7 +155,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
 
   const save = async () => {
     if (amt <= 0) return
-    const pay = type === 'expense' ? method : '카드' // N페이 칩은 지출에만 있다
+    const pay = type === 'expense' ? method : '카드' // 결제수단 버튼은 지출에만 있다
     const thenPay = pay === 'N페이'
     const typed = amount
     const payload: AddTransactionPayload = {
@@ -261,50 +261,17 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
                 />
               )}
 
-              <div className="flex gap-2">
-                {type === 'expense' && (
-                  <div className="flex shrink-0 gap-1.5">
-                    {(['카드', 'N페이'] as const).map(m => (
-                      // 고른 칩은 저장 버튼(brand)과 다른 색으로 채우고 링·체크를 붙여, 무엇이 골라졌는지 한눈에 보이게 한다
-                      <button
-                        key={m}
-                        type="button"
-                        {...keepFocusTap(() => pickMethod(m))}
-                        aria-pressed={method === m}
-                        className={`h-12 min-h-10 rounded-xl border px-3 text-sm font-semibold transition-colors ${
-                          method !== m
-                            ? 'border-line bg-white text-stone-400'
-                            : m === 'N페이'
-                              ? 'border-emerald-600 bg-emerald-600 text-white ring-2 ring-emerald-200 ring-offset-1'
-                              : 'border-stone-700 bg-stone-700 text-white ring-2 ring-stone-300 ring-offset-1'
-                        }`}
-                      >
-                        <motion.span
-                          key={method === m ? 'on' : 'off'}
-                          initial={reduceMotion || method !== m ? false : { scale: 0.7 }}
-                          animate={{ scale: 1 }}
-                          transition={reduceMotion ? NO_MOTION : SPRING}
-                          className="flex items-center gap-1"
-                        >
-                          {method === m && <CheckIcon aria-hidden className="h-4 w-4" strokeWidth={3} />}
-                          {m}
-                        </motion.span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  {...keepFocusTap(() => save())}
-                  className="h-12 flex-1 rounded-xl bg-brand-500 text-base font-bold text-white transition-colors hover:bg-brand-600"
-                >
-                  저장
-                </button>
-              </div>
+              <button
+                type="button"
+                {...keepFocusTap(() => save())}
+                className="h-12 w-full rounded-xl bg-brand-500 text-base font-bold text-white transition-colors hover:bg-brand-600"
+              >
+                저장
+              </button>
             </div>
           )}
 
-          {amt > 0 && pickerOpen && (
+          {pickerOpen && (
             <>
               <div id="quick-cat-picker" className="rounded-card border border-line bg-white p-3 shadow-warm">
                 <div className="mb-1 flex items-center justify-between">
@@ -339,46 +306,62 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
             </>
           )}
 
-          <label className="flex w-full items-center gap-2 rounded-[18px] bg-brand-500 px-4 text-white shadow-bar">
-            <span className="text-lg font-bold text-white/70">+</span>
-            {amt > 0 && (
+          {/* 바 오른쪽 카테고리·결제수단은 금액 전에도 누를 수 있는 버튼이다. label 밖에 두어 누름이 금액 칸 포커스로 먹히지 않게 한다 */}
+          <div className="flex w-full items-center gap-1 rounded-[18px] bg-brand-500 pl-4 pr-1.5 text-white shadow-bar">
+            <label className="flex min-w-0 flex-1 items-center gap-2">
+              <span className="text-lg font-bold text-white/70">+</span>
+              <input
+                ref={inputRef}
+                inputMode="numeric"
+                enterKeyHint="done"
+                placeholder="금액 입력"
+                aria-label="금액"
+                value={amount}
+                onChange={e => setAmount(formatAmountInput(e.target.value))}
+                className="h-12 min-w-0 flex-1 bg-transparent text-lg font-bold tabular-nums text-white placeholder:text-white/70 focus:outline-none"
+              />
+              {amt > 0 && <span className="text-sm font-medium text-white/60">원</span>}
+            </label>
+            <button
+              type="button"
+              aria-label={`카테고리 ${activeCategory}, 바꾸기`}
+              aria-expanded={pickerOpen}
+              aria-controls="quick-cat-picker"
+              {...keepFocusTap(togglePicker)}
+              className="flex h-11 min-w-11 max-w-[8.5rem] shrink-0 items-center justify-center px-0.5"
+            >
+              <motion.span
+                key={`${activeCategory}-${pillPop}`}
+                initial={reduceMotion ? false : { scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={reduceMotion ? NO_MOTION : SPRING}
+                className={`flex min-w-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold ring-2 ring-white/50 ${CAT_CLASS[categoryColor(activeCategory)].pill}`}
+              >
+                <span aria-hidden className={`h-1.5 w-1.5 shrink-0 rounded-full ${CAT_CLASS[categoryColor(activeCategory)].dot}`} />
+                <span className="truncate">{activeCategory}</span>
+                <span aria-hidden className={`text-[10px] transition-transform ${pickerOpen ? 'rotate-180' : ''}`}>▾</span>
+              </motion.span>
+            </button>
+            {type === 'expense' && (
+              // 누를 때마다 카드 ↔ N페이. 수입은 결제수단이 카드로 고정이라 보이지 않는다
               <button
                 type="button"
-                aria-label="카테고리 바꾸기"
-                aria-expanded={pickerOpen}
-                aria-controls="quick-cat-picker"
-                {...keepFocusTap(togglePicker)}
-                className="-mx-1 flex h-11 min-w-11 shrink-0 items-center justify-center px-1"
+                aria-label={`결제수단 ${method}, 바꾸기`}
+                {...keepFocusTap(() => pickMethod(method === '카드' ? 'N페이' : '카드'))}
+                className="flex h-11 min-w-11 shrink-0 items-center justify-center px-0.5"
               >
                 <motion.span
-                  key={`${activeCategory}-${pillPop}`}
-                  initial={reduceMotion ? false : { scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
+                  key={method}
+                  initial={reduceMotion ? false : { scale: 0.7 }}
+                  animate={{ scale: 1 }}
                   transition={reduceMotion ? NO_MOTION : SPRING}
-                  className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-white/40 ${CAT_CLASS[categoryColor(activeCategory)].pill}`}
+                  className={`block rounded-full px-2.5 py-1.5 text-xs font-semibold text-white ring-2 ring-white/50 ${method === 'N페이' ? 'bg-emerald-600' : 'bg-stone-700'}`}
                 >
-                  <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${CAT_CLASS[categoryColor(activeCategory)].dot}`} />
-                  {activeCategory}
-                  <span aria-hidden className={`text-[10px] transition-transform ${pickerOpen ? 'rotate-180' : ''}`}>▾</span>
+                  {method}
                 </motion.span>
               </button>
             )}
-            <input
-              ref={inputRef}
-              inputMode="numeric"
-              enterKeyHint="done"
-              placeholder="금액 입력"
-              aria-label="금액"
-              value={amount}
-              onChange={e => {
-                const next = formatAmountInput(e.target.value)
-                setAmount(next)
-                if (parseAmount(next) <= 0) setPickerOpen(false) // 금액을 지우면 선택판도 닫아 다음 금액에 되살아나지 않게
-              }}
-              className="h-12 min-w-0 flex-1 bg-transparent text-lg font-bold tabular-nums text-white placeholder:text-white/70 focus:outline-none"
-            />
-            <span className="text-sm font-medium text-white/60">{amt > 0 ? '원' : `${activeCategory} · ${type === 'expense' ? method : '카드'}`}</span>
-          </label>
+          </div>
         </div>
       </form>
 

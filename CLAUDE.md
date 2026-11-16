@@ -52,6 +52,7 @@
 - `emerald` / `rose` / `slate` / `amber` 의미 바꾸지 말 것
 - **`fetch(` 직접 호출 금지** → `@/lib/api`의 `apiFetch(path, accessToken, options)` (토큰·`res.ok` 검사). 실패는 `toastError()`(`@/components/ui/Toast`) 또는 폼 오류 문구로 알리고, 낙관적 반영은 되돌린다
 - **누르는 요소 최소 44px(필터 칩 40px), 2단 메뉴는 전체 폭 세그먼트** — 작은 아이콘 버튼은 `before:` 로 누르는 영역을 넓힌다(`IconButton`)
+- 화면에 보이는 선택값(카테고리·결제수단 등)은 누르면 바꿀 수 있는 버튼이어야 한다. 버튼처럼 보이는 글자만 두지 않는다.
 - 오늘 날짜는 `todayKST()` (`@/lib/date`). `toISOString().slice(0, 10)` 금지
 
 ## 공용 조각 (`@/components/ui/Card`, `@/components/ui/Toast`)
