@@ -81,6 +81,8 @@ import { applySummaryDelta } from '@/lib/ledger'
 import { motion, useReducedMotion } from 'framer-motion'
 import { NO_MOTION, SPRING, Segmented, tapHaptic } from '@/components/ui/Card'
 import { Toaster, showToast, toastError } from '@/components/ui/Toast'
+import { TopProgress } from '@/components/ui/Loading'
+import { stepLoad, sectionView, mergeViews, type LoadState, type SectionState } from '@/lib/loadState'
 
 // 개발: NEXT_PUBLIC_API_URL=http://localhost:8090 으로 직접 호출
 // 프로덕션: 빈 문자열 → /api/* 경로로 → next.config.mjs rewrite가 백엔드로 프록시
@@ -119,28 +121,8 @@ const canSee = (m: MenuKey) => levelOf(_perms, m) !== 'hidden'
 // 가계부(저축 연동·배당·고정비)도 종목·자산 목록을 쓴다
 const canSeeHoldings = () => canSee('assets') || canSee('ledger')
 
-function fetchLife(): Promise<[Schedule[], DiaryEntry[]]> {
-  return Promise.all([
-    canSee('schedule') ? apiFetch<Schedule[]>('/api/schedules') : Promise.resolve([]),
-    canSee('diary') ? apiFetch<DiaryEntry[]>('/api/diaries') : Promise.resolve([]),
-  ])
-}
-
-
-// ─── 탭 로딩 스켈레톤 ─────────────────────────────────────────────────────────
-function TabSkeleton() {
-  return (
-    <div className="space-y-3 pt-1">
-      {[80, 140, 100].map((h, i) => (
-        <div
-          key={i}
-          className="bg-white rounded-3xl animate-pulse"
-          style={{ height: h }}
-        />
-      ))}
-    </div>
-  )
-}
+// 탭 단위 요청(첫 화면·탭 전환)은 이 키도 같이 세어 헤더 아래 진행 막대를 띄운다
+const TAB = '_tab'
 
 // ─── component ────────────────────────────────────────────────────────────────
 
@@ -170,8 +152,17 @@ export default function DashboardClient() {
   const [diaries, setDiaries]         = useState<DiaryEntry[]>([])
   const [diariesAt, setDiariesAt]     = useState(0) // 일기 목록(사진 presigned 주소)을 받은 시각
   const [loading, setLoading]         = useState(true)
-  const [tabLoading, setTabLoading]   = useState<ActiveTab | null>(null)
   const [error, setError]             = useState<string | null>(null)
+  // 카드별 불러오기 상태(lib/loadState). 키: summary·tx·fe·div·cal·holdings·schedules·diaries·_tab
+  const [loads, setLoads]             = useState<Record<string, LoadState>>({})
+  /** p 가 끝날 때까지 keys 카드를 불러오는 중으로 센다. p 를 그대로 돌려준다(취소는 오류로 치지 않는다) */
+  const track = useCallback(<T,>(keys: string[], p: Promise<T>): Promise<T> => {
+    const step = (ev: Parameters<typeof stepLoad>[1]) =>
+      setLoads(s => { const n = { ...s }; for (const k of keys) n[k] = stepLoad(s[k], ev); return n })
+    step('start')
+    p.then(() => step('ok'), e => step((e as Error)?.name === 'AbortError' ? 'abort' : 'error'))
+    return p
+  }, [])
   const loadedTabs = useRef<Set<ActiveTab>>(new Set<ActiveTab>())
   const [roadmap, setRoadmap] = useState<RoadmapPrefetch | null>(null)
 
@@ -224,17 +215,17 @@ export default function DashboardClient() {
   const [showTradeHistory, setShowTradeHistory] = useState(false)
   const [tradeTransactions, setTradeTransactions] = useState<StockTransaction[]>([])
 
-  // ── fetch summary by period ───────────────────────────────────────────────
-  const fetchSummary = useCallback(async (y: number, m: number, sd: number, signal?: AbortSignal) => {
+  // ── fetchers: 각자 맡은 카드의 불러오기 상태를 센다(track) ───────────────────
+  const fetchSummary = useCallback((y: number, m: number, sd: number, signal?: AbortSignal) => track(['summary'], (async () => {
     const { startDate, endDate } = ledgerPeriod(y, m, sd)
     const data = await apiFetch<MonthlySummary>(
       `/api/summary?start_date=${startDate}&end_date=${endDate}`, { signal, cache: 'no-store' }
     )
     setSummary(data)
-  }, [])
+  })()), [track])
 
   // ── fetch calendar summary ────────────────────────────────────────────────
-  const fetchCalendarTransactions = useCallback(async (y: number, m: number, signal?: AbortSignal) => {
+  const fetchCalendarTransactions = useCallback((y: number, m: number, signal?: AbortSignal) => track(['cal'], (async () => {
     const nextM = m === 12 ? 1 : m + 1
     const nextY = m === 12 ? y + 1 : y
     const [d1, d2] = await Promise.all([
@@ -244,32 +235,97 @@ export default function DashboardClient() {
     const all = [...(Array.isArray(d1) ? d1 : []), ...(Array.isArray(d2) ? d2 : [])]
     const seen = new Set<string>()
     setCalendarTransactions(all.filter(tx => { if (seen.has(tx.id)) return false; seen.add(tx.id); return true }))
-  }, [])
+  })()), [track])
 
-  const fetchCalendar = useCallback(async (y: number, m: number, signal?: AbortSignal) => {
+  const fetchCalendar = useCallback((y: number, m: number, signal?: AbortSignal) => track(['cal'], (async () => {
     const data = await apiFetch<CalendarSummaryResponse>(
       `/api/transactions/calendar-summary?year=${y}&month=${m}`, { signal, cache: 'no-store' }
     )
     setCalendarData(data)
-  }, [])
+  })()), [track])
 
   // 요약·카테고리 집계와 같은 가계부 기간의 거래
-  const fetchTransactions = useCallback(async (y: number, m: number, sd: number, signal?: AbortSignal) => {
+  const fetchTransactions = useCallback((y: number, m: number, sd: number, signal?: AbortSignal) => track(['tx'], (async () => {
     const { startDate, endDate } = ledgerPeriod(y, m, sd)
     const data = await apiFetch<Transaction[]>(
       `/api/transactions?start_date=${startDate}&end_date=${endDate}`, { signal, cache: 'no-store' }
     )
     setTransactions(Array.isArray(data) ? data : [])
+  })()), [track])
+
+  // 고정비 목록 + 그 달 고정비 요약(첫 화면·다시 시도)
+  const fetchFixed = useCallback((y: number, m: number) => track(['fe'], (async () => {
+    const [feData, feSummaryData] = await Promise.all([
+      apiFetch<FixedExpense[]>('/api/fixed-expenses'),
+      apiFetch<FixedExpenseSummary>(`/api/fixed-expenses/summary?year=${y}&month=${m}`),
+    ])
+    setFixedExpenses(Array.isArray(feData) ? feData : [])
+    setFeSummary(feSummaryData)
+  })()), [track])
+
+  const refetchDividends = useCallback((y = now.getFullYear(), m = now.getMonth() + 1) => track(['div'], (async () => {
+    const data = await apiFetch<DividendYearlySummary>(`/api/dividends/summary?year=${y}&month=${m}`)
+    setDivSummary(data)
+  })()), [track]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 종목·자산·매매 내역(자산 탭, 가계부 저축 연동·배당·고정비 공용)
+  const fetchHoldings = useCallback(() => track(['holdings'], (async () => {
+    const [port, assets, stockTx] = await Promise.all([
+      apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
+      apiFetch<OtherAsset[]>('/api/assets'),
+      apiFetch<StockTransaction[]>('/api/stocks/transactions'),
+    ])
+    if (Array.isArray(port)) { setPortfolio(port); setPortfolioSummary(null) }
+    else { setPortfolio(port?.items ?? []); setPortfolioSummary(port?.summary ?? null) }
+    setOtherAssets(Array.isArray(assets) ? assets : [])
+    setTradeTransactions(Array.isArray(stockTx) ? stockTx : [])
+  })()), [track])
+
+  // 일정·일기는 따로 센다(한쪽이 늦어도 다른 쪽은 먼저 보인다). 못 보는 메뉴는 부르지 않는다
+  const fetchSchedules = useCallback(() => track(['schedules'], (async () => {
+    if (!canSee('schedule')) return
+    const list = await apiFetch<Schedule[]>('/api/schedules')
+    setSchedules(Array.isArray(list) ? list : [])
+  })()), [track])
+
+  const fetchDiaries = useCallback(() => track(['diaries'], (async () => {
+    if (!canSee('diary')) return
+    const list = await apiFetch<DiaryEntry[]>('/api/diaries')
+    setDiaries(Array.isArray(list) ? list : [])
+    setDiariesAt(Date.now())
+  })()), [track])
+
+  const fetchUsers = useCallback(async () => {
+    setUsers(withAvatarColors(await apiFetch<User[]>('/api/users')))
   }, [])
 
-  // ── initial load ─────────────────────────────────────────────────────────
-  // Step 1: couple (tiny JSON) → ledger_start_day 확정
-  // Step 2: 가계부 탭 + users 만 (8개) — wealth/life/roadmap 탭은 첫 방문 시 로드
-  const fetchAll = useCallback(async () => {
-    try {
-      const y = now.getFullYear()
-      const m = now.getMonth() + 1
+  // ── 탭 데이터: 카드마다 따로 받아 먼저 온 카드부터 보인다. 실패는 그 카드에 다시 시도로 남는다 ──
+  const loadTab = useCallback((tab: ActiveTab, ledger?: { y: number; m: number; sd: number; calY: number; calM: number }) => {
+    const jobs: Promise<unknown>[] = []
+    if (tab === 'ledger' && ledger && canSee('ledger')) {
+      const { y, m, sd, calY, calM } = ledger
+      jobs.push(
+        fetchTransactions(y, m, sd), fetchSummary(y, m, sd), fetchFixed(y, m),
+        refetchDividends(calY, calM), fetchCalendar(calY, calM), fetchCalendarTransactions(calY, calM),
+      )
+    } else if (tab === 'wealth' && canSeeHoldings()) {
+      jobs.push(fetchHoldings())
+    } else if (tab === 'life') {
+      jobs.push(fetchSchedules(), fetchDiaries())
+    }
+    return Promise.allSettled(jobs.map(j => track([TAB], j)))
+  }, [track, fetchTransactions, fetchSummary, fetchFixed, refetchDividends, fetchCalendar, fetchCalendarTransactions, fetchHoldings, fetchSchedules, fetchDiaries])
 
+  // ── initial load ─────────────────────────────────────────────────────────
+  // Step 1: couple + 권한 (화면 전체 로딩) → 어떤 탭을 보일지 정해진다
+  // Step 2: 첫 탭 카드들을 카드별로 받는다(화면은 이미 보이고 카드마다 스피너)
+  // Step 3: 첫 탭이 끝나면 나머지 보이는 탭을 뒤에서 미리 받는다(prefetchAll)
+  const fetchAll = useCallback(async () => {
+    const y = now.getFullYear()
+    const m = now.getMonth() + 1
+    let first: ActiveTab = 'ledger'
+    let ledgerArgs: Parameters<typeof loadTab>[1]
+    try {
       // ── Step 1: couple + 내 권한 ──
       const [coupleData, permData] = await Promise.all([
         apiFetch<Couple>('/api/couple'),
@@ -277,7 +333,8 @@ export default function DashboardClient() {
       ])
       _perms = permData
       setPerms(permData)
-      setActiveTab(visibleTabs(permData)[0]?.key ?? 'ledger')
+      first = visibleTabs(permData)[0]?.key ?? 'ledger'
+      setActiveTab(first)
       const dbStartDay = (coupleData?.ledger_start_day >= 1 && coupleData?.ledger_start_day <= 28)
         ? coupleData.ledger_start_day
         : 1
@@ -289,64 +346,37 @@ export default function DashboardClient() {
       const { year: periodYear, month: adjMonth } = ledgerMonthOf(todayKST(), dbStartDay)
       setSummaryYear(periodYear)
       setSummaryMonth(adjMonth)
-
-      const { startDate, endDate } = ledgerPeriod(periodYear, adjMonth, dbStartDay)
-
-      // 가계부를 못 보는 사람(예: 조부모)은 구성원 목록만 받는다
-      if (!canSee('ledger')) {
-        setUsers(withAvatarColors(await apiFetch<User[]>('/api/users')))
-        return
-      }
-
-      // ── Step 2: 가계부 탭 + users (9개 병렬) ──
-      const nextCalM = m === 12 ? 1 : m + 1
-      const nextCalY = m === 12 ? y + 1 : y
-      const [usersData, txData, summaryData, feData, feSummaryData, divData, calData, calTxCur, calTxNext] = await Promise.all([
-        apiFetch<User[]>('/api/users'),
-        apiFetch<Transaction[]>(`/api/transactions?start_date=${startDate}&end_date=${endDate}`),
-        apiFetch<MonthlySummary>(`/api/summary?start_date=${startDate}&end_date=${endDate}`),
-        apiFetch<FixedExpense[]>('/api/fixed-expenses'),
-        apiFetch<FixedExpenseSummary>(`/api/fixed-expenses/summary?year=${periodYear}&month=${adjMonth}`),
-        apiFetch<DividendYearlySummary>(`/api/dividends/summary?year=${y}&month=${m}`),
-        apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${y}&month=${m}`),
-        apiFetch<Transaction[]>(`/api/transactions?year=${y}&month=${m}`),
-        apiFetch<Transaction[]>(`/api/transactions?year=${nextCalY}&month=${nextCalM}`),
-      ])
-
-      setUsers(withAvatarColors(usersData))
-      const txList = Array.isArray(txData) ? txData : []
-      setTransactions(txList)
-      const calTxAll = [...(Array.isArray(calTxCur) ? calTxCur : []), ...(Array.isArray(calTxNext) ? calTxNext : [])]
-      const calTxSeen = new Set<string>()
-      setCalendarTransactions(calTxAll.filter(tx => { if (calTxSeen.has(tx.id)) return false; calTxSeen.add(tx.id); return true }))
-      setSummary(summaryData)
-      setFixedExpenses(Array.isArray(feData) ? feData : [])
-      setFeSummary(feSummaryData)
-      setDivSummary(divData)
-      setCalendarData(calData)
-
-      // 가계부 탭은 이미 로드됨
-      loadedTabs.current.add('ledger')
+      ledgerArgs = { y: periodYear, m: adjMonth, sd: dbStartDay, calY: y, calM: m }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error')
-    } finally {
       setLoading(false)
+      return
     }
+    setLoading(false)
+
+    // ── Step 2: 첫 탭 + 구성원(헤더 아바타) ──
+    loadedTabs.current.add(first)
+    await Promise.allSettled([
+      track([TAB], fetchUsers()).catch(e => toastError('구성원 불러오기', e)),
+      loadTab(first, ledgerArgs),
+    ])
+    // ── Step 3 ──
+    prefetchAll(first, ledgerArgs)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (status === 'authenticated') fetchAll()
   }, [fetchAll, status])
 
-  // ── Phase 2: UI 표시 직후 나머지 탭 데이터 백그라운드 프리패치 ─────────────────
-  // loading=false 가 되는 순간 wealth/life/roadmap 를 조용히 병렬 로드.
-  // 사용자가 탭을 누를 때 이미 데이터가 준비돼 있으면 스켈레톤 없이 즉시 표시.
+  // ── 나머지 탭 백그라운드 프리패치 ─────────────────────────────────────────────
+  // 첫 탭이 다 받아지면 다른 보이는 탭을 조용히 병렬 로드(진행 막대 없이, 카드 상태만 센다).
+  // 사용자가 탭을 누를 때 이미 데이터가 준비돼 있으면 스피너 없이 즉시 표시.
   //
   // .preload() 란?
   //   next/dynamic 으로 만든 컴포넌트는 정적 메서드 .preload()를 가진다.
   //   이를 호출하면 렌더링 없이 해당 JS 청크만 네트워크로 미리 다운로드한다.
   //   → 탭 전환 시 "청크 다운로드 + 렌더링" 에서 "렌더링만" 으로 단축된다.
-  const prefetchAll = useCallback(async () => {
+  const prefetchAll = useCallback(async (first: ActiveTab, ledgerArgs: Parameters<typeof loadTab>[1]) => {
     // ── JS 청크 미리 다운로드 (렌더링 없이 네트워크만, 병렬) ──
     ;[
       WealthScreen,
@@ -354,121 +384,54 @@ export default function DashboardClient() {
       AddStockModal, EditStockModal, BuySellModal, TradeHistoryModal,
     ].forEach(c => (c as any).preload?.())
 
+    const visible = new Set(visibleTabs(_perms).map(t => t.key))
     await Promise.allSettled([
-      // ── 종목·자산 (자산 탭, 가계부 공용) ──
-      canSeeHoldings() && (async () => {
-        try {
-          const [port, assets, stockTx] = await Promise.all([
-            apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
-            apiFetch<OtherAsset[]>('/api/assets'),
-            apiFetch<StockTransaction[]>('/api/stocks/transactions'),
-          ])
-          if (Array.isArray(port)) { setPortfolio(port); setPortfolioSummary(null) }
-          else { setPortfolio(port?.items ?? []); setPortfolioSummary(port?.summary ?? null) }
-          setOtherAssets(Array.isArray(assets) ? assets : [])
-          setTradeTransactions(Array.isArray(stockTx) ? stockTx : [])
-          loadedTabs.current.add('wealth')
-        } catch { /* 실패해도 탭 진입 시 fetchTabData 가 다시 시도 */ }
+      // ── 가계부(첫 탭이 아니었을 때) ──
+      first !== 'ledger' && visible.has('ledger') && ledgerArgs && (async () => {
+        const rs = await loadTab('ledger', ledgerArgs)
+        if (rs.every(r => r.status === 'fulfilled')) loadedTabs.current.add('ledger')
       })(),
+      // ── 종목·자산 (자산 탭, 가계부 공용) ── 실패해도 탭 진입 시 다시 시도
+      first !== 'wealth' && canSeeHoldings() && fetchHoldings().then(() => { loadedTabs.current.add('wealth') }),
       // ── 일상 탭 ──
-      (canSee('schedule') || canSee('diary')) && (async () => {
-        try {
-          const [sch, dia] = await fetchLife()
-          setSchedules(Array.isArray(sch) ? sch : [])
-          setDiaries(Array.isArray(dia) ? dia : []); setDiariesAt(Date.now())
-          loadedTabs.current.add('life')
-        } catch {}
-      })(),
+      first !== 'life' && visible.has('life') && Promise.all([fetchSchedules(), fetchDiaries()])
+        .then(() => { loadedTabs.current.add('life') }),
       // ── 로드맵 ──
       canSee('roadmap') && (async () => {
-        try {
-          const [projection, assumptions] = await Promise.all([
-            apiFetch<RoadmapProjection>('/api/roadmap/projection'),
-            apiFetch<RoadmapAssumptionsResponse>('/api/roadmap/assumptions'),
-          ])
-          if (projection && assumptions?.assumptions) {
-            setRoadmap({
-              projection,
-              assumptions: assumptions.assumptions,
-              candidates: assumptions.dividend_candidates ?? [],
-            })
-          }
-        } catch {}
+        const [projection, assumptions] = await Promise.all([
+          apiFetch<RoadmapProjection>('/api/roadmap/projection'),
+          apiFetch<RoadmapAssumptionsResponse>('/api/roadmap/assumptions'),
+        ])
+        if (projection && assumptions?.assumptions) {
+          setRoadmap({
+            projection,
+            assumptions: assumptions.assumptions,
+            candidates: assumptions.dividend_candidates ?? [],
+          })
+        }
       })(),
     ])
-  }, [])
+  }, [loadTab, fetchHoldings, fetchSchedules, fetchDiaries])
 
-  // loading 이 false 로 바뀌는 순간(Phase 1 완료) → Phase 2 백그라운드 시작
-  useEffect(() => {
-    if (!loading) prefetchAll()
-  }, [loading, prefetchAll])
-
-  // ── 탭 최초 진입 시 데이터 로드 (프리패치 미완료 시 폴백) ──────────────────────
-  const fetchTabData = useCallback(async (tab: ActiveTab) => {
-    setTabLoading(tab)
-    try {
-      if (tab === 'wealth' && canSeeHoldings()) {
-        const [port, assets, stockTx] = await Promise.all([
-          apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
-          apiFetch<OtherAsset[]>('/api/assets'),
-          apiFetch<StockTransaction[]>('/api/stocks/transactions'),
-        ])
-        if (Array.isArray(port)) { setPortfolio(port); setPortfolioSummary(null) }
-        else { setPortfolio(port?.items ?? []); setPortfolioSummary(port?.summary ?? null) }
-        setOtherAssets(Array.isArray(assets) ? assets : [])
-        setTradeTransactions(Array.isArray(stockTx) ? stockTx : [])
-      } else if (tab === 'life') {
-        const [sch, dia] = await fetchLife()
-        setSchedules(Array.isArray(sch) ? sch : [])
-        setDiaries(Array.isArray(dia) ? dia : []); setDiariesAt(Date.now())
-      }
-    } catch {
-      // 탭 데이터 실패 → 빈 상태 유지
-    } finally {
-      setTabLoading(null)
-    }
-  }, [])
-
-  // ── 탭 전환: 첫 방문이면 fetch, 재방문이면 refresh ─���─────────────────────────
+  // ── 탭 전환: 첫 방문이면 카드별 로드, 재방문이면 가벼운 refresh(받은 카드는 그대로 두고 머리에 작은 스피너) ──
   useEffect(() => {
     if (loading) return // 초기 로딩 완료 전 무시
     if (!loadedTabs.current.has(activeTab)) {
-      // 첫 방문 → 데이터 로드 후 등록
       loadedTabs.current.add(activeTab)
-      fetchTabData(activeTab)
+      loadTab(activeTab, { y: summaryYear, m: summaryMonth, sd: startDay, calY: calendarYear, calM: calendarMonth })
       return
     }
-    // 재방문 → 가벼운 refresh
     if (activeTab === 'life') {
-      fetchLife().then(([sch, dia]) => {
-        setSchedules(Array.isArray(sch) ? sch : [])
-        setDiaries(Array.isArray(dia) ? dia : []); setDiariesAt(Date.now())
-      }).catch(() => {})
-    } else if (activeTab === 'ledger') {
-      const { startDate, endDate } = ledgerPeriod(summaryYear, summaryMonth, startDay)
-      Promise.all([
-        apiFetch<Transaction[]>(`/api/transactions?start_date=${startDate}&end_date=${endDate}`),
-        apiFetch<MonthlySummary>(`/api/summary?start_date=${startDate}&end_date=${endDate}`),
-        apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`),
-        apiFetch<FixedExpense[]>('/api/fixed-expenses'),
-      ]).then(([tx, sum, cal, fe]) => {
-        setTransactions(Array.isArray(tx) ? tx : [])
-        setSummary(sum as MonthlySummary)
-        setCalendarData(cal as CalendarSummaryResponse)
-        setFixedExpenses(Array.isArray(fe) ? fe : [])
-      }).catch(() => {})
+      track([TAB], Promise.all([fetchSchedules(), fetchDiaries()])).catch(() => {})
+    } else if (activeTab === 'ledger' && canSee('ledger')) {
+      track([TAB], Promise.all([
+        fetchTransactions(summaryYear, summaryMonth, startDay),
+        fetchSummary(summaryYear, summaryMonth, startDay),
+        fetchCalendar(calendarYear, calendarMonth),
+        track(['fe'], apiFetch<FixedExpense[]>('/api/fixed-expenses').then(fe => setFixedExpenses(Array.isArray(fe) ? fe : []))),
+      ])).catch(() => {})
     } else if (activeTab === 'wealth' && canSeeHoldings()) {
-      Promise.all([
-        apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
-        apiFetch<OtherAsset[]>('/api/assets'),
-        apiFetch<StockTransaction[]>('/api/stocks/transactions'),
-      ]).then(([port, assets, stockTx]) => {
-        const p = port as PortfolioResponse
-        if (Array.isArray(p)) { setPortfolio(p); setPortfolioSummary(null) }
-        else { setPortfolio(p?.items ?? []); setPortfolioSummary(p?.summary ?? null) }
-        setOtherAssets(Array.isArray(assets) ? assets : [])
-        setTradeTransactions(Array.isArray(stockTx) ? stockTx : [])
-      }).catch(() => {})
+      track([TAB], fetchHoldings()).catch(() => {})
     }
   }, [activeTab, loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -517,7 +480,7 @@ export default function DashboardClient() {
   }, [fetchCalendar, fetchSummary, fetchTransactions, fetchCalendarTransactions, startDay, nextMonthSignal]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── portfolio refetch ─────────────────────────────────────────────────────
-  const refetchPortfolio = async () => {
+  const refetchPortfolio = () => track(['holdings'], (async () => {
     const updated = await apiFetch<PortfolioResponse>('/api/stocks/portfolio')
     if (Array.isArray(updated)) {
       setPortfolio(updated)
@@ -526,16 +489,16 @@ export default function DashboardClient() {
       setPortfolio(updated?.items ?? [])
       setPortfolioSummary(updated?.summary ?? null)
     }
-  }
+  })())
 
   // ── assets refetch ────────────────────────────────────────────────────────
-  const refetchAssets = async () => {
+  const refetchAssets = () => track(['holdings'], (async () => {
     const updated = await apiFetch<OtherAsset[]>('/api/assets')
     setOtherAssets(Array.isArray(updated) ? updated : [])
-  }
+  })())
 
   // ── fixed expense refetch ─────────────────────────────────────────────────
-  const refetchFixedExpenses = useCallback(async (y = summaryYear, m = summaryMonth) => {
+  const refetchFixedExpenses = useCallback((y = summaryYear, m = summaryMonth) => track(['fe', 'tx'], (async () => {
     const [feData, feSummaryData, txData] = await Promise.all([
       apiFetch<FixedExpense[]>('/api/fixed-expenses'),
       apiFetch<FixedExpenseSummary>(`/api/fixed-expenses/summary?year=${y}&month=${m}`),
@@ -544,7 +507,7 @@ export default function DashboardClient() {
     setFixedExpenses(Array.isArray(feData) ? feData : [])
     setFeSummary(feSummaryData)
     setTransactions(Array.isArray(txData) ? txData : [])
-  }, [summaryYear, summaryMonth])
+  })()), [summaryYear, summaryMonth, track])
 
   // ── transaction handlers ──────────────────────────────────────────────────
   // ── 거래 추가: 입력 시트·달력 공용 ─────────────────────────────────────────
@@ -749,11 +712,6 @@ export default function DashboardClient() {
   }, [startDay])
 
   // ── dividend handlers ─────────────────────────────────────────────────────
-  const refetchDividends = useCallback(async (y = now.getFullYear(), m = now.getMonth() + 1) => {
-    const data = await apiFetch<DividendYearlySummary>(`/api/dividends/summary?year=${y}&month=${m}`)
-    setDivSummary(data)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
   const handleAddDividend = async (data: CreateDividendRequest) => {
     await apiFetch('/api/dividends', {
       method: 'POST',
@@ -814,9 +772,7 @@ export default function DashboardClient() {
   // 저장 뒤 목록 새로고침 실패도 던지지 않는다(같은 이유).
   const refetchDiaries = async () => {
     try {
-      const list = await apiFetch<DiaryEntry[]>('/api/diaries')
-      setDiaries(Array.isArray(list) ? list : [])
-      setDiariesAt(Date.now())
+      await fetchDiaries()
     } catch (e) {
       toastError('일기 목록 새로고침', e)
     }
@@ -877,6 +833,11 @@ export default function DashboardClient() {
   const currentTab = tabs.find(t => t.key === activeTab) ?? tabs[0]
   const currentSub = currentTab?.subs.find(s => s.key === activeSub) ?? currentTab?.subs[0]
   const canEdit = (m: MenuKey) => levelOf(perms, m) === 'edit'
+  // 카드 하나의 불러오기 상태 + 다시 시도
+  const sec = (key: string, retry: () => Promise<unknown>): SectionState => ({
+    view: sectionView(loads[key]),
+    onRetry: () => { retry().catch(() => {}) },
+  })
   // 2단 메뉴 세그먼트. 하나뿐이면 숨김. 시안처럼 화면 제목 아래에 두려고 화면에 prop 으로 넘긴다.
   const chipRow = currentTab && currentTab.subs.length > 1 ? (
     <Segmented items={currentTab.subs} value={currentSub?.key} onChange={setActiveSub} />
@@ -887,6 +848,7 @@ export default function DashboardClient() {
 
       {/* ── Header ── */}
       <header className="bg-cream/90 backdrop-blur-md px-5 py-3 sticky top-0 z-40">
+        <TopProgress on={(loads[TAB]?.pending ?? 0) > 0} />
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center">
@@ -982,8 +944,8 @@ export default function DashboardClient() {
 
         {/* ══ 자산현황 ══ */}
         {currentSub?.key === 'assets' && (
-          tabLoading === 'wealth' ? <TabSkeleton /> : (
             <WealthScreen
+              holdings={sec('holdings', fetchHoldings)}
               canEdit={canEdit('assets')}
               chips={chipRow}
               accessToken={session?.user?.accessToken ?? ''}
@@ -1005,7 +967,6 @@ export default function DashboardClient() {
               onCreateLoanExpense={handleCreateLoanExpense}
               onReorderAssets={handleReorderAssets}
             />
-          )
         )}
 
         {/* ══ 가계부 ══ */}
@@ -1029,6 +990,17 @@ export default function DashboardClient() {
             fixedExpenses={fixedExpenses}
             feSummary={feSummary}
             divSummary={divSummary}
+            sections={{
+              summary: sec('summary', () => fetchSummary(summaryYear, summaryMonth, startDay)),
+              feed: sec('tx', () => fetchTransactions(summaryYear, summaryMonth, startDay)),
+              breakdown: { view: mergeViews(sectionView(loads.tx), sectionView(loads.fe)), onRetry: () => {
+                if (sectionView(loads.tx) === 'error') fetchTransactions(summaryYear, summaryMonth, startDay).catch(() => {})
+                if (sectionView(loads.fe) === 'error') fetchFixed(summaryYear, summaryMonth).catch(() => {})
+              } },
+              dividends: sec('div', () => refetchDividends(calendarYear, calendarMonth)),
+              fixed: sec('fe', () => fetchFixed(summaryYear, summaryMonth)),
+              calendar: sec('cal', () => Promise.all([fetchCalendar(calendarYear, calendarMonth), fetchCalendarTransactions(calendarYear, calendarMonth)])),
+            }}
             portfolio={portfolio}
             portfolioSummary={portfolioSummary}
             otherAssets={otherAssets}
@@ -1048,8 +1020,9 @@ export default function DashboardClient() {
 
         {/* ══ 일상: 일정 · 일기 ══ */}
         {currentTab?.key === 'life' && (
-          tabLoading === 'life' ? <TabSkeleton /> : currentSub?.key === 'diary' ? (
+          currentSub?.key === 'diary' ? (
             <DiaryScreen
+              section={sec('diaries', fetchDiaries)}
               diaries={diaries}
               users={users}
               currentUserID={currentUserID}
@@ -1067,6 +1040,7 @@ export default function DashboardClient() {
             />
           ) : (
             <ScheduleScreen
+              section={sec('schedules', fetchSchedules)}
               schedules={schedules}
               diaries={diaries}
               currentUserID={currentUserID}

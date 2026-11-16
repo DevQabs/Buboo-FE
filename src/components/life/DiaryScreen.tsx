@@ -6,6 +6,8 @@ import { AnimatePresence } from 'framer-motion'
 import { ChevronLeftIcon, ChevronRightIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { Card, FloatingBar, IconButton, PageTitle } from '@/components/ui/Card'
 import StorageWarning from '@/components/ui/StorageWarning'
+import { Section } from '@/components/ui/Loading'
+import type { SectionState } from '@/lib/loadState'
 import { toastError } from '@/components/ui/Toast'
 import { AddDiaryModal, EditDiaryModal, MOOD_LABEL, MOOD_TONE, PhotoLightbox, photoSrc } from './DiaryModals'
 import { todayKST } from '@/lib/date'
@@ -14,6 +16,8 @@ import { lunarFullLabel } from '@/lib/lunar'
 import type { CreateDiaryRequest, DiaryEntry, DiaryMood, UpdateDiaryRequest, User } from '@/types'
 
 interface DiaryScreenProps {
+  /** 일기 목록 불러오기 상태(기분 띠·피드) */
+  section: SectionState
   diaries: DiaryEntry[]
   users: User[]
   currentUserID: string
@@ -36,7 +40,7 @@ interface DiaryScreenProps {
 }
 
 export default function DiaryScreen({
-  diaries, users, currentUserID, accessToken, isOwner, photosLoadedAt, onReloadPhotos, canEdit, hasNav, chips, onAdd, onUpdate, onDeletePhoto, onDelete,
+  section, diaries, users, currentUserID, accessToken, isOwner, photosLoadedAt, onReloadPhotos, canEdit, hasNav, chips, onAdd, onUpdate, onDeletePhoto, onDelete,
 }: DiaryScreenProps) {
   const today = todayKST()
   const [ym, setYm] = useState(today.slice(0, 7)) // "YYYY-MM"
@@ -99,6 +103,8 @@ export default function DiaryScreen({
       {chips}
       {isOwner && accessToken && <StorageWarning accessToken={accessToken} className="rounded-card bg-white p-4 shadow-warm" />}
 
+      <Section s={section} minH={220}>
+      <div className="space-y-3">
       {/* 한 달 기분 띠 */}
       <Card className="px-3 py-2.5">
         <p className="mb-1.5 text-xs text-stone-400">{m}월 기분</p>
@@ -168,6 +174,8 @@ export default function DiaryScreen({
           </div>
         </Card>
       ))}
+      </div>
+      </Section>
 
       {canEdit && (
         <FloatingBar hasNav={hasNav} onClick={() => setAdding(true)} className="border border-dashed border-stone-300 bg-white text-stone-400 shadow-warm">

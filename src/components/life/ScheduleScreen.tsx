@@ -6,6 +6,8 @@ import { AnimatePresence } from 'framer-motion'
 import { CalendarDaysIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { Card, IconButton, PageTitle, SectionLabel } from '@/components/ui/Card'
 import { toastError } from '@/components/ui/Toast'
+import { Section } from '@/components/ui/Loading'
+import type { SectionState } from '@/lib/loadState'
 import MiniCalendar from './MiniCalendar'
 import { AddScheduleModal, COLOR_MAP, EditScheduleModal } from './ScheduleModals'
 import { addDays, daysBetween, todayKST, weekdayOf } from '@/lib/date'
@@ -99,6 +101,8 @@ function LaterRow({ s, today, canEdit, onOpen, onRemove }: {
 }
 
 interface ScheduleScreenProps {
+  /** 일정 목록 불러오기 상태(주간 스트립 아래 목록) */
+  section: SectionState
   schedules: Schedule[]
   /** 월 달력의 일기 점 */
   diaries: DiaryEntry[]
@@ -111,7 +115,7 @@ interface ScheduleScreenProps {
   onDelete: (id: string) => Promise<void>
 }
 
-export default function ScheduleScreen({ schedules, diaries, currentUserID, canEdit, chips, onAdd, onEdit, onDelete }: ScheduleScreenProps) {
+export default function ScheduleScreen({ section, schedules, diaries, currentUserID, canEdit, chips, onAdd, onEdit, onDelete }: ScheduleScreenProps) {
   const today = todayKST()
   const [selected, setSelected] = useState(today)
   const [showMonth, setShowMonth] = useState(false)
@@ -194,6 +198,8 @@ export default function ScheduleScreen({ schedules, diaries, currentUserID, canE
         })}
       </div>
 
+      <Section s={section} minH={160}>
+      <div className="space-y-3">
       {selected !== today && (
         <>
           <div className="flex items-center justify-between">
@@ -248,6 +254,8 @@ export default function ScheduleScreen({ schedules, diaries, currentUserID, canE
           </div>
         </>
       )}
+      </div>
+      </Section>
 
       <AnimatePresence>
         {adding && (

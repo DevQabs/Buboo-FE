@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { IconButton, PageTitle, SectionLabel } from '@/components/ui/Card'
+import { Section } from '@/components/ui/Loading'
 import CalendarView, { type AddTransactionPayload } from '@/components/dashboard/CalendarView'
 import AllowanceHero from './AllowanceHero'
 import UpcomingStrip from './UpcomingStrip'
@@ -16,12 +17,14 @@ import QuickEntryBar from './QuickEntryBar'
 import { apiFetch } from '@/lib/api'
 import { daysLeftInPeriod, ledgerPeriod, todayKST } from '@/lib/date'
 import { categoryBreakdown, fixedSpendingTotal, upcomingEvents } from '@/lib/ledger'
+import type { SectionState } from '@/lib/loadState'
 import type {
   CalendarEvent, CalendarSummaryResponse, Couple, CreateDividendRequest, CreateFixedExpenseRequest, DividendYearlySummary,
   FixedExpense, FixedExpenseSummary, MonthlySummary, OtherAsset, PortfolioSummary, StockAssetWithPrice,
   Transaction, UpdateFixedExpenseRequest, User,
 } from '@/types'
 
+// 청크 받는 동안은 데이터 스피너가 아니라 빈 카드 자리만(카드 데이터 상태는 Section 이 보인다)
 const loadingCard = () => <div className="h-24 w-full animate-pulse rounded-card bg-white" />
 const DividendCard = dynamic(() => import('@/components/dashboard/DividendCard'), { ssr: false, loading: loadingCard })
 const FixedExpenseCard = dynamic(() => import('@/components/dashboard/FixedExpenseCard'), { ssr: false, loading: loadingCard })
@@ -49,6 +52,8 @@ export interface LedgerScreenProps {
   fixedExpenses: FixedExpense[]
   feSummary: FixedExpenseSummary | null
   divSummary: DividendYearlySummary | null
+  /** 카드별 불러오기 상태(처음엔 스피너·실패면 다시 시도, 새로고침은 작은 스피너) */
+  sections: Record<'summary' | 'feed' | 'breakdown' | 'dividends' | 'fixed' | 'calendar', SectionState>
   portfolio: StockAssetWithPrice[]
   portfolioSummary: PortfolioSummary | null
   otherAssets: OtherAsset[]
@@ -80,19 +85,27 @@ export default function LedgerScreen(p: LedgerScreenProps) {
   const breakdown = useMemo(() => categoryBreakdown(p.transactions, p.fixedExpenses), [p.transactions, p.fixedExpenses])
   // 곧 나갈/들어올 돈은 달력 달이 아니라 가계부 기간 기준. 시작일이 1일이 아니면 기간이 두 달에 걸친다.
   // 달력 요약이 다시 불리면(고정비·배당 변경) 같이 다시 읽는다.
-  const [periodEvents, setPeriodEvents] = useState<CalendarEvent[]>([])
+  // null: 아직 못 받음. 다시 받을 땐 있던 목록을 두고 머리에 작은 스피너만 띄운다.
+  const [periodEvents, setPeriodEvents] = useState<CalendarEvent[] | null>(null)
+  const [upLoad, setUpLoad] = useState<'loading' | 'error' | 'ok'>('loading')
+  const [upRetry, setUpRetry] = useState(0)
   useEffect(() => {
     if (!p.accessToken) return
     const months = p.startDay === 1 ? [startDate] : [startDate, endDate]
     let alive = true
+    setUpLoad('loading')
     Promise.all(months.map(d => apiFetch<CalendarSummaryResponse>(
       `/api/transactions/calendar-summary?year=${Number(d.slice(0, 4))}&month=${Number(d.slice(5, 7))}`, p.accessToken!,
     )))
-      .then(rs => { if (alive) setPeriodEvents(rs.flatMap(r => r?.events ?? [])) })
-      .catch(() => { if (alive) setPeriodEvents([]) })
+      .then(rs => { if (alive) { setPeriodEvents(rs.flatMap(r => r?.events ?? [])); setUpLoad('ok') } })
+      .catch(() => { if (alive) setUpLoad('error') })
     return () => { alive = false }
-  }, [startDate, endDate, p.startDay, p.accessToken, p.calendarData])
-  const upcoming = upcomingEvents(periodEvents, today, startDate, endDate)
+  }, [startDate, endDate, p.startDay, p.accessToken, p.calendarData, upRetry])
+  const upcoming = upcomingEvents(periodEvents ?? [], today, startDate, endDate)
+  const upcomingSection: SectionState = {
+    view: periodEvents ? (upLoad === 'loading' ? 'refreshing' : 'content') : upLoad === 'error' ? 'error' : 'spinner',
+    onRetry: () => setUpRetry(n => n + 1),
+  }
 
   const goMonth = (d: number) => {
     const m = p.calendarMonth + d
@@ -122,7 +135,7 @@ export default function LedgerScreen(p: LedgerScreenProps) {
         </>}
       />
 
-      {p.summary && (
+      <Section s={p.sections.summary} minH={168}>
         <AllowanceHero
           budget={budget}
           variable={variable}
@@ -134,9 +147,10 @@ export default function LedgerScreen(p: LedgerScreenProps) {
           onPeriodChange={p.onPeriodChange}
           onUpdateBudget={p.canEdit ? p.onUpdateBudget : undefined}
         />
-      )}
+      </Section>
 
       {showCalendar && (
+        <Section s={p.sections.calendar} minH={320}>
         <CalendarView
           key={focusDate ?? 'month'}
           initialSelectedDate={focusDate ?? undefined}
@@ -155,15 +169,23 @@ export default function LedgerScreen(p: LedgerScreenProps) {
           onUpdateTransaction={p.canEdit ? p.onUpdateTransaction : undefined}
           onDeleteTransaction={p.canEdit ? p.onDeleteTransaction : undefined}
         />
+        </Section>
       )}
 
-      <UpcomingStrip events={upcoming} />
+      <Section s={upcomingSection} minH={112}>
+        <UpcomingStrip events={upcoming} />
+      </Section>
 
       <SectionLabel>{p.canEdit ? '내역 · 누르면 그날 달력에서 고칠 수 있어요' : '내역'}</SectionLabel>
-      <LedgerFeed transactions={p.transactions} users={p.users} onSelectDate={openDay} />
+      <Section s={p.sections.feed} minH={160}>
+        <LedgerFeed transactions={p.transactions} users={p.users} onSelectDate={openDay} />
+      </Section>
 
-      <CategoryBreakdownCard items={breakdown} total={variable + fixed} />
+      <Section s={p.sections.breakdown} minH={160}>
+        <CategoryBreakdownCard items={breakdown} total={variable + fixed} />
+      </Section>
 
+      <Section s={p.sections.dividends}>
       <DividendCard
         summary={p.divSummary}
         portfolio={p.portfolio}
@@ -175,7 +197,9 @@ export default function LedgerScreen(p: LedgerScreenProps) {
         onDelete={p.onDeleteDividend}
         canEdit={p.canEdit}
       />
+      </Section>
 
+      <Section s={p.sections.fixed}>
       <FixedExpenseCard
         fixedExpenses={p.fixedExpenses}
         summary={p.feSummary}
@@ -189,6 +213,7 @@ export default function LedgerScreen(p: LedgerScreenProps) {
         onDelete={p.onDeleteFixedExpense}
         canEdit={p.canEdit}
       />
+      </Section>
 
       {p.canEdit && (
         <QuickEntryBar

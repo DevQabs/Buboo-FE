@@ -33,6 +33,14 @@
 
   /* Safe area (노치/홈바 대응) */
   .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  /* 헤더 아래 얇은 진행 막대(components/ui/Loading.tsx TopProgress): 끝을 모르는 왕복 */
+  .animate-indeterminate { animation: indeterminate 1.1s ease-in-out infinite; }
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
 }
 
 /* recharts는 클릭 시 wrapper와 sector에 포커스를 줘서 도넛 위에 브라우저

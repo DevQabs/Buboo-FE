@@ -4,6 +4,8 @@
 import { useState, type ReactNode } from 'react'
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { Card, PageTitle } from '@/components/ui/Card'
+import { Section } from '@/components/ui/Loading'
+import type { SectionState } from '@/lib/loadState'
 import StockPortfolioCard from '@/components/dashboard/StockPortfolioCard'
 import OtherAssetCard from '@/components/dashboard/OtherAssetCard'
 import AllocationCard from './AllocationCard'
@@ -13,6 +15,8 @@ import type {
 
 interface WealthScreenProps {
   canEdit: boolean
+  /** 종목·자산 불러오기 상태(구성비·보유 종목·예적금 카드 공용) */
+  holdings: SectionState
   chips: ReactNode
   accessToken: string
   currentUserID: string
@@ -41,8 +45,11 @@ export default function WealthScreen(p: WealthScreenProps) {
       <PageTitle eyebrow="자산" title="자산현황" />
       {p.chips}
 
-      <AllocationCard portfolioSummary={p.portfolioSummary} otherAssets={p.otherAssets} />
+      <Section s={p.holdings} minH={200}>
+        <AllocationCard portfolioSummary={p.portfolioSummary} otherAssets={p.otherAssets} />
+      </Section>
 
+      <Section s={p.holdings} minH={160}>
       <StockPortfolioCard
         assets={p.portfolio}
         users={p.users}
@@ -56,7 +63,9 @@ export default function WealthScreen(p: WealthScreenProps) {
         onDeleteClick={p.onDeleteStock}
         onReorder={p.onReorderStocks}
       />
+      </Section>
 
+      <Section s={p.holdings} minH={48}>
       <Card>
         <button type="button" onClick={() => setShowOther(v => !v)} className="flex w-full items-center justify-between px-4 py-3">
           <span className="text-sm font-bold text-stone-800">예적금 · 기타</span>
@@ -66,7 +75,8 @@ export default function WealthScreen(p: WealthScreenProps) {
           </span>
         </button>
       </Card>
-      {showOther && (
+      </Section>
+      {showOther && p.holdings.view !== 'spinner' && p.holdings.view !== 'error' && (
         <OtherAssetCard
           assets={p.otherAssets}
           users={p.users}
