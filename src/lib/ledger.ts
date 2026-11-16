@@ -75,3 +75,10 @@ export function categoryBreakdown(txs: Transaction[], fixed: FixedExpense[]): Ca
     .map(([category, v]) => ({ category, amount: v.amount, isFixed: v.isFixed }))
     .sort((a, b) => b.amount - a.amount)
 }
+
+export type PayMethod = '카드' | 'N페이'
+export const PAY_METHOD_KEY = 'uri-jip.quickEntry.payment'
+/** 저장된 결제수단 값을 읽는다. 없거나 모르는 값이면 카드 */
+export function readPayMethod(raw: string | null | undefined): PayMethod {
+  return raw === 'N페이' ? 'N페이' : '카드'
+}

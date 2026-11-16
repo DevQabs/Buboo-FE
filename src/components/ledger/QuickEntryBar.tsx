@@ -12,7 +12,7 @@ import { toastError } from '@/components/ui/Toast'
 import { openNaverPay } from './EntrySheet'
 import { formatAmountInput, parseAmount } from '@/lib/formatNumber'
 import { todayKST } from '@/lib/date'
-import { sortCategoriesByUse } from '@/lib/ledger'
+import { sortCategoriesByUse, readPayMethod, PAY_METHOD_KEY, type PayMethod } from '@/lib/ledger'
 import type { Transaction } from '@/types'
 
 type QuickType = 'expense' | 'income'
@@ -71,6 +71,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
   const [memo, setMemo] = useState('')
   const [undoID, setUndoID] = useState<string | null>(null)
   const [showCats, setShowCats] = useState(false)
+  const [method, setMethod] = useState<PayMethod>('카드')
   const inputRef = useRef<HTMLInputElement>(null)
   const dateRef = useRef<HTMLInputElement>(null)
   const keyboard = useKeyboardInset()
@@ -85,13 +86,24 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
   const today = todayKST()
 
   useEffect(() => {
+    try { setMethod(readPayMethod(localStorage.getItem(PAY_METHOD_KEY))) } catch { /* 저장소 막힘: 기본 카드 */ }
+  }, [])
+
+  const pickMethod = (m: PayMethod) => {
+    setMethod(m)
+    try { localStorage.setItem(PAY_METHOD_KEY, m) } catch { /* 저장소 막힘: 이번 화면에서만 유지 */ }
+  }
+
+  useEffect(() => {
     if (!undoID) return
     const t = setTimeout(() => setUndoID(null), 5000)
     return () => clearTimeout(t)
   }, [undoID])
 
-  const save = async (thenPay: boolean) => {
+  const save = async () => {
     if (amt <= 0) return
+    const pay = type === 'expense' ? method : '카드' // N페이 칩은 지출에만 있다
+    const thenPay = pay === 'N페이'
     const typed = amount
     const payload: AddTransactionPayload = {
       user_id: currentUserID,
@@ -100,7 +112,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
       category: activeCategory,
       title: memo.trim() || (thenPay ? '네이버페이 결제' : ''),
       date,
-      payment_method: '카드',
+      payment_method: pay,
     }
     // 다음 건을 바로 넣게 먼저 비우고 포커스를 지킨다. 실패하면 금액을 되살린다.
     setAmount('')
@@ -132,7 +144,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
 
   const onFormSubmit = (e: FormEvent) => {
     e.preventDefault()
-    save(false)
+    save()
   }
 
   const openDate = () => {
@@ -140,7 +152,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
   }
 
   const position = hasNav
-    ? 'bottom-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+0.75rem)]'
+    ? 'bottom-[calc(var(--nav-h)+0.75rem)]'
     : 'bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)]'
 
   return (
@@ -214,25 +226,32 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
               </div>
 
               <div className="flex gap-2">
+                {type === 'expense' && (
+                  <div className="flex shrink-0 gap-1.5">
+                    {(['카드', 'N페이'] as const).map(m => (
+                      <button
+                        key={m}
+                        type="button"
+                        onPointerDown={keepFocus}
+                        onClick={() => pickMethod(m)}
+                        aria-pressed={method === m}
+                        className={`h-12 rounded-xl border px-4 text-sm font-semibold transition-colors ${
+                          method === m ? 'border-brand-500 bg-brand-500 text-white' : 'border-line bg-white text-stone-500'
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <button
                   type="button"
                   onPointerDown={keepFocus}
-                  onClick={() => save(false)}
+                  onClick={() => save()}
                   className="h-12 flex-1 rounded-xl bg-brand-500 text-base font-bold text-white transition-colors hover:bg-brand-600"
                 >
                   저장
                 </button>
-                {type === 'expense' && (
-                  <button
-                    type="button"
-                    onPointerDown={keepFocus}
-                    onClick={() => save(true)}
-                    className="h-12 shrink-0 rounded-xl px-4 text-sm font-semibold text-white"
-                    style={{ background: 'linear-gradient(135deg, #03c75a 0%, #018a3c 100%)' }}
-                  >
-                    N페이
-                  </button>
-                )}
               </div>
             </div>
           )}
@@ -249,7 +268,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
               onChange={e => setAmount(formatAmountInput(e.target.value))}
               className="h-12 min-w-0 flex-1 bg-transparent text-lg font-bold tabular-nums text-white placeholder:text-white/70 focus:outline-none"
             />
-            <span className="text-sm font-medium text-white/60">{amt > 0 ? '원' : `${activeCategory} · 카드`}</span>
+            <span className="text-sm font-medium text-white/60">{amt > 0 ? '원' : `${activeCategory} · ${type === 'expense' ? method : '카드'}`}</span>
           </label>
         </div>
       </form>

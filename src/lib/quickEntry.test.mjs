@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { formatAmountInput, parseAmount } from './formatNumber.ts'
-import { sortCategoriesByUse } from './ledger.ts'
+import { sortCategoriesByUse, readPayMethod } from './ledger.ts'
 
 test('금액 입력: 숫자만 남기고 천 단위 쉼표, 다시 읽으면 원 금액', () => {
   assert.equal(formatAmountInput('12000'), '12,000')
@@ -24,4 +24,12 @@ test('미리 고르는 카테고리는 가장 많이 쓴 지출 카테고리, �
   assert.equal(sortCategoriesByUse(cats, txs, 'expense')[0], '교통')
   assert.equal(sortCategoriesByUse(cats, [], 'expense')[0], '식비')
   assert.equal(sortCategoriesByUse(cats, [{ type: 'expense', category: '기타' }], 'expense')[0], '식비')
+})
+
+test('저장된 결제수단: N페이만 인정, 없거나 이상한 값은 카드', () => {
+  assert.equal(readPayMethod('N페이'), 'N페이')
+  assert.equal(readPayMethod('카드'), '카드')
+  assert.equal(readPayMethod(null), '카드')
+  assert.equal(readPayMethod(undefined), '카드')
+  assert.equal(readPayMethod('현금'), '카드')
 })
