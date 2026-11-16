@@ -8,8 +8,8 @@ import { Card, IconButton, PageTitle, SectionLabel } from '@/components/ui/Card'
 import { toastError } from '@/components/ui/Toast'
 import MiniCalendar from './MiniCalendar'
 import { AddScheduleModal, COLOR_MAP, EditScheduleModal } from './ScheduleModals'
-import { addDays, todayKST, weekdayOf } from '@/lib/date'
-import { buildAgenda, ddayBadge, schedulesOn } from '@/lib/dday'
+import { addDays, daysBetween, todayKST, weekdayOf } from '@/lib/date'
+import { buildAgenda, ddayBadge, fmtDDay, schedulesOn, weekBuckets } from '@/lib/dday'
 import { getHolidaysForMonth } from '@/lib/koreanHolidays'
 import { lunarFullLabel } from '@/lib/lunar'
 import type { CreateScheduleRequest, DiaryEntry, Schedule, UpdateScheduleRequest } from '@/types'
@@ -47,6 +47,53 @@ function AgendaRow({ s, today, canEdit, onOpen, onRemove }: {
           <TrashIcon className="h-3.5 w-3.5" />
         </button>
       )}
+    </div>
+  )
+}
+
+// "12월 6일 (토)" — 토 brand, 일 rose. 같은 달 끝날은 "8일 (월)".
+function FullDate({ d, withMonth = true }: { d: string; withMonth?: boolean }) {
+  const w = weekdayOf(d)
+  const tone = w === 6 ? 'text-brand-500' : w === 0 ? 'text-rose-500' : ''
+  return <>{withMonth ? `${Number(d.slice(5, 7))}월 ` : ''}{Number(d.slice(8))}일 <span className={tone}>({WD[w]})</span></>
+}
+
+// 다음 주 이후 타임라인 한 줄: 제목, 전체 날짜(여러 날이면 끝날까지), 음력·메모, 오른쪽 D-n.
+function LaterRow({ s, today, canEdit, onOpen, onRemove }: {
+  s: Schedule
+  today: string
+  canEdit: boolean
+  onOpen: () => void
+  onRemove: () => void
+}) {
+  const c = COLOR_MAP[s.color] ?? COLOR_MAP.indigo
+  const start = ymd(s.start_date)
+  const end = s.end_date ? ymd(s.end_date) : ''
+  return (
+    <div className="relative">
+      <span className={`absolute -left-5 top-4 h-2.5 w-2.5 rounded-full ring-2 ring-white ${c.dot}`} />
+      <Card className="flex min-h-11 items-center gap-2 px-3 py-2">
+        <button type="button" disabled={!canEdit} onClick={onOpen} className="min-w-0 flex-1 self-stretch text-left">
+          <p className="truncate text-sm font-semibold text-stone-800">
+            {s.title}
+            {s.dday_label && <span className="font-normal text-stone-400"> · {s.dday_label}</span>}
+          </p>
+          <p className="text-xs text-stone-500">
+            <FullDate d={start} />
+            {end && end !== start && <> – <FullDate d={end} withMonth={end.slice(0, 7) !== start.slice(0, 7)} /></>}
+            <span className="text-stone-400"> · {lunarFullLabel(start)}</span>
+          </p>
+          {s.description && <p className="truncate text-xs text-stone-400">{s.description}</p>}
+        </button>
+        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-extrabold tabular-nums ${c.bg} ${c.text}`}>
+          {fmtDDay(daysBetween(today, start))}
+        </span>
+        {canEdit && (
+          <button type="button" aria-label="삭제" onClick={onRemove} className="relative before:absolute before:content-[''] before:-inset-2 shrink-0 rounded-lg p-1.5 text-stone-300 hover:bg-rose-50 hover:text-rose-400">
+            <TrashIcon className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </Card>
     </div>
   )
 }
@@ -166,7 +213,17 @@ export default function ScheduleScreen({ schedules, diaries, currentUserID, canE
       {agenda.later.length > 0 && (
         <>
           <SectionLabel>다음 주 이후</SectionLabel>
-          <Card className="px-3 py-1">{rows(agenda.later)}</Card>
+          {/* 주 단위 타임라인: 일정 있는 주만 */}
+          <div className="relative space-y-2 pl-6 before:absolute before:bottom-2 before:left-2 before:top-2 before:w-0.5 before:rounded-full before:bg-stone-200 before:content-['']">
+            {weekBuckets(agenda.later, today).map(b => (
+              <section key={b.label} className="space-y-1.5">
+                <h3 className="pt-1 text-xs font-bold text-stone-500">{b.label}</h3>
+                {b.items.map(s => (
+                  <LaterRow key={s.id} s={s} today={today} canEdit={canEdit} onOpen={() => setEditing(s)} onRemove={() => remove(s.id)} />
+                ))}
+              </section>
+            ))}
+          </div>
         </>
       )}
 

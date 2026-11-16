@@ -238,3 +238,39 @@ test('apiFetch 는 빈 본문 200/201 을 undefined 로, Headers 인스턴스도
     assert.deepEqual(await apiFetch('/x', 't'), { a: 1 })
   })
 })
+
+// ── 일정 다음 주 이후: 주 단위 타임라인 ──
+import { weekBuckets } from './dday.ts'
+
+test('다음 주 이후는 일~토 주로 묶고 빈 주는 건너뛴다', () => {
+  // 2026-11-17(화) → 이번 주 11-15(일)~11-21(토). 다음 주 11-22(일)~11-28(토).
+  const list = [
+    sch('far', '2026-12-23'),
+    sch('sun', '2026-11-22'),
+    sch('sat', '2026-11-28'),
+    sch('w3', '2026-12-06'),
+  ]
+  const b = weekBuckets(list, '2026-11-17')
+  assert.deepEqual(b.map(x => x.label), ['다음 주 (11.22 – 11.28)', '3주 뒤 (12.6 – 12.12)', '12월 넷째 주'])
+  assert.deepEqual(b.map(x => x.items.map(s => s.id)), [['sun', 'sat'], ['w3'], ['far']])
+})
+
+test('주 이름은 달·해를 넘어도 맞다', () => {
+  const lbl = d => weekBuckets([sch('a', d)], '2026-11-17')[0].label
+  assert.equal(lbl('2026-11-30'), '2주 뒤 (11.29 – 12.5)') // 두 달에 걸친 주
+  assert.equal(lbl('2026-12-13'), '12월 셋째 주') // 12-13~19, 수요일 16일
+  assert.equal(lbl('2026-12-31'), '12월 다섯째 주') // 12-27~01-02, 수요일 12-30 이라 12월
+  assert.equal(lbl('2027-01-05'), '내년 1월 첫째 주')
+  assert.equal(lbl('2027-01-15'), '내년 1월 둘째 주')
+  assert.equal(lbl('2028-03-01'), '2028년 3월 첫째 주')
+})
+
+test('같은 날 시작하면 먼저 끝나는 일정이 앞, 여러 날 일정은 시작 주에 둔다', () => {
+  const list = [
+    sch('long', '2026-12-06', { end_date: '2026-12-20T00:00:00Z' }),
+    sch('one', '2026-12-06'),
+  ]
+  const b = weekBuckets(list, '2026-11-17')
+  assert.equal(b.length, 1)
+  assert.deepEqual(b[0].items.map(s => s.id), ['one', 'long'])
+})

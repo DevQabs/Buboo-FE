@@ -42,3 +42,41 @@ export function buildAgenda<T extends AgendaFields>(list: T[], today: string): {
 export function schedulesOn<T extends Pick<Schedule, 'start_date'> & Partial<Pick<Schedule, 'end_date'>>>(list: T[], day: string): T[] {
   return list.filter(s => ymd(s.start_date) <= day && day <= ymd(s.end_date ?? s.start_date))
 }
+
+const ORD = ['첫째', '둘째', '셋째', '넷째', '다섯째']
+const md = (n: number) => { const d = new Date(n * DAY_MS); return `${d.getUTCMonth() + 1}.${d.getUTCDate()}` }
+
+/**
+ * "다음 주 이후" 일정을 시작일이 든 주(일~토, 주간 스트립·buildAgenda 와 같은 기준)로 묶는다.
+ * 일정이 없는 주는 만들지 않는다. 1~3주 뒤는 "다음 주 (11.22 – 11.28)" 식, 그 뒤는 "12월 넷째 주",
+ * 해가 바뀌면 "내년 1월 둘째 주". 주가 두 달에 걸치면 수요일이 든 달로 센다.
+ */
+export function weekBuckets<T extends AgendaFields>(list: T[], today: string): { label: string; items: T[] }[] {
+  const t = dayNum(today)
+  const thisWeek = t - new Date(t * DAY_MS).getUTCDay()
+  const start = (s: T) => dayNum(ymd(s.start_date))
+  const end = (s: T) => dayNum(ymd(s.end_date ?? s.start_date))
+  const sorted = [...list].sort((a, b) => start(a) - start(b) || end(a) - end(b))
+  const out: { label: string; items: T[] }[] = []
+  let cur = -1
+  for (const s of sorted) {
+    const k = Math.floor((start(s) - thisWeek) / 7)
+    if (k !== cur) {
+      cur = k
+      const ws = thisWeek + k * 7
+      const range = `(${md(ws)} – ${md(ws + 6)})`
+      let label: string
+      if (k === 1) label = `다음 주 ${range}`
+      else if (k >= 2 && k <= 3) label = `${k}주 뒤 ${range}`
+      else {
+        const mid = new Date((ws + 3) * DAY_MS)
+        const dy = mid.getUTCFullYear() - Number(today.slice(0, 4))
+        const year = dy === 1 ? '내년 ' : dy > 1 ? `${mid.getUTCFullYear()}년 ` : ''
+        label = `${year}${mid.getUTCMonth() + 1}월 ${ORD[Math.ceil(mid.getUTCDate() / 7) - 1]} 주`
+      }
+      out.push({ label, items: [] })
+    }
+    out[out.length - 1].items.push(s)
+  }
+  return out
+}
