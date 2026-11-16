@@ -3,8 +3,26 @@
 import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
 import { daysSinceBirth } from '@/lib/mediaRules'
-import { Chip } from '@/components/ui/Card'
 import type { Baby, BabySex } from '@/types'
+
+/** 성별 기호 — 이모지 대신 SVG */
+function SexIcon({ male }: { male: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {male ? (
+        <>
+          <circle cx="10" cy="14" r="5" />
+          <path d="M14 10l6-6M15 4h5v5" />
+        </>
+      ) : (
+        <>
+          <circle cx="12" cy="9" r="5" />
+          <path d="M12 14v8M9 18h6" />
+        </>
+      )}
+    </svg>
+  )
+}
 
 /** B 톤 흰 카드 클래스(ui/Card 와 같은 토큰) */
 export const CARD = 'rounded-card bg-white shadow-warm'
@@ -69,10 +87,25 @@ function BabyProfileForm({ accessToken, initial, onSaved, onCancel }: {
         생일
         <input type="date" value={birth} max={localToday()} onChange={e => setBirth(e.target.value)} className={`${input} mt-1`} />
       </label>
-      <div className="flex gap-1.5">
-        {(['female', 'male'] as const).map(s => (
-          <Chip key={s} on={sex === s} onClick={() => setSex(s)}>{s === 'female' ? '여아' : '남아'}</Chip>
-        ))}
+      <div className="flex gap-2">
+        {(['male', 'female'] as const).map(s => {
+          const on = sex === s
+          const male = s === 'male'
+          const tone = male ? 'border-brand-500 bg-brand-500 text-white' : 'border-rose-400 bg-rose-400 text-white'
+          const off = male ? 'border-line bg-white text-brand-500' : 'border-line bg-white text-rose-400'
+          return (
+            <button
+              key={s}
+              type="button"
+              aria-pressed={on}
+              onClick={() => setSex(s)}
+              className={`flex h-14 w-1/2 items-center justify-center gap-2 rounded-card border text-sm font-semibold transition-colors ${on ? tone : off}`}
+            >
+              <SexIcon male={male} />
+              {male ? '남아' : '여아'}
+            </button>
+          )
+        })}
       </div>
       <p className="text-xs text-stone-400">성별은 성장 화면의 또래 표준 곡선을 고르는 데만 써요.</p>
       {error && <p className="text-xs text-rose-500">{error}</p>}
@@ -101,7 +134,7 @@ export function BabyGate({ accessToken, isOwner, children }: {
     return (
       <div className="flex items-center gap-2 px-1 text-xs">
         <span className="text-rose-500">{error}</span>
-        <button type="button" onClick={reload} className="font-semibold text-brand-500">다시 시도</button>
+        <button type="button" onClick={reload} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 font-semibold text-brand-500">다시 시도</button>
       </div>
     )
   }
@@ -135,7 +168,7 @@ export function BabyGate({ accessToken, isOwner, children }: {
           </div>
         </div>
         {isOwner && (
-          <button type="button" onClick={() => setEditing(true)} className="text-xs text-stone-400">수정</button>
+          <button type="button" onClick={() => setEditing(true)} className="relative before:absolute before:content-[''] before:-inset-y-3 before:-inset-x-2 text-xs text-stone-400">수정</button>
         )}
       </div>
       {children(baby)}
