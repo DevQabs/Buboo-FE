@@ -104,8 +104,7 @@ const KNOWN_CATEGORY_COLOR: Record<string, CategoryColor> = {
 }
 
 export function categoryColor(name: string): CategoryColor {
-  const known = KNOWN_CATEGORY_COLOR[name]
-  if (known) return known
+  if (Object.hasOwn(KNOWN_CATEGORY_COLOR, name)) return KNOWN_CATEGORY_COLOR[name]
   let h = 0
   for (const ch of name) h = (h * 31 + ch.codePointAt(0)!) >>> 0
   return CATEGORY_PALETTE[h % CATEGORY_PALETTE.length]

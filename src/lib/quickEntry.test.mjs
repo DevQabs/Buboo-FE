@@ -59,3 +59,9 @@ test('카테고리 색: 정해진 이름은 고정 색, 모르는 이름은 늘 
   }
   assert.ok(!CATEGORY_PALETTE.includes('indigo') && !CATEGORY_PALETTE.includes('blue'))
 })
+
+test('카테고리 색: 객체 프로토타입 이름("constructor" 등)도 팔레트 색을 준다', () => {
+  for (const name of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+    assert.ok(CATEGORY_PALETTE.includes(categoryColor(name)), name)
+  }
+})

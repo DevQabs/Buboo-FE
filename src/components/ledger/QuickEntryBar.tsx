@@ -370,7 +370,11 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
               placeholder="금액 입력"
               aria-label="금액"
               value={amount}
-              onChange={e => setAmount(formatAmountInput(e.target.value))}
+              onChange={e => {
+                const next = formatAmountInput(e.target.value)
+                setAmount(next)
+                if (parseAmount(next) <= 0) setPickerOpen(false) // 금액을 지우면 선택판도 닫아 다음 금액에 되살아나지 않게
+              }}
               className="h-12 min-w-0 flex-1 bg-transparent text-lg font-bold tabular-nums text-white placeholder:text-white/70 focus:outline-none"
             />
             <span className="text-sm font-medium text-white/60">{amt > 0 ? '원' : `${activeCategory} · ${type === 'expense' ? method : '카드'}`}</span>
