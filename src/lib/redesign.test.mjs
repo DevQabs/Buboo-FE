@@ -167,3 +167,40 @@ test('이미 목표 이상이면 시작 달(달성), 마이너스 수익률은 �
   assert.equal(previewReachMonth({ ...o, netWorth: 200, annualReturn: -0.1 }), null)
   assert.equal(previewReachMonth({ ...o, netWorth: 0, annualReturn: -0.1, contributions: [{ year: 2026, monthly_krw: 400 }] }), '2026-12')
 })
+
+// ── Task 7: apiFetch 실패 문구·빈 본문·Headers ──
+import { apiFetch, ApiError } from './api.ts'
+
+async function withFetch(impl, fn) {
+  const orig = globalThis.fetch
+  globalThis.fetch = impl
+  try { return await fn() } finally { globalThis.fetch = orig }
+}
+
+test('apiFetch 실패 문구는 서버 error 를 쓰고, 없으면 한국어로', async () => {
+  await withFetch(async () => new Response('{"error":"용량이 가득 찼습니다"}', { status: 413 }), async () => {
+    await assert.rejects(apiFetch('/x', 't'), e => e instanceof ApiError && e.status === 413 && e.message === '용량이 가득 찼습니다')
+  })
+  await withFetch(async () => new Response('<html>', { status: 502 }), async () => {
+    await assert.rejects(apiFetch('/x', 't'), { message: '요청을 처리하지 못했습니다 (오류 502)' })
+  })
+  await withFetch(async () => { throw new TypeError('fetch failed') }, async () => {
+    await assert.rejects(apiFetch('/x', 't'), { message: '서버에 연결하지 못했습니다' })
+  })
+  await withFetch(async () => { throw new DOMException('aborted', 'AbortError') }, async () => {
+    await assert.rejects(apiFetch('/x', 't'), { name: 'AbortError' })
+  })
+})
+
+test('apiFetch 는 빈 본문 200/201 을 undefined 로, Headers 인스턴스도 받는다', async () => {
+  let seen
+  await withFetch(async (_url, init) => { seen = new Headers(init.headers); return new Response('', { status: 201 }) }, async () => {
+    assert.equal(await apiFetch('/x', 't', { method: 'POST', headers: new Headers({ 'X-Test': '1' }) }), undefined)
+  })
+  assert.equal(seen.get('X-Test'), '1')
+  assert.equal(seen.get('Authorization'), 'Bearer t')
+  assert.equal(seen.get('Content-Type'), 'application/json')
+  await withFetch(async () => new Response('{"a":1}', { status: 200 }), async () => {
+    assert.deepEqual(await apiFetch('/x', 't'), { a: 1 })
+  })
+})

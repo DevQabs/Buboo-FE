@@ -77,7 +77,7 @@ test('apiFetch: 토큰을 붙이고 실패면 서버 문구로 ApiError', async 
     return new Response(JSON.stringify({ ok: 1 }), { status: 200 })
   })
   assert.deepEqual(await apiFetch('/api/good', 'tok'), { ok: 1 })
-  assert.equal(calls[0][1].headers.Authorization, 'Bearer tok')
+  assert.equal(new Headers(calls[0][1].headers).get('Authorization'), 'Bearer tok')
   assert.equal(await apiFetch('/api/empty', 'tok'), undefined)
   await assert.rejects(apiFetch('/api/bad', 'tok'),
     (e) => e instanceof ApiError && e.status === 400 && e.message === '매수 환율이 필요합니다')
