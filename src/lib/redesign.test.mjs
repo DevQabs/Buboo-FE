@@ -96,7 +96,7 @@ test('고정비 합계와 카테고리 집계는 SummaryCard 식 그대로', () 
 })
 
 // ── Task 3: 일정 D-day ──
-import { buildAgenda, ddayBadge } from './dday.ts'
+import { buildAgenda, ddayBadge, schedulesOn } from './dday.ts'
 
 const sch = (id, start, o = {}) => ({ id, start_date: `${start}T00:00:00Z`, is_dday: false, is_anniversary: false, ...o })
 
@@ -121,6 +121,24 @@ test('이번 주(토요일까지)·그 뒤·지난 기념일로 나눈다', () =
   assert.deepEqual(a.thisWeek.map(s => s.id), ['multi', 'w'])
   assert.deepEqual(a.later.map(s => s.id), ['n'])
   assert.deepEqual(a.anniversaries.map(s => s.id), ['ann'])
+})
+
+test('진행 중인 여러 날 기념일은 이번 주에만, 지난 기념일 칸에는 겹치지 않는다', () => {
+  const list = [sch('ann', '2026-11-15', { is_anniversary: true, end_date: '2026-11-18T00:00:00Z' })]
+  const a = buildAgenda(list, '2026-11-17')
+  assert.deepEqual(a.thisWeek.map(s => s.id), ['ann'])
+  assert.deepEqual(a.anniversaries, [])
+})
+
+test('고른 날 목록은 여러 날 일정의 가운데·끝 날에도 나온다', () => {
+  const list = [
+    sch('multi', '2026-11-15', { end_date: '2026-11-17T00:00:00Z' }),
+    sch('one', '2026-11-16'),
+  ]
+  assert.deepEqual(schedulesOn(list, '2026-11-15').map(s => s.id), ['multi'])
+  assert.deepEqual(schedulesOn(list, '2026-11-16').map(s => s.id), ['multi', 'one'])
+  assert.deepEqual(schedulesOn(list, '2026-11-17').map(s => s.id), ['multi'])
+  assert.deepEqual(schedulesOn(list, '2026-11-18'), [])
 })
 
 // ── Task 5: 자산현황 ──

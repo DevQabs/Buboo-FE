@@ -33,6 +33,12 @@ export function buildAgenda<T extends AgendaFields>(list: T[], today: string): {
   return {
     thisWeek: upcoming.filter(s => start(s) <= weekEnd),
     later: upcoming.filter(s => start(s) > weekEnd),
-    anniversaries: list.filter(s => s.is_anniversary && start(s) < t).sort((a, b) => start(b) - start(a)),
+    // 아직 안 끝난 기념일은 위(이번 주·그 뒤)에 이미 있으니 지난 기념일 칸에는 끝난 것만.
+    anniversaries: list.filter(s => s.is_anniversary && end(s) < t).sort((a, b) => start(b) - start(a)),
   }
+}
+
+/** 그 날에 걸친 일정(여러 날 일정은 시작~끝 사이 모든 날). */
+export function schedulesOn<T extends Pick<Schedule, 'start_date'> & Partial<Pick<Schedule, 'end_date'>>>(list: T[], day: string): T[] {
+  return list.filter(s => ymd(s.start_date) <= day && day <= ymd(s.end_date ?? s.start_date))
 }

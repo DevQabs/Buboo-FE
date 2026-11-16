@@ -9,7 +9,7 @@ import { toastError } from '@/components/ui/Toast'
 import MiniCalendar from './MiniCalendar'
 import { AddScheduleModal, COLOR_MAP, EditScheduleModal } from './ScheduleModals'
 import { addDays, todayKST, weekdayOf } from '@/lib/date'
-import { buildAgenda, ddayBadge } from '@/lib/dday'
+import { buildAgenda, ddayBadge, schedulesOn } from '@/lib/dday'
 import { getHolidaysForMonth } from '@/lib/koreanHolidays'
 import { lunarFullLabel } from '@/lib/lunar'
 import type { CreateScheduleRequest, DiaryEntry, Schedule, UpdateScheduleRequest } from '@/types'
@@ -82,7 +82,7 @@ export default function ScheduleScreen({ schedules, diaries, currentUserID, canE
   }), [first, last])
   const scheduleDays = new Set(schedules.map(s => ymd(s.start_date)))
   const agenda = buildAgenda(schedules, today)
-  const dayList = schedules.filter(s => ymd(s.start_date) === selected)
+  const dayList = schedulesOn(schedules, selected)
   const monthKey = `${cal.year}-${String(cal.month).padStart(2, '0')}`
   const monthSchedules = schedules.filter(s => s.start_date.startsWith(monthKey))
   const monthDiaries = diaries.filter(d => d.date.startsWith(monthKey))
