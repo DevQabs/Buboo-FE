@@ -743,14 +743,17 @@ export default function DashboardClient() {
 
   const handleEditStock = async (id: string, data: {
     user_id?: string; name?: string; quantity?: number
-    average_price?: number; memo?: string
+    average_price?: number; avg_krw_price?: number; memo?: string
   }) => {
     const res = await fetch(`${API_BASE}/api/stocks/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(data),
     })
-    if (!res.ok) throw new Error(`주식 수정 실패: ${res.status}`)
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      throw new Error(body?.error ?? `주식 수정 실패: ${res.status}`)
+    }
     await refetchPortfolio()
   }
 
@@ -764,7 +767,10 @@ export default function DashboardClient() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
       body: JSON.stringify(data),
     })
-    if (!res.ok) throw new Error(`${mode === 'buy' ? '매수' : '매도'} 실패: ${res.status}`)
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      throw new Error(body?.error ?? `${mode === 'buy' ? '매수' : '매도'} 실패: ${res.status}`)
+    }
     await refetchPortfolio()
   }
 
@@ -1300,6 +1306,7 @@ export default function DashboardClient() {
       {showAddStock && (
         <AddStockModal
           currentUserID={currentUserID}
+          exchangeRate={portfolioSummary?.usd_krw}
           onClose={() => setShowAddStock(false)}
           onAdd={handleAddStock}
         />

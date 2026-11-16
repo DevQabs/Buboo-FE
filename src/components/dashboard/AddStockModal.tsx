@@ -7,6 +7,7 @@ import { formatAmountInput } from '@/lib/formatNumber';
 
 interface AddStockModalProps {
   currentUserID: string;
+  exchangeRate?: number;
   onClose: () => void;
   onAdd: (data: {
     user_id: string;
@@ -16,13 +17,14 @@ interface AddStockModalProps {
     quantity: number;
     average_price: number;
     currency: string;
+    exchange_rate: number;
     memo: string;
   }) => Promise<void>;
 }
 
 const EXCHANGES = ['NASDAQ', 'NYSE', 'KRX', '기타'];
 
-export default function AddStockModal({ currentUserID, onClose, onAdd }: AddStockModalProps) {
+export default function AddStockModal({ currentUserID, exchangeRate = 0, onClose, onAdd }: AddStockModalProps) {
   const [symbol, setSymbol] = useState('');
   const [name, setName] = useState('');
   const [exchange, setExchange] = useState('NASDAQ');
@@ -51,6 +53,7 @@ export default function AddStockModal({ currentUserID, onClose, onAdd }: AddStoc
       quantity: parseFloat(quantity),
       average_price: parseFloat(avgPrice.replace(/,/g, '')),
       currency,
+      exchange_rate: currency === 'USD' && exchangeRate > 0 ? exchangeRate : 0,
       memo,
     });
     setLoading(false);
