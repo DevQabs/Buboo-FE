@@ -80,7 +80,9 @@ import type {
 } from '@/types'
 import { levelOf, visibleTabs, type TabKey } from '@/lib/menus'
 import { ledgerPeriod, ledgerMonthOf, todayKST } from '@/lib/date'
-import { latestOnly, ignoreAbort } from '@/lib/api'
+import { apiFetch as callApi, latestOnly, ignoreAbort } from '@/lib/api'
+import { Chip } from '@/components/ui/Card'
+import { Toaster } from '@/components/ui/Toast'
 
 // 개발: NEXT_PUBLIC_API_URL=http://localhost:8090 으로 직접 호출
 // 프로덕션: 빈 문자열 → /api/* 경로로 → next.config.mjs rewrite가 백엔드로 프록시
@@ -107,20 +109,9 @@ function withAvatarColors(list: User[] | null): User[] {
 // Module-level token set by DashboardClient once session is ready
 let _accessToken = ''
 
+// 모든 백엔드 호출은 공용 함수를 거친다: 토큰을 붙이고 실패면 서버 문구로 ApiError(설계서 9.C-11).
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    // 옵션 없으면 no-store, 있으면 넘긴 cache 를 따른다(signal 만 넘겨도 cache 는 기본값)
-    cache: options ? undefined : 'no-store',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${_accessToken}`,
-      ...options?.headers,
-    },
-  })
-  if (!res.ok) throw new Error(`API ${path} → ${res.status}`)
-  if (res.status === 204 || res.headers.get('content-length') === '0') return undefined as T
-  return res.json() as Promise<T>
+  return callApi<T>(path, _accessToken, options)
 }
 
 // Module-level permissions set by fetchAll, read by the fetch callbacks below
@@ -983,7 +974,7 @@ export default function DashboardClient() {
   // ── loading / error screens ───────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-2">
+      <div className="min-h-screen bg-cream flex flex-col items-center justify-center gap-2">
         <Lottie animationData={loadingAnimation} loop style={{ width: 180, height: 180 }} />
         <p className="text-sm text-slate-400">불러오는 중...</p>
       </div>
@@ -992,9 +983,8 @@ export default function DashboardClient() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-cream flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl p-7 shadow-sm text-center space-y-2 w-full max-w-sm">
-          <div className="text-3xl mb-1">⚠️</div>
           <p className="font-bold text-slate-800">서버 연결 실패</p>
           <p className="text-xs text-slate-400 leading-relaxed">{error}</p>
           <p className="text-xs text-slate-300">Go 서버({API_BASE})가 실행 중인지 확인하세요.</p>
@@ -1009,12 +999,20 @@ export default function DashboardClient() {
   const currentTab = tabs.find(t => t.key === activeTab) ?? tabs[0]
   const currentSub = currentTab?.subs.find(s => s.key === activeSub) ?? currentTab?.subs[0]
   const canEdit = (m: MenuKey) => levelOf(perms, m) === 'edit'
+  // 2단 메뉴 칩 줄. 하나뿐이면 숨김. 시안처럼 화면 제목 아래에 두려고 화면에 prop 으로 넘긴다.
+  const chipRow = currentTab && currentTab.subs.length > 1 ? (
+    <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
+      {currentTab.subs.map(s => (
+        <Chip key={s.key} on={currentSub?.key === s.key} onClick={() => setActiveSub(s.key)}>{s.label}</Chip>
+      ))}
+    </div>
+  ) : null
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-cream">
 
       {/* ── Header ── */}
-      <header className="bg-white/80 backdrop-blur-md px-5 py-3 sticky top-0 z-40 border-b border-slate-100/60">
+      <header className="bg-cream/90 backdrop-blur-md px-5 py-3 sticky top-0 z-40">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center">
@@ -1088,24 +1086,8 @@ export default function DashboardClient() {
           </div>
         )}
 
-        {/* 2단 메뉴 칩 — 하나뿐이면 숨김 */}
-        {currentTab && currentTab.subs.length > 1 && (
-          <div className="flex gap-1.5 overflow-x-auto">
-            {currentTab.subs.map(s => (
-              <button
-                key={s.key}
-                onClick={() => setActiveSub(s.key)}
-                className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
-                  currentSub?.key === s.key
-                    ? 'bg-brand-500 border-brand-500 text-white'
-                    : 'bg-white border-[#eee7dd] text-stone-500'
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* 2단 메뉴 칩 — 화면이 직접 그리면 여기서는 뺀다(Task 3·5·6) */}
+        {chipRow}
 
         {/* ══ 아기 (3단계에서 채움) ══ */}
         {currentTab?.key === 'baby' && (
@@ -1331,7 +1313,7 @@ export default function DashboardClient() {
 
       {/* ── Bottom navigation bar ── */}
       {tabs.length > 1 && (
-        <nav className="fixed bottom-0 inset-x-0 z-50 bg-white/90 backdrop-blur-lg border-t border-slate-100 shadow-[0_-1px_12px_rgba(0,0,0,0.06)]">
+        <nav className="fixed bottom-0 inset-x-0 z-50 rounded-t-card bg-white shadow-warm-up">
           <div className="max-w-2xl mx-auto flex pb-safe">
             {tabs.map(t => {
               const Icon = TAB_ICONS[t.key]
@@ -1340,22 +1322,19 @@ export default function DashboardClient() {
                 <button
                   key={t.key}
                   onClick={() => { setActiveTab(t.key); setActiveSub(null) }}
-                  className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
-                    on ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
-                  }`}
+                  className={`flex-1 flex flex-col items-center pt-2.5 pb-4 gap-1 transition-colors ${on ? 'text-brand-500' : 'text-stone-400'}`}
                 >
-                  <div className={`p-1.5 rounded-xl transition-all duration-200 ${on ? 'bg-brand-50' : ''}`}>
+                  <div className={`p-1.5 rounded-xl transition-colors ${on ? 'bg-brand-500 text-white' : ''}`}>
                     <Icon className="h-5 w-5" />
                   </div>
-                  <span className={`text-[10px] font-semibold tracking-tight ${on ? 'text-brand-600' : 'text-slate-400'}`}>
-                    {t.label}
-                  </span>
+                  <span className="text-[10px] font-semibold tracking-tight">{t.label}</span>
                 </button>
               )
             })}
           </div>
         </nav>
       )}
+      <Toaster />
     </div>
   )
 }

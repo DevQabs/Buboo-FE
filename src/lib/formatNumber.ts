@@ -18,3 +18,12 @@ export function formatAmountInput(raw: string, allowDecimal = false): string {
 export function stripCommas(s: string): string {
   return s.replace(/,/g, '')
 }
+
+// 원 금액을 짧게: 2.35억, 103만, 9,800원 (부호 유지). 시안의 금액 표기.
+export function formatMan(v: number): string {
+  const abs = Math.abs(v)
+  const sign = v < 0 ? '-' : ''
+  if (abs >= 100_000_000) return `${sign}${parseFloat((abs / 100_000_000).toFixed(2))}억`
+  if (abs >= 10_000) return `${sign}${Math.round(abs / 10_000).toLocaleString('ko-KR')}만`
+  return `${sign}${Math.round(abs).toLocaleString('ko-KR')}원`
+}

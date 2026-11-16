@@ -22,3 +22,28 @@ export function ledgerMonthOf(today: string, startDay: number): { year: number; 
   if (startDay === 1 || d < startDay) return { year: y, month: m }
   return m === 12 ? { year: y + 1, month: 1 } : { year: y, month: m + 1 }
 }
+
+const DAY_MS = 86_400_000
+const dayNum = (d: string) => Date.parse(`${d}T00:00:00Z`) / DAY_MS
+
+// b − a 일수. 둘 다 "YYYY-MM-DD".
+export function daysBetween(a: string, b: string): number {
+  return Math.round(dayNum(b) - dayNum(a))
+}
+
+// "YYYY-MM-DD"에 n일을 더한다(음수면 뺀다).
+export function addDays(d: string, n: number): string {
+  return new Date((dayNum(d) + n) * DAY_MS).toISOString().slice(0, 10)
+}
+
+// 요일 0(일)~6(토).
+export function weekdayOf(d: string): number {
+  return new Date(dayNum(d) * DAY_MS).getUTCDay()
+}
+
+// 가계부 기간 [start, end)에서 오늘을 포함해 남은 일수. 기간 전이면 기간 전체, 끝났으면 0.
+export function daysLeftInPeriod(today: string, start: string, end: string): number {
+  if (today < start) return daysBetween(start, end)
+  if (today >= end) return 0
+  return daysBetween(today, end)
+}
