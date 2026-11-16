@@ -4,12 +4,12 @@ export type TabKey = 'baby' | 'ledger' | 'life' | 'wealth'
 export interface SubMenu { key: MenuKey; label: string }
 export interface TabDef { key: TabKey; label: string; subs: SubMenu[] }
 
-/** 설계서 3절 메뉴 구조. 배열 순서 = 하단 탭 순서 = 기본 진입 우선순위. */
+/** 설계서 3절 메뉴 구조. 배열 순서 = 하단 탭 순서(가계부 → 일상 → 자산 → 아기) = 기본 진입 우선순위. */
 export const TABS: TabDef[] = [
-  { key: 'baby', label: '아기', subs: [{ key: 'baby_photo', label: '사진일기' }, { key: 'baby_growth', label: '성장' }] },
   { key: 'ledger', label: '가계부', subs: [{ key: 'ledger', label: '가계부' }] },
   { key: 'life', label: '일상', subs: [{ key: 'schedule', label: '일정' }, { key: 'diary', label: '일기' }] },
   { key: 'wealth', label: '자산', subs: [{ key: 'assets', label: '자산현황' }, { key: 'roadmap', label: '로드맵' }] },
+  { key: 'baby', label: '아기', subs: [{ key: 'baby_photo', label: '사진일기' }, { key: 'baby_growth', label: '성장' }] },
 ]
 
 export function levelOf(p: MyPermissions | null, menu: MenuKey): PermLevel {

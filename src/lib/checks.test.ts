@@ -14,9 +14,15 @@ test('권한을 못 받았으면 아무 탭도 없다', () => {
 
 test('owner 는 4탭 전부, 칩도 전부', () => {
   const tabs = visibleTabs({ is_owner: true, menus: {} })
-  assert.deepEqual(tabs.map(t => t.key), ['baby', 'ledger', 'life', 'wealth'])
-  assert.equal(tabs[2].subs.length, 2)
+  assert.deepEqual(tabs.map(t => t.key), ['ledger', 'life', 'wealth', 'baby'])
+  assert.equal(tabs[1].subs.length, 2)
   assert.equal(levelOf({ is_owner: true, menus: {} }, 'roadmap'), 'edit')
+})
+
+test('기본 진입은 보이는 첫 탭: 부부는 가계부', () => {
+  const all = { baby_photo: 'edit', baby_growth: 'edit', ledger: 'edit', schedule: 'edit', diary: 'edit', assets: 'edit', roadmap: 'edit' } as const
+  assert.equal(visibleTabs({ is_owner: false, menus: all })[0].key, 'ledger')
+  assert.equal(visibleTabs({ is_owner: false, menus: { baby_photo: 'view', schedule: 'view' } })[0].key, 'life')
 })
 
 test('조부모 묶음은 아기 탭 하나 → 탭바를 숨길 수 있다', () => {
