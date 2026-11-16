@@ -24,6 +24,11 @@ export interface DayGroup { date: string; items: Transaction[]; net: number }
 // 거래 시각을 한국 날짜로. date.ts 의 todayKST 와 같은 식(런타임 import 를 피하려고 한 줄 둔다).
 const kstDate = (iso: string) => new Date(Date.parse(iso) + 9 * 3_600_000).toISOString().slice(0, 10)
 
+/** 내역 피드용: 오늘 이전(오늘 포함) 거래만 날짜별로. 미래 예정 거래는 "곧 나갈/들어올 돈"에서 보이므로 뺀다. */
+export function feedGroups(txs: Transaction[], today: string): DayGroup[] {
+  return groupByDate(txs.filter(tx => kstDate(tx.date) <= today))
+}
+
 /** 한국 날짜별로 묶는다. 최근 날짜가 먼저, 하루 안에서도 최근 거래가 먼저. net = 수입 − 지출(저축 제외). */
 export function groupByDate(txs: Transaction[]): DayGroup[] {
   const map = new Map<string, Transaction[]>()

@@ -1,7 +1,7 @@
 // 날짜별 내역 (시안 ledger-a "오늘 · -50,400" 아래 카드). 행을 누르면 그날 달력 상세로 간다(수정·삭제).
 import { Card, SectionLabel } from '@/components/ui/Card'
 import { addDays, todayKST, weekdayOf } from '@/lib/date'
-import { groupByDate } from '@/lib/ledger'
+import { feedGroups } from '@/lib/ledger'
 import type { Transaction, User } from '@/types'
 
 const WD = ['일', '월', '화', '수', '목', '금', '토']
@@ -23,7 +23,7 @@ export default function LedgerFeed({ transactions, users, onSelectDate }: {
   onSelectDate: (date: string) => void
 }) {
   const today = todayKST()
-  const groups = groupByDate(transactions)
+  const groups = feedGroups(transactions, today)
   const userMap = Object.fromEntries(users.map(u => [u.id, u]))
 
   if (groups.length === 0) {

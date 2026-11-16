@@ -94,3 +94,16 @@ test('자주 쓴 내용: 많이 쓴 것부터, 같으면 최근 것부터, 빈 �
   assert.deepEqual(recentTitles([...txs].reverse())[0], { title: '쿠팡', category: '생활' })
   assert.deepEqual(recentTitles([]), [])
 })
+
+test('feedGroups: 미래 거래는 빼고 오늘이 맨 위, 하루 안은 최근 순', async () => {
+  const { feedGroups } = await import('./ledger.ts')
+  const tx = (id, date) => ({ id, date, type: 'expense', amount: 100 })
+  const g = feedGroups([
+    tx('future', '2026-11-20T03:00:00+09:00'),
+    tx('past', '2026-11-15T12:00:00+09:00'),
+    tx('t1', '2026-11-17T09:00:00+09:00'),
+    tx('t2', '2026-11-17T18:00:00+09:00'),
+  ], '2026-11-17')
+  assert.deepEqual(g.map(x => x.date), ['2026-11-17', '2026-11-15'])
+  assert.deepEqual(g[0].items.map(x => x.id), ['t2', 't1'])
+})
