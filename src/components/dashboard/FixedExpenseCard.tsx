@@ -41,7 +41,7 @@ const OWNER_LABEL: Record<FixedExpenseOwner, string> = {
 }
 
 const OWNER_COLOR: Record<FixedExpenseOwner, string> = {
-  husband: 'bg-blue-100 text-blue-700',
+  husband: 'bg-brand-100 text-brand-700',
   wife: 'bg-pink-100 text-pink-700',
   joint: 'bg-violet-100 text-violet-700',
 }
@@ -370,14 +370,14 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
                 onClick={() => { setKind('spending'); setSavingLink(null) }}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${kind === 'spending' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}
               >
-                💸 지출 고정비
+                지출 고정비
               </button>
               <button
                 type="button"
                 onClick={() => { setKind('saving'); if (owner === 'joint') setOwner('husband') }}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${kind === 'saving' ? 'bg-brand-500 text-white shadow' : 'text-slate-500'}`}
               >
-                🏦 저축 고정비
+                저축 고정비
               </button>
             </div>
           </div>
@@ -601,13 +601,13 @@ export default function FixedExpenseCard({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
+    <div className="bg-white rounded-card shadow-warm">
 
       {/* ── banner ── */}
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 border-b border-amber-100 rounded-t-2xl overflow-hidden">
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 border-b border-amber-100 rounded-t-card overflow-hidden">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-medium text-amber-600 mb-0.5">😮‍💨 {year}년 {month}월 고정비</p>
+            <p className="text-[10px] font-medium text-amber-600 mb-0.5">{year}년 {month}월 고정비</p>
             <p className="text-xl font-black text-slate-900 tabular-nums">{formatKRW(totalAmount)}</p>
           </div>
 

@@ -127,7 +127,7 @@ function AddDividendModal({ portfolio, portfolioSummary, users, onClose, onSave 
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
-          <h2 className="text-base font-bold text-slate-800">💰 배당 이벤트 등록</h2>
+          <h2 className="text-base font-bold text-slate-800">배당 이벤트 등록</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
         </div>
 
@@ -378,13 +378,13 @@ export default function DividendCard({
   }, [events, users])
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-white rounded-card shadow-warm overflow-hidden">
 
       {/* ── YTD Summary banner ── */}
       <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 border-b border-emerald-100">
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-emerald-600 mb-0.5">💰 {year}년 {month}월 배당 수익 (세후)</p>
+            <p className="text-[10px] font-medium text-emerald-600 mb-0.5">{year}년 {month}월 배당 수익 (세후)</p>
             <div className="flex items-baseline gap-2">
               <p className="text-xl font-extrabold text-slate-900 tabular-nums">
                 {fmtKRW(summary?.total_krw ?? 0)}

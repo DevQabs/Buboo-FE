@@ -26,3 +26,55 @@ test('금액 짧게 쓰기', () => {
   assert.equal(formatMan(-83_400_000), '-8,340만')
   assert.equal(formatMan(9_800), '9,800원')
 })
+
+// ── Task 2: 가계부 ──
+import { categoryBreakdown, dailyAllowance, fixedSpendingTotal, groupByDate, sortCategoriesByUse, upcomingEvents } from './ledger.ts'
+
+test('하루 쓸 돈 = 남은 예산 ÷ 남은 일수, 100원 아래 버림', () => {
+  assert.deepEqual(dailyAllowance(2_000_000, 970_000, 14), { remaining: 1_030_000, perDay: 73_500 })
+  assert.deepEqual(dailyAllowance(1_000_000, 1_200_000, 10), { remaining: -200_000, perDay: 0 })
+  assert.deepEqual(dailyAllowance(1_000_000, 0, 0), { remaining: 1_000_000, perDay: 0 })
+})
+
+test('곧 나갈 돈은 오늘 포함 이후만, 날짜순', () => {
+  const ev = [
+    { date: '2026-11-25', type: 'fixed_expense', title: '대출이자', amount: 280_000 },
+    { date: '2026-11-10', type: 'fixed_expense', title: '통신', amount: 50_000 },
+    { date: '2026-11-18', type: 'dividend', title: 'SCHD', amount: 41_000 },
+  ]
+  assert.deepEqual(upcomingEvents(ev, '2026-11-18').map(e => e.title), ['SCHD', '대출이자'])
+})
+
+test('내역은 한국 날짜로 묶고 최근 날짜·최근 거래가 먼저', () => {
+  const tx = (id, date, type, amount) => ({ id, date, type, amount })
+  const g = groupByDate([
+    tx('a', '2026-11-16T03:00:00Z', 'expense', 1000),
+    tx('b', '2026-11-16T15:30:00Z', 'expense', 500), // 한국 11-17 00:30
+    tx('c', '2026-11-16T05:00:00Z', 'income', 3000),
+  ])
+  assert.deepEqual(g.map(d => d.date), ['2026-11-17', '2026-11-16'])
+  assert.equal(g[1].net, 2000)
+  assert.deepEqual(g[1].items.map(t => t.id), ['c', 'a'])
+})
+
+test('카테고리는 많이 쓴 순, 기타는 맨 뒤', () => {
+  const txs = [{ type: 'expense', category: '카페' }, { type: 'expense', category: '카페' }, { type: 'expense', category: '식비' }]
+  assert.deepEqual(sortCategoriesByUse(['식비', '카페', '기타', '교통'], txs, 'expense'), ['카페', '식비', '교통', '기타'])
+})
+
+test('고정비 합계와 카테고리 집계는 SummaryCard 식 그대로', () => {
+  const fe = [
+    { is_active: true, kind: 'spending', amount: 210_000, category: '주거' },
+    { is_active: false, kind: 'spending', amount: 9, category: 'x' },
+    { is_active: true, kind: 'saving', amount: 7, category: 'y' },
+  ]
+  assert.equal(fixedSpendingTotal(fe), 210_000)
+  const txs = [
+    { type: 'expense', category: '식비', amount: 5000 },
+    { type: 'expense', category: '주거', amount: 1000, fixed_expense_id: 'f' }, // 고정비로 생긴 거래는 뺀다
+  ]
+  assert.deepEqual(categoryBreakdown(txs, fe), [
+    { category: '주거', amount: 210_000, isFixed: true },
+    { category: '식비', amount: 5000, isFixed: false },
+  ])
+})

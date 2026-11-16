@@ -16,9 +16,8 @@ import loadingAnimation from '@/assets/loading.json'
 import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, FaceSmileIcon, UserGroupIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline'
 
 // ─── 가계부 탭 (초기 탭) — 정적 import ────────────────────────────────────────
-import SummaryCard from '@/components/dashboard/SummaryCard'
-import NaverPayCard from '@/components/dashboard/NaverPayCard'
-import CalendarView from '@/components/dashboard/CalendarView'
+import LedgerScreen from '@/components/ledger/LedgerScreen'
+import type { AddTransactionPayload } from '@/components/dashboard/CalendarView'
 
 // ─── ChunkSkeleton: dynamic 청크 다운로드 중 표시되는 placeholder ──────────────
 // loading 옵션이 없으면 청크 로드 전까지 아무것도 안 보여 레이아웃이 깜빡임(CLS).
@@ -30,10 +29,6 @@ function ChunkSkeleton({ h = 100 }: { h?: number }) {
 const NetWorthSummaryCard = dynamic(() => import('@/components/dashboard/NetWorthSummaryCard'), { ssr: false, loading: () => <ChunkSkeleton h={88}  /> })
 const StockPortfolioCard  = dynamic(() => import('@/components/dashboard/StockPortfolioCard'),  { ssr: false, loading: () => <ChunkSkeleton h={260} /> })
 const OtherAssetCard      = dynamic(() => import('@/components/dashboard/OtherAssetCard'),      { ssr: false, loading: () => <ChunkSkeleton h={140} /> })
-
-// ─── 가계부 탭 서브 카드 — 첫 방문 시 로드 ──────────────────────────────────────
-const FixedExpenseCard = dynamic(() => import('@/components/dashboard/FixedExpenseCard'), { ssr: false, loading: () => <ChunkSkeleton h={100} /> })
-const DividendCard     = dynamic(() => import('@/components/dashboard/DividendCard'),     { ssr: false, loading: () => <ChunkSkeleton h={100} /> })
 
 // ─── 라이프 / 로드맵 탭 — 첫 방문 시 로드 ──────────────────────────────────────
 const ScheduleTab = dynamic(() => import('@/components/dashboard/ScheduleTab'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
@@ -82,7 +77,7 @@ import { levelOf, visibleTabs, type TabKey } from '@/lib/menus'
 import { ledgerPeriod, ledgerMonthOf, todayKST } from '@/lib/date'
 import { apiFetch as callApi, latestOnly, ignoreAbort } from '@/lib/api'
 import { Chip } from '@/components/ui/Card'
-import { Toaster } from '@/components/ui/Toast'
+import { Toaster, toastError } from '@/components/ui/Toast'
 
 // 개발: NEXT_PUBLIC_API_URL=http://localhost:8090 으로 직접 호출
 // 프로덕션: 빈 문자열 → /api/* 경로로 → next.config.mjs rewrite가 백엔드로 프록시
@@ -357,7 +352,6 @@ export default function DashboardClient() {
     // ── JS 청크 미리 다운로드 (렌더링 없이 네트워크만, 병렬) ──
     ;[
       NetWorthSummaryCard, StockPortfolioCard, OtherAssetCard,
-      FixedExpenseCard, DividendCard,
       ScheduleTab, RoadmapTab,
       AddStockModal, EditStockModal, BuySellModal, TradeHistoryModal,
     ].forEach(c => (c as any).preload?.())
@@ -491,17 +485,14 @@ export default function DashboardClient() {
       setStartDay(sd)
       // Persist startDay to DB so all users share the same setting.
       // Fire-and-forget: UI responds immediately, DB update runs in background.
-      if (levelOf(_perms, 'ledger') === 'edit') fetch(`${API_BASE}/api/couple`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-        body: JSON.stringify({
-          monthly_budget: couple?.monthly_budget ?? 0,
-          ledger_start_day: sd,
-        }),
-      })
-        .then(r => r.ok ? r.json() : null)
-        .then(updated => { if (updated) setCouple(updated) })
-        .catch(() => { /* non-critical, UI already updated */ })
+      if (levelOf(_perms, 'ledger') === 'edit') {
+        apiFetch<Couple>('/api/couple', {
+          method: 'PUT',
+          body: JSON.stringify({ monthly_budget: couple?.monthly_budget ?? 0, ledger_start_day: sd }),
+        })
+          .then(updated => { if (updated) setCouple(updated) })
+          .catch(e => toastError('시작일 저장', e))
+      }
       const signal = nextMonthSignal()
       fetchSummary(year, month, sd, signal).catch(ignoreAbort)
       fetchCalendar(year, month, signal).catch(ignoreAbort)
@@ -558,100 +549,59 @@ export default function DashboardClient() {
   }, [summaryYear, summaryMonth])
 
   // ── transaction handlers ──────────────────────────────────────────────────
-  const handleAddTransaction = async (data: {
-    user_id: string
-    type: 'income' | 'expense' | 'saving'
-    amount: number
-    category: string
-    title: string
-    payment_method: string
-    saving_link?: SavingLink
-  }) => {
-    // KST 날짜 기준 noon으로 고정 — UTC toISOString()은 9시 이전 결제를 전날로 집계
-    const now = new Date()
-    const kstDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }))
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const ts = `${kstDate.getFullYear()}-${pad(kstDate.getMonth() + 1)}-${pad(kstDate.getDate())}T12:00:00+09:00`
-
-    // Saving transactions have asset side-effects — skip optimistic update,
-    // do a real POST then refetch everything that may have changed.
-    if (data.type === 'saving') {
-      const res = await fetch(`${API_BASE}/api/transactions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-        body: JSON.stringify({ ...data, date: ts }),
-      })
-      if (!res.ok) {
-        const body = await res.text()
-        throw new Error(body || `저축 등록 실패: ${res.status}`)
+  // ── 거래 추가: 입력 시트·달력 공용 ─────────────────────────────────────────
+  // 지출·수입은 화면에 먼저 넣고, 저장이 실패하면 되돌린 뒤 토스트를 띄우고 던진다(설계서 9.C-12).
+  // 저축은 자산이 같이 바뀌어 서버 결과로만 그린다.
+  const handleAddTransaction = async (p: AddTransactionPayload) => {
+    const date = `${p.date}T12:00:00+09:00` // 한국 정오 — UTC 로 넘어가 전날이 되지 않게
+    const body = {
+      user_id: p.user_id, type: p.type, amount: p.amount, currency: 'KRW',
+      category: p.category, title: p.title, payment_method: p.payment_method ?? 'card',
+      date, saving_link: p.saving_link,
+    }
+    const tempID = `temp-${Date.now()}`
+    const optimistic = p.type !== 'saving'
+    const prevSummary = summary
+    if (optimistic) {
+      const temp: Transaction = {
+        id: tempID, couple_id: session?.user?.backendUser?.couple_id ?? '', user_id: p.user_id,
+        type: p.type, amount: p.amount, currency: 'KRW', category: p.category, subcategory: '',
+        title: p.title, memo: '', date, payment_method: body.payment_method, is_fixed: false,
+        tags: [], location: null, created_at: date, updated_at: date,
       }
-      await Promise.all([
-        fetchTransactions(summaryYear, summaryMonth, startDay),
-        refetchPortfolio(),
-        refetchAssets(),
-        fetchSummary(summaryYear, summaryMonth, startDay),
-      ])
-      return
-    }
-
-    const optimistic: Transaction = {
-      id: `temp-${Date.now()}`,
-      couple_id: session?.user?.backendUser?.couple_id ?? '',
-      user_id: data.user_id,
-      type: data.type,
-      amount: data.amount,
-      currency: 'KRW',
-      category: data.category,
-      subcategory: '',
-      title: data.title,
-      memo: '',
-      date: ts,
-      payment_method: data.payment_method,
-      is_fixed: false,
-      tags: [],
-      location: null,
-      created_at: ts,
-      updated_at: ts,
-    }
-
-    setTransactions(prev => [optimistic, ...prev])
-    setSummary(prev => {
-      if (!prev) return prev
-      const delta = data.type === 'income' ? data.amount : -data.amount
-      return {
+      setTransactions(prev => [temp, ...prev])
+      setSummary(prev => prev && {
         ...prev,
-        total_income:  data.type === 'income'  ? prev.total_income  + data.amount : prev.total_income,
-        total_expense: data.type === 'expense' ? prev.total_expense + data.amount : prev.total_expense,
-        balance: prev.balance + delta,
-      }
-    })
-
-    try {
-      const created: Transaction = await fetch(`${API_BASE}/api/transactions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-        body: JSON.stringify({ ...data, date: ts }),
-      }).then(r => r.json())
-      setTransactions(prev => prev.map(tx => tx.id === optimistic.id ? created : tx))
-      await Promise.all([
-        fetchCalendar(calendarYear, calendarMonth),
-        fetchCalendarTransactions(calendarYear, calendarMonth),
-      ])
-    } catch {
-      setTransactions(prev => prev.filter(tx => tx.id !== optimistic.id))
+        total_income:  p.type === 'income'  ? prev.total_income  + p.amount : prev.total_income,
+        total_expense: p.type === 'expense' ? prev.total_expense + p.amount : prev.total_expense,
+        balance: prev.balance + (p.type === 'income' ? p.amount : -p.amount),
+      })
     }
+    try {
+      await apiFetch<Transaction>('/api/transactions', { method: 'POST', body: JSON.stringify(body) })
+    } catch (e) {
+      if (optimistic) {
+        setTransactions(prev => prev.filter(tx => tx.id !== tempID))
+        setSummary(prevSummary)
+      }
+      toastError('거래 저장', e)
+      throw e
+    }
+    const refetches: Promise<unknown>[] = [
+      fetchTransactions(summaryYear, summaryMonth, startDay),
+      fetchSummary(summaryYear, summaryMonth, startDay),
+      fetchCalendar(calendarYear, calendarMonth),
+      fetchCalendarTransactions(calendarYear, calendarMonth),
+    ]
+    if (p.type === 'saving') refetches.push(refetchPortfolio(), refetchAssets())
+    await Promise.allSettled(refetches)
   }
 
   // ── update/delete transaction ─────────────────────────────────────────────────
   const handleUpdateTransaction = useCallback(async (id: string, data: { title: string; amount: number; category: string; user_id: string }) => {
     const existing = transactions.find(tx => tx.id === id) ?? calendarTransactions.find(tx => tx.id === id)
     if (!existing) return
-    const res = await fetch(`${API_BASE}/api/transactions/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify({ ...existing, ...data }),
-    })
-    if (!res.ok) throw new Error(`거래 수정 실패: ${res.status}`)
+    await apiFetch(`/api/transactions/${id}`, { method: 'PUT', body: JSON.stringify({ ...existing, ...data }) })
     await Promise.all([
       fetchTransactions(summaryYear, summaryMonth, startDay),
       fetchSummary(summaryYear, summaryMonth, startDay),
@@ -669,47 +619,6 @@ export default function DashboardClient() {
       fetchCalendarTransactions(calendarYear, calendarMonth),
     ])
   }, [summaryYear, summaryMonth, startDay, calendarYear, calendarMonth, fetchSummary, fetchCalendarTransactions]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── add transaction from calendar (specific date, refetches calendar + summary) ──
-  const handleAddTransactionOnDate = useCallback(async (payload: {
-    user_id: string
-    type: 'income' | 'expense' | 'saving'
-    amount: number
-    category: string
-    title: string
-    date: string  // YYYY-MM-DD
-    saving_link?: SavingLink
-  }) => {
-    const dateISO = `${payload.date}T12:00:00+09:00`
-    const res = await fetch(`${API_BASE}/api/transactions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify({
-        
-        user_id: payload.user_id,
-        type: payload.type,
-        amount: payload.amount,
-        currency: 'KRW',
-        category: payload.category,
-        title: payload.title,
-        payment_method: 'card',
-        date: dateISO,
-        saving_link: payload.saving_link,
-      }),
-    })
-    if (!res.ok) throw new Error(`거래 추가 실패: ${res.status}`)
-
-    const refetches: Promise<unknown>[] = [
-      fetchTransactions(summaryYear, summaryMonth, startDay),
-      apiFetch<CalendarSummaryResponse>(`/api/transactions/calendar-summary?year=${calendarYear}&month=${calendarMonth}`).then(d => setCalendarData(d)),
-      fetchSummary(summaryYear, summaryMonth, startDay),
-      fetchCalendarTransactions(calendarYear, calendarMonth),
-    ]
-    if (payload.type === 'saving') {
-      refetches.push(refetchPortfolio(), refetchAssets())
-    }
-    await Promise.all(refetches)
-  }, [calendarYear, calendarMonth, summaryYear, summaryMonth, startDay, fetchSummary, fetchTransactions, fetchCalendarTransactions, refetchPortfolio, refetchAssets]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── stock handlers ────────────────────────────────────────────────────────
   const handleAddStock = async (data: Parameters<React.ComponentProps<typeof AddStockModal>['onAdd']>[0]) => {
@@ -839,45 +748,33 @@ export default function DashboardClient() {
 
   // ── fixed expense handlers ────────────────────────────────────────────────
   const handleAddFixedExpense = async (data: CreateFixedExpenseRequest) => {
-    const res = await fetch(`${API_BASE}/api/fixed-expenses`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify({ ...data }),
-    })
-    if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new Error(body?.error ?? `고정비 추가 실패: ${res.status}`)
-    }
+    await apiFetch('/api/fixed-expenses', { method: 'POST', body: JSON.stringify(data) })
     await refetchFixedExpenses()
   }
 
   const handleEditFixedExpense = async (id: string, data: UpdateFixedExpenseRequest) => {
-    const res = await fetch(`${API_BASE}/api/fixed-expenses/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error(`고정비 수정 실패: ${res.status}`)
+    await apiFetch(`/api/fixed-expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) })
     await refetchFixedExpenses()
   }
 
   const handleDeleteFixedExpense = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/fixed-expenses/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
-    if (!res.ok) throw new Error(`고정비 삭제 실패: ${res.status}`)
+    await apiFetch(`/api/fixed-expenses/${id}`, { method: 'DELETE' })
     await refetchFixedExpenses()
   }
 
   // ── budget update ─────────────────────────────────────────────────────────
   const handleUpdateBudget = useCallback(async (amount: number) => {
-    const res = await fetch(`${API_BASE}/api/couple`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      // Always include ledger_start_day so the backend doesn't reset it
-      body: JSON.stringify({ monthly_budget: amount, ledger_start_day: startDay }),
-    })
-    if (!res.ok) throw new Error(`예산 저장 실패: ${res.status}`)
-    const updated: Couple = await res.json()
-    setCouple(updated)
+    try {
+      // ledger_start_day 를 같이 보내야 서버가 시작일을 1로 되돌리지 않는다
+      const updated = await apiFetch<Couple>('/api/couple', {
+        method: 'PUT',
+        body: JSON.stringify({ monthly_budget: amount, ledger_start_day: startDay }),
+      })
+      setCouple(updated)
+    } catch (e) {
+      toastError('예산 저장', e)
+      throw e
+    }
   }, [startDay])
 
   // ── dividend handlers ─────────────────────────────────────────────────────
@@ -887,17 +784,10 @@ export default function DashboardClient() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddDividend = async (data: CreateDividendRequest) => {
-    const body = {
-      ...data,
-      
-      payment_date: `${data.payment_date}T00:00:00Z`,
-    }
-    const res = await fetch(`${API_BASE}/api/dividends`, {
+    await apiFetch('/api/dividends', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...data, payment_date: `${data.payment_date}T00:00:00Z` }),
     })
-    if (!res.ok) throw new Error(`배당 등록 실패: ${res.status}`)
     await Promise.all([
       refetchDividends(calendarYear, calendarMonth),
       fetchTransactions(summaryYear, summaryMonth, startDay),
@@ -906,9 +796,13 @@ export default function DashboardClient() {
   }
 
   const handleDeleteDividend = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/dividends/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
-    if (!res.ok) throw new Error(`배당 삭제 실패: ${res.status}`)
-    await refetchDividends(calendarYear, calendarMonth)
+    await apiFetch(`/api/dividends/${id}`, { method: 'DELETE' })
+    // 5단계: 배당을 지우면 서버가 연결된 수입 거래도 지운다
+    await Promise.all([
+      refetchDividends(calendarYear, calendarMonth),
+      fetchTransactions(summaryYear, summaryMonth, startDay),
+      fetchSummary(summaryYear, summaryMonth, startDay),
+    ])
   }
 
   // ── schedule handlers ─────────────────────────────────────────────────────
@@ -1138,102 +1032,42 @@ export default function DashboardClient() {
           </div>
         )}
 
-        {/* ══ Tab 2: 가계부 ══ */}
+        {/* ══ 가계부 ══ */}
         {currentSub?.key === 'ledger' && (
-          <div className="space-y-3">
-            {/* 네이버페이 결제 카드 */}
-            {canEdit('ledger') && (
-              <NaverPayCard
-                currentUserID={session?.user?.backendUser?.id ?? users[0]?.id ?? ''}
-                transactions={transactions}
-                accessToken={session?.user?.accessToken}
-                onAdd={async (data) => { await handleAddTransaction(data) }}
-              />
-            )}
-
-            {/* 예산 현황 + 기간 선택 (맨 위) */}
-            {summary && (
-              <SummaryCard
-                summary={{ ...summary, budget_limit: couple?.monthly_budget ?? 0 }}
-                year={summaryYear}
-                month={summaryMonth}
-                startDay={startDay}
-                onPeriodChange={handlePeriodChange}
-                budgetLimit={couple?.monthly_budget ?? 0}
-                onUpdateBudget={canEdit('ledger') ? handleUpdateBudget : undefined}
-                fixedExpenseTotal={fixedExpenses
-                  .filter(fe => fe.is_active && fe.kind === 'spending')
-                  .reduce((s, fe) => s + fe.amount, 0)}
-                categoryBreakdown={(() => {
-                  const map = new Map<string, { amount: number; isFixed: boolean }>()
-                  for (const tx of transactions) {
-                    if (tx.type === 'expense' && !tx.fixed_expense_id) {
-                      const cat = tx.category || '기타'
-                      const prev = map.get(cat)
-                      map.set(cat, { amount: (prev?.amount ?? 0) + tx.amount, isFixed: false })
-                    }
-                  }
-                  for (const fe of fixedExpenses) {
-                    if (fe.is_active && fe.kind === 'spending') {
-                      const cat = fe.category || '고정비'
-                      const prev = map.get(cat)
-                      map.set(cat, { amount: (prev?.amount ?? 0) + fe.amount, isFixed: prev?.isFixed ?? true })
-                    }
-                  }
-                  return Array.from(map.entries())
-                    .map(([category, v]) => ({ category, amount: v.amount, isFixed: v.isFixed }))
-                    .sort((a, b) => b.amount - a.amount)
-                })()}
-              />
-            )}
-
-            {/* 월간 캘린더 (날짜 클릭 → 수입/지출 입력) */}
-            <CalendarView
-              year={calendarYear}
-              month={calendarMonth}
-              calendarData={calendarData}
-              transactions={calendarTransactions}
-              users={users}
-              currentUserID={currentUserID}
-              stocks={portfolio}
-              otherAssets={otherAssets}
-              budgetLimit={couple?.monthly_budget ?? 0}
-              accessToken={session?.user?.accessToken}
-              onMonthChange={handleCalendarMonthChange}
-              onAddTransaction={canEdit('ledger') ? handleAddTransactionOnDate : undefined}
-              onUpdateTransaction={canEdit('ledger') ? handleUpdateTransaction : undefined}
-              onDeleteTransaction={canEdit('ledger') ? handleDeleteTransaction : undefined}
-            />
-
-            {/* 배당 수익 */}
-            <DividendCard
-              canEdit={canEdit('ledger')}
-              summary={divSummary}
-              portfolio={portfolio}
-              portfolioSummary={portfolioSummary}
-              users={users}
-              year={calendarYear}
-              month={calendarMonth}
-              onAdd={handleAddDividend}
-              onDelete={handleDeleteDividend}
-            />
-
-            {/* 고정비 관리 + 숨만 쉬어도 나가는 돈 */}
-            <FixedExpenseCard
-              canEdit={canEdit('ledger')}
-              fixedExpenses={fixedExpenses}
-              summary={feSummary}
-              users={users}
-              stocks={portfolio}
-              otherAssets={otherAssets}
-              year={summaryYear}
-              month={summaryMonth}
-              onAdd={handleAddFixedExpense}
-              onEdit={handleEditFixedExpense}
-              onDelete={handleDeleteFixedExpense}
-            />
-
-          </div>
+          <LedgerScreen
+            canEdit={canEdit('ledger')}
+            hasNav={tabs.length > 1}
+            currentUserID={currentUserID}
+            accessToken={session?.user?.accessToken}
+            users={users}
+            couple={couple}
+            summary={summary}
+            summaryYear={summaryYear}
+            summaryMonth={summaryMonth}
+            startDay={startDay}
+            calendarYear={calendarYear}
+            calendarMonth={calendarMonth}
+            transactions={transactions}
+            calendarTransactions={calendarTransactions}
+            calendarData={calendarData}
+            fixedExpenses={fixedExpenses}
+            feSummary={feSummary}
+            divSummary={divSummary}
+            portfolio={portfolio}
+            portfolioSummary={portfolioSummary}
+            otherAssets={otherAssets}
+            onPeriodChange={handlePeriodChange}
+            onMonthChange={handleCalendarMonthChange}
+            onUpdateBudget={handleUpdateBudget}
+            onAddTransaction={handleAddTransaction}
+            onUpdateTransaction={handleUpdateTransaction}
+            onDeleteTransaction={handleDeleteTransaction}
+            onAddDividend={handleAddDividend}
+            onDeleteDividend={handleDeleteDividend}
+            onAddFixedExpense={handleAddFixedExpense}
+            onEditFixedExpense={handleEditFixedExpense}
+            onDeleteFixedExpense={handleDeleteFixedExpense}
+          />
         )}
 
         {/* ══ Tab 3: 일정/일기 ══ */}

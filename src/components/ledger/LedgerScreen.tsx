@@ -1,0 +1,197 @@
+'use client'
+
+// 가계부 A (시안 ledger-a): 하루 예산 → 곧 나갈/들어올 돈 → 날짜별 내역 → 카테고리 분석·배당·고정비.
+// 달력은 머리 아이콘으로 펼친다. 입력은 하단 고정 바 → 입력 시트.
+import { useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
+import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
+import { FloatingBar, IconButton, PageTitle, SectionLabel } from '@/components/ui/Card'
+import CalendarView, { type AddTransactionPayload } from '@/components/dashboard/CalendarView'
+import AllowanceHero from './AllowanceHero'
+import UpcomingStrip from './UpcomingStrip'
+import LedgerFeed from './LedgerFeed'
+import CategoryBreakdownCard from './CategoryBreakdownCard'
+import EntrySheet from './EntrySheet'
+import { daysLeftInPeriod, ledgerPeriod, todayKST } from '@/lib/date'
+import { categoryBreakdown, fixedSpendingTotal, sortCategoriesByUse, upcomingEvents } from '@/lib/ledger'
+import type {
+  CalendarSummaryResponse, Couple, CreateDividendRequest, CreateFixedExpenseRequest, DividendYearlySummary,
+  FixedExpense, FixedExpenseSummary, MonthlySummary, OtherAsset, PortfolioSummary, StockAssetWithPrice,
+  Transaction, UpdateFixedExpenseRequest, User,
+} from '@/types'
+
+const loadingCard = () => <div className="h-24 w-full animate-pulse rounded-card bg-white" />
+const DividendCard = dynamic(() => import('@/components/dashboard/DividendCard'), { ssr: false, loading: loadingCard })
+const FixedExpenseCard = dynamic(() => import('@/components/dashboard/FixedExpenseCard'), { ssr: false, loading: loadingCard })
+
+type TxEdit = { title: string; amount: number; category: string; user_id: string }
+
+export interface LedgerScreenProps {
+  canEdit: boolean
+  /** 하단 탭바가 보이는지(입력 바 위치) */
+  hasNav: boolean
+  currentUserID: string
+  accessToken?: string
+  users: User[]
+  couple: Couple | null
+  summary: MonthlySummary | null
+  summaryYear: number
+  summaryMonth: number
+  startDay: number
+  calendarYear: number
+  calendarMonth: number
+  /** 가계부 기간 거래(5단계: start_date~end_date) */
+  transactions: Transaction[]
+  calendarTransactions: Transaction[]
+  calendarData: CalendarSummaryResponse | null
+  fixedExpenses: FixedExpense[]
+  feSummary: FixedExpenseSummary | null
+  divSummary: DividendYearlySummary | null
+  portfolio: StockAssetWithPrice[]
+  portfolioSummary: PortfolioSummary | null
+  otherAssets: OtherAsset[]
+  onPeriodChange: (p: { year: number; month: number; startDay: number }) => void
+  onMonthChange: (year: number, month: number) => void
+  onUpdateBudget: (amount: number) => Promise<void>
+  onAddTransaction: (p: AddTransactionPayload) => Promise<void>
+  onUpdateTransaction: (id: string, data: TxEdit) => Promise<void>
+  onDeleteTransaction: (id: string) => Promise<void>
+  onAddDividend: (d: CreateDividendRequest) => Promise<void>
+  onDeleteDividend: (id: string) => Promise<void>
+  onAddFixedExpense: (d: CreateFixedExpenseRequest) => Promise<void>
+  onEditFixedExpense: (id: string, d: UpdateFixedExpenseRequest) => Promise<void>
+  onDeleteFixedExpense: (id: string) => Promise<void>
+}
+
+export default function LedgerScreen(p: LedgerScreenProps) {
+  const [showCalendar, setShowCalendar] = useState(false)
+  const [focusDate, setFocusDate] = useState<string | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  const today = todayKST()
+  const { startDate, endDate } = ledgerPeriod(p.summaryYear, p.summaryMonth, p.startDay)
+  const budget = p.couple?.monthly_budget ?? 0
+  const fixed = fixedSpendingTotal(p.fixedExpenses)
+  const variable = p.summary?.total_expense ?? 0
+  const breakdown = useMemo(() => categoryBreakdown(p.transactions, p.fixedExpenses), [p.transactions, p.fixedExpenses])
+  const upcoming = upcomingEvents(p.calendarData?.events ?? [], today)
+  const usedCategories = Array.from(new Set(p.transactions.filter(t => t.type === 'expense' && t.category).map(t => t.category)))
+  const hint = sortCategoriesByUse(usedCategories, p.transactions, 'expense')[0] ?? '지출'
+
+  const goMonth = (d: number) => {
+    const m = p.calendarMonth + d
+    if (m < 1) p.onMonthChange(p.calendarYear - 1, 12)
+    else if (m > 12) p.onMonthChange(p.calendarYear + 1, 1)
+    else p.onMonthChange(p.calendarYear, m)
+  }
+
+  // 내역 행을 누르면 그날 달력 상세를 연다(거래 수정·삭제는 거기서).
+  const openDay = (date: string) => {
+    setFocusDate(date)
+    setShowCalendar(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  return (
+    <div className="space-y-3 pb-20">
+      <PageTitle
+        eyebrow={`${p.summaryMonth}월 · ${p.startDay}일 시작`}
+        title="가계부"
+        right={<>
+          <IconButton label="이전 달" onClick={() => goMonth(-1)}><ChevronLeftIcon className="h-4 w-4" /></IconButton>
+          <IconButton label="다음 달" onClick={() => goMonth(1)}><ChevronRightIcon className="h-4 w-4" /></IconButton>
+          <IconButton label="달력" on={showCalendar} onClick={() => { setShowCalendar(v => !v); setFocusDate(null) }}>
+            <CalendarDaysIcon className="h-4 w-4" />
+          </IconButton>
+        </>}
+      />
+
+      {p.summary && (
+        <AllowanceHero
+          budget={budget}
+          variable={variable}
+          fixed={fixed}
+          daysLeft={daysLeftInPeriod(today, startDate, endDate)}
+          year={p.summaryYear}
+          month={p.summaryMonth}
+          startDay={p.startDay}
+          onPeriodChange={p.onPeriodChange}
+          onUpdateBudget={p.canEdit ? p.onUpdateBudget : undefined}
+        />
+      )}
+
+      {showCalendar && (
+        <CalendarView
+          key={focusDate ?? 'month'}
+          initialSelectedDate={focusDate ?? undefined}
+          year={p.calendarYear}
+          month={p.calendarMonth}
+          calendarData={p.calendarData}
+          transactions={p.calendarTransactions}
+          users={p.users}
+          currentUserID={p.currentUserID}
+          stocks={p.portfolio}
+          otherAssets={p.otherAssets}
+          budgetLimit={budget}
+          accessToken={p.accessToken}
+          onMonthChange={p.onMonthChange}
+          onAddTransaction={p.canEdit ? p.onAddTransaction : undefined}
+          onUpdateTransaction={p.canEdit ? p.onUpdateTransaction : undefined}
+          onDeleteTransaction={p.canEdit ? p.onDeleteTransaction : undefined}
+        />
+      )}
+
+      <UpcomingStrip events={upcoming} />
+
+      <SectionLabel>{p.canEdit ? '내역 · 누르면 그날 달력에서 고칠 수 있어요' : '내역'}</SectionLabel>
+      <LedgerFeed transactions={p.transactions} users={p.users} onSelectDate={openDay} />
+
+      <CategoryBreakdownCard items={breakdown} total={variable + fixed} />
+
+      <DividendCard
+        summary={p.divSummary}
+        portfolio={p.portfolio}
+        portfolioSummary={p.portfolioSummary}
+        users={p.users}
+        year={p.calendarYear}
+        month={p.calendarMonth}
+        onAdd={p.onAddDividend}
+        onDelete={p.onDeleteDividend}
+        canEdit={p.canEdit}
+      />
+
+      <FixedExpenseCard
+        fixedExpenses={p.fixedExpenses}
+        summary={p.feSummary}
+        users={p.users}
+        stocks={p.portfolio}
+        otherAssets={p.otherAssets}
+        year={p.summaryYear}
+        month={p.summaryMonth}
+        onAdd={p.onAddFixedExpense}
+        onEdit={p.onEditFixedExpense}
+        onDelete={p.onDeleteFixedExpense}
+        canEdit={p.canEdit}
+      />
+
+      {p.canEdit && (
+        <FloatingBar hasNav={p.hasNav} onClick={() => setSheetOpen(true)} className="bg-brand-500 font-bold text-white shadow-bar">
+          <span>+ 금액 입력</span>
+          <span className="font-medium text-white/60">{hint} · 카드</span>
+        </FloatingBar>
+      )}
+
+      {sheetOpen && (
+        <EntrySheet
+          currentUserID={p.currentUserID}
+          accessToken={p.accessToken}
+          transactions={p.transactions}
+          stocks={p.portfolio}
+          otherAssets={p.otherAssets}
+          onClose={() => setSheetOpen(false)}
+          onSubmit={p.onAddTransaction}
+        />
+      )}
+    </div>
+  )
+}

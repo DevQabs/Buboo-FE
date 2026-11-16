@@ -29,6 +29,7 @@ export interface AddTransactionPayload {
   title: string
   date: string   // YYYY-MM-DD
   saving_link?: SavingLink
+  payment_method?: string   // 없으면 'card'
 }
 
 const OTHER_ASSET_TYPES: OtherAssetType[] = ['부동산', '예/적금', '현금', '기타']
@@ -76,7 +77,7 @@ interface SavingLinkInlineProps {
   onChange: (link: SavingLink | null) => void
 }
 
-function SavingLinkInline({ stocks, otherAssets, onChange }: SavingLinkInlineProps) {
+export function SavingLinkInline({ stocks, otherAssets, onChange }: SavingLinkInlineProps) {
   const [kind, setKind] = useState<SavingKind>('stock')
   const [isNew, setIsNew] = useState(false)
 
@@ -276,7 +277,7 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
         isSelected ? 'text-white'
         : isToday   ? 'text-brand-600'
         : col === 0 || (col !== 6 && holiday) ? 'text-rose-500'
-        : col === 6 ? 'text-blue-500'
+        : col === 6 ? 'text-brand-400'
         : 'text-slate-600'
       }`}>
         {day}
@@ -307,7 +308,7 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
           title={feEvents.map(e => e.title).join(', ')}
           className={`text-[8px] font-semibold tabular-nums leading-none ${isSelected ? 'text-violet-200' : 'text-violet-400'}`}
         >
-          📌{fmtCell(feEvents.reduce((s, e) => s + e.amount, 0))}
+          -{fmtCell(feEvents.reduce((s, e) => s + e.amount, 0))}
         </span>
       )}
       {divEvents.length > 0 && (
@@ -315,7 +316,7 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
           title={divEvents.map(e => e.title).join(', ')}
           className={`text-[8px] font-semibold tabular-nums leading-none ${isSelected ? 'text-teal-200' : 'text-teal-500'}`}
         >
-          💰{fmtCell(divEvents.reduce((s, e) => s + e.amount, 0))}
+          +{fmtCell(divEvents.reduce((s, e) => s + e.amount, 0))}
         </span>
       )}
     </button>
@@ -559,7 +560,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, currentUser
               <div key={i} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg font-medium ${
                 ev.type === 'fixed_expense' ? 'bg-amber-50 text-amber-700' : 'bg-teal-50 text-teal-700'
               }`}>
-                <span>{ev.type === 'fixed_expense' ? '📌' : '💰'}</span>
+                <span>{ev.type === 'fixed_expense' ? '고정비' : '배당'}</span>
                 <span>{ev.title}</span>
                 <span className="opacity-60">
                   {ev.type === 'fixed_expense' ? '-' : '+'}{(ev.amount / 10000).toFixed(0)}만원
@@ -574,7 +575,7 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, currentUser
       <div className="divide-y divide-slate-50 max-h-72 overflow-y-auto">
         {dayTxns.length === 0 ? (
           <div className="px-4 py-5 text-center text-xs text-slate-400">
-            {dayEvents.length > 0 ? '직접 등록된 거래 내역은 없어요' : '이 날은 조용했어요 🌿'}
+            {dayEvents.length > 0 ? '직접 등록된 거래 내역은 없어요' : '이 날은 조용했어요'}
           </div>
         ) : (
           dayTxns.map(tx => {
@@ -649,8 +650,8 @@ function DetailPanel({ dateKey, transactions, calendarEvents, users, currentUser
                     <span className="text-xs font-medium text-slate-700 truncate">{tx.title}</span>
                     {tx.is_fixed && <span className="text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-full shrink-0">고정</span>}
                     {isSaving && <span className="text-[9px] bg-brand-50 text-brand-600 px-1.5 py-0.5 rounded-full shrink-0">저축</span>}
-                    {tx.fixed_expense_id && <span className="text-[9px]">📌</span>}
-                    {tx.tags?.includes('배당') && <span className="text-[9px]">💰</span>}
+                    {tx.fixed_expense_id && <span className="text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-full shrink-0">고정비</span>}
+                    {tx.tags?.includes('배당') && <span className="text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-full shrink-0">배당</span>}
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="text-[10px] text-slate-400">{fmtTime(tx.date)}</span>
@@ -725,6 +726,8 @@ interface CalendarViewProps {
   onAddTransaction?: (payload: AddTransactionPayload) => Promise<void>
   onUpdateTransaction?: (id: string, data: { title: string; amount: number; category: string; user_id: string }) => Promise<void>
   onDeleteTransaction?: (id: string) => Promise<void>
+  /** 열 때 바로 펼칠 날짜(가계부 내역에서 누른 날) */
+  initialSelectedDate?: string
 }
 
 export default function CalendarView({
@@ -742,8 +745,9 @@ export default function CalendarView({
   onAddTransaction,
   onUpdateTransaction,
   onDeleteTransaction,
+  initialSelectedDate,
 }: CalendarViewProps) {
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string | null>(initialSelectedDate ?? null)
   const today = todayKey()
 
   const dayMap = useMemo((): Record<string, CalendarDay> => {
@@ -790,7 +794,7 @@ export default function CalendarView({
   }), { expense: 0, income: 0 }) ?? { expense: 0, income: 0 }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-white rounded-card shadow-warm overflow-hidden">
 
       {/* ── Month navigator + stats ── */}
       <div className="px-3 pt-3 pb-2">
@@ -822,7 +826,7 @@ export default function CalendarView({
       <div className="grid grid-cols-7 border-t border-slate-100">
         {WEEKDAYS.map((d, i) => (
           <div key={d} className={`text-center py-1 text-xs font-semibold ${
-            i === 0 ? 'text-rose-400' : i === 6 ? 'text-blue-400' : 'text-slate-400'
+            i === 0 ? 'text-rose-400' : i === 6 ? 'text-brand-400' : 'text-slate-400'
           }`}>
             {d}
           </div>
