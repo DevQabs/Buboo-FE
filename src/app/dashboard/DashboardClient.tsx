@@ -28,7 +28,7 @@ function ChunkSkeleton({ h = 100 }: { h?: number }) {
 const WealthScreen = dynamic(() => import('@/components/wealth/WealthScreen'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 
 // ─── 라이프 / 로드맵 탭 — 첫 방문 시 로드 ──────────────────────────────────────
-const ScheduleTab = dynamic(() => import('@/components/dashboard/ScheduleTab'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
+const DiaryScreen = dynamic(() => import('@/components/life/DiaryScreen'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 const ScheduleScreen = dynamic(() => import('@/components/life/ScheduleScreen'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 const RoadmapTab  = dynamic(() => import('@/components/dashboard/RoadmapTab'),  { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 type RoadmapPrefetch = import('@/components/dashboard/RoadmapTab').RoadmapPrefetch
@@ -66,6 +66,7 @@ import type {
   CreateScheduleRequest,
   UpdateScheduleRequest,
   CreateDiaryRequest,
+  UpdateDiaryRequest,
   StockTransaction,
   RoadmapProjection,
   RoadmapAssumptionsResponse,
@@ -77,7 +78,7 @@ import { ledgerPeriod, ledgerMonthOf, todayKST } from '@/lib/date'
 import { apiFetch as callApi, latestOnly, ignoreAbort } from '@/lib/api'
 import { attachDiaryPhotos } from '@/lib/media'
 import { Chip } from '@/components/ui/Card'
-import { Toaster, toastError } from '@/components/ui/Toast'
+import { Toaster, showToast, toastError } from '@/components/ui/Toast'
 
 // 개발: NEXT_PUBLIC_API_URL=http://localhost:8090 으로 직접 호출
 // 프로덕션: 빈 문자열 → /api/* 경로로 → next.config.mjs rewrite가 백엔드로 프록시
@@ -334,7 +335,7 @@ export default function DashboardClient() {
     // ── JS 청크 미리 다운로드 (렌더링 없이 네트워크만, 병렬) ──
     ;[
       WealthScreen,
-      ScheduleTab, ScheduleScreen, RoadmapTab,
+      DiaryScreen, ScheduleScreen, RoadmapTab,
       AddStockModal, EditStockModal, BuySellModal, TradeHistoryModal,
     ].forEach(c => (c as any).preload?.())
 
@@ -774,32 +775,55 @@ export default function DashboardClient() {
     setSchedules(s => s.filter(x => x.id !== id))
   }
 
-  // ── diary handlers ────────────────────────────────────────────────────────
-  const handleAddDiary = async (req: CreateDiaryRequest, photos: File[]) => {
-    const res = await fetch(`${API_BASE}/api/diaries`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify(req),
-    })
-    if (!res.ok) throw new Error(`일기 저장 실패: ${res.status}`)
-    const created: DiaryEntry = await res.json()
-    // 사진이 실패해도 만들어진 일기는 목록에 보이게 먼저 새로고침하고, 오류는 작성 창에 보인다.
+  // ── diary ─────────────────────────────────────────────────────────────────
+  // 사진은 한 장씩 올리고(presigned, attachDiaryPhotos), 실패한 장수를 알린다(설계서 9.C-12).
+  // 일기 글은 이미 저장됐으므로 던지지 않는다: 쓰기 창이 열린 채 다시 저장해 같은 일기가 또 생기는 일을 막는다.
+  const uploadDiaryPhotos = async (diaryID: string, files: File[]) => {
+    let failed = 0
+    for (const file of files) {
+      try {
+        await attachDiaryPhotos(_accessToken, diaryID, [file])
+      } catch {
+        failed++
+      }
+    }
+    if (failed > 0) showToast(`사진 ${failed}장을 올리지 못했어요. 수정에서 다시 올려 주세요`)
+  }
+
+  // 저장 뒤 목록 새로고침 실패도 던지지 않는다(같은 이유).
+  const refetchDiaries = async () => {
     try {
-      await attachDiaryPhotos(_accessToken, created.id, photos)
-    } finally {
-      // 새로고침 실패가 사진 오류를 덮지 않게 따로 삼킨다.
-      await handleDiaryEdited().catch(() => {})
+      const list = await apiFetch<DiaryEntry[]>('/api/diaries')
+      setDiaries(Array.isArray(list) ? list : [])
+    } catch (e) {
+      toastError('일기 목록 새로고침', e)
     }
   }
 
-  const handleDiaryEdited = async () => {
-    const updated = await apiFetch<DiaryEntry[]>('/api/diaries')
-    setDiaries(Array.isArray(updated) ? updated : [])
+  const handleAddDiary = async (req: CreateDiaryRequest, photos: File[]) => {
+    const created = await apiFetch<DiaryEntry>('/api/diaries', { method: 'POST', body: JSON.stringify(req) })
+    await uploadDiaryPhotos(created.id, photos)
+    await refetchDiaries()
+  }
+
+  const handleUpdateDiary = async (id: string, req: UpdateDiaryRequest, newPhotos: File[]) => {
+    await apiFetch(`/api/diaries/${id}`, { method: 'PUT', body: JSON.stringify(req) })
+    await uploadDiaryPhotos(id, newPhotos)
+    await refetchDiaries()
+  }
+
+  /** photo 는 저장소 키 */
+  const handleDeleteDiaryPhoto = async (id: string, photo: string) => {
+    await apiFetch(`/api/diaries/${id}/photos?key=${encodeURIComponent(photo)}`, { method: 'DELETE' })
+    setDiaries(ds => ds.map(d => {
+      if (d.id !== id) return d
+      const i = d.photos.indexOf(photo)
+      return i < 0 ? d : { ...d, photos: d.photos.filter((_, k) => k !== i), photo_urls: d.photo_urls.filter((_, k) => k !== i) }
+    }))
   }
 
   const handleDeleteDiary = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/diaries/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
-    if (!res.ok) throw new Error(`일기 삭제 실패: ${res.status}`)
+    await apiFetch(`/api/diaries/${id}`, { method: 'DELETE' })
     setDiaries(d => d.filter(x => x.id !== id))
   }
 
@@ -1007,23 +1031,18 @@ export default function DashboardClient() {
         {/* ══ 일상: 일정 · 일기 ══ */}
         {currentTab?.key === 'life' && (
           tabLoading === 'life' ? <TabSkeleton /> : currentSub?.key === 'diary' ? (
-            <div className="space-y-3">
-              {chipRow}
-              <ScheduleTab
-                schedules={schedules}
-                diaries={diaries}
-                currentUserID={currentUserID}
-                accessToken={session?.user?.accessToken ?? ''}
-                section="diary"
-                canEdit={canEdit('diary')}
-                onAddSchedule={handleAddSchedule}
-                onEditSchedule={handleEditSchedule}
-                onDeleteSchedule={handleDeleteSchedule}
-                onAddDiary={handleAddDiary}
-                onDiaryEdited={handleDiaryEdited}
-                onDeleteDiary={handleDeleteDiary}
-              />
-            </div>
+            <DiaryScreen
+              diaries={diaries}
+              users={users}
+              currentUserID={currentUserID}
+              canEdit={canEdit('diary')}
+              hasNav={tabs.length > 1}
+              chips={chipRow}
+              onAdd={handleAddDiary}
+              onUpdate={handleUpdateDiary}
+              onDeletePhoto={handleDeleteDiaryPhoto}
+              onDelete={handleDeleteDiary}
+            />
           ) : (
             <ScheduleScreen
               schedules={schedules}

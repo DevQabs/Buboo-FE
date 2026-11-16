@@ -117,7 +117,7 @@ className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:o
 ## 스케줄 색상 (`ScheduleColor`)
 
 DB에 `'indigo' | 'rose' | 'emerald' | 'amber' | 'sky'` 저장.
-`ScheduleTab.tsx`의 `COLOR_MAP`에서 `indigo` → `brand-*`으로 매핑.
+`life/ScheduleScreen.tsx`·`ScheduleModals.tsx`의 `COLOR_MAP`에서 `indigo` → `brand-*`으로 매핑.
 **타입/DB 값은 변경하지 말 것.**
 
 ## 고정비 Owner 색상
