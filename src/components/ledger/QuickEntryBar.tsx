@@ -74,6 +74,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
   const [method, setMethod] = useState<PayMethod>('카드')
   const inputRef = useRef<HTMLInputElement>(null)
   const dateRef = useRef<HTMLInputElement>(null)
+  const saveSeq = useRef(0) // 마지막으로 시작한 저장 번호 — 되돌리기는 이 저장만 가리킨다
   const keyboard = useKeyboardInset()
   const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories(accessToken)
 
@@ -121,9 +122,10 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
     setCategory('')
     setUndoID(null)
     inputRef.current?.focus()
+    const seq = ++saveSeq.current
     try {
       const id = await onSubmit(payload)
-      setUndoID(id)
+      if (seq === saveSeq.current) setUndoID(id) // 늦게 끝난 옛 저장은 되돌리기 대상이 아니다
     } catch {
       setAmount(prev => prev || typed) // 오류 토스트는 대시보드가 띄운다
       return // 저장 실패면 네이버페이를 열지 않는다
