@@ -83,8 +83,8 @@ function MomentCard({ m, days, author, canEdit, onOpen, onEdit, onDelete, onMedi
           <span>생후 {days}일 · {monthDay(m.date)}{author && ` · ${author}`}</span>
           {canEdit && (
             <span className="flex gap-2.5">
-              <button type="button" onClick={onEdit}>수정</button>
-              <button type="button" onClick={onDelete} className="text-rose-400">삭제</button>
+              <button type="button" onClick={onEdit} className="relative before:absolute before:-inset-x-1 before:-inset-y-4 before:content-['']">수정</button>
+              <button type="button" onClick={onDelete} className="relative text-rose-400 before:absolute before:-inset-x-1 before:-inset-y-4 before:content-['']">삭제</button>
             </span>
           )}
         </div>
