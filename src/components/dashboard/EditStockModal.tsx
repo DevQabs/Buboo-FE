@@ -137,7 +137,7 @@ export default function EditStockModal({ asset, onClose, onEdit }: EditStockModa
                 placeholder="예: 19,600"
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300 placeholder:font-normal"
               />
-              <p className="text-[11px] text-slate-400 mt-1">매수 당시 환율로 환산한 1주당 원화 가격이에요. 없으면 환차손익이 빠져요.</p>
+              <p className="text-xs text-slate-400 mt-1">매수 당시 환율로 환산한 1주당 원화 가격이에요. 없으면 환차손익이 빠져요.</p>
             </div>
           )}
 
