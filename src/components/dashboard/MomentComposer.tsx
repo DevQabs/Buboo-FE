@@ -8,7 +8,8 @@ import { MAX_FILE_BYTES, MAX_VIDEO_SEC } from '@/lib/mediaRules'
 import { CARD, localToday } from './BabyProfile'
 import type { BabyMedia, BabyMoment } from '@/types'
 
-interface Picked { file: File; kind: 'image' | 'video'; preview: string; duration?: number }
+/** key: 이미 R2 에 올린 키 — 저장이 실패해 다시 누르면 이건 건너뛴다 */
+interface Picked { file: File; kind: 'image' | 'video'; preview: string; duration?: number; key?: string }
 
 /** 서버는 duration_sec 30.5 까지 받는다 */
 const LONG_VIDEO_SEC = MAX_VIDEO_SEC + 0.5
@@ -95,17 +96,24 @@ export default function MomentComposer({ accessToken, moment, onClose, onSaved }
     setError(null)
     try {
       const keys: string[] = []
+      const todo = picked.filter(p => !p.key).length
+      let n = 0
       for (let i = 0; i < picked.length; i++) {
         const p = picked[i]
-        const label = `올리는 중 ${i + 1}/${picked.length}`
+        if (p.key) { keys.push(p.key); continue }
+        const label = `올리는 중 ${++n}/${todo}`
         setProgress(label)
         const onProgress = (r: number) => setProgress(`${label} · ${Math.round(r * 100)}%`)
+        let key: string
         if (p.kind === 'image') {
           const { blob, contentType } = await prepareImage(p.file)
-          keys.push(await uploadMedia(accessToken, 'baby', blob, contentType, undefined, onProgress))
+          key = await uploadMedia(accessToken, 'baby', blob, contentType, undefined, onProgress)
         } else {
-          keys.push(await uploadMedia(accessToken, 'baby', p.file, videoContentType(p.file), p.duration, onProgress))
+          key = await uploadMedia(accessToken, 'baby', p.file, videoContentType(p.file), p.duration, onProgress)
         }
+        keys.push(key)
+        // 저장 중에는 picked 를 못 바꾸므로(busy) i 가 그대로 맞다
+        setPicked(ps => ps.map((x, j) => (j === i ? { ...x, key } : x)))
       }
       setProgress('저장 중')
       if (moment) {
@@ -119,7 +127,7 @@ export default function MomentComposer({ accessToken, moment, onClose, onSaved }
       }
       await onSaved()
     } catch (e) {
-      // ponytail: 중간에 실패하면 이미 올린 파일은 사용량에 남는다(안전한 쪽) — 쌓이면 정리 명령 추가
+      // ponytail: 다시 누르지 않고 닫거나 올린 것을 빼면 그 파일은 사용량에 남는다 — 쌓이면 정리 명령 추가
       setError(e instanceof Error ? e.message : '저장하지 못했어요')
     } finally {
       setProgress(null)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon, PlayIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { apiFetch } from '@/lib/api'
 import { daysSinceBirth } from '@/lib/mediaRules'
@@ -10,21 +10,26 @@ import type { Baby, BabyMedia, BabyMoment, User } from '@/types'
 
 const monthDay = (d: string) => `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}일`
 
-function MediaThumb({ media, className, onClick }: { media: BabyMedia; className: string; onClick: () => void }) {
+/** presigned 주소는 1시간 유효 — 화면이 이보다 오래 열려 있었으면 다시 받는다 */
+const STALE_MS = 50 * 60_000
+/** 마지막으로 받은 지 이보다 짧으면 깨진 미디어로 다시 받지 않는다(진짜 깨진 파일로 무한 반복 방지) */
+const ERROR_RELOAD_GAP_MS = 60_000
+
+function MediaThumb({ media, className, onClick, onError }: { media: BabyMedia; className: string; onClick: () => void; onError: () => void }) {
   return (
     <button type="button" onClick={onClick}
       className={`relative block overflow-hidden bg-gradient-to-br from-[#fde2e4] to-[#cde5f5] ${className}`}>
       {media.kind === 'video'
-        ? <video src={`${media.url}#t=0.1`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+        ? <video src={`${media.url}#t=0.1`} muted playsInline preload="metadata" onError={onError} className="h-full w-full object-cover" />
         // eslint-disable-next-line @next/next/no-img-element -- presigned R2 주소라 next/image 를 못 쓴다
-        : <img src={media.url} alt="" loading="lazy" className="h-full w-full object-cover" />}
+        : <img src={media.url} alt="" loading="lazy" onError={onError} className="h-full w-full object-cover" />}
       {media.kind === 'video' && <PlayIcon className="absolute inset-0 m-auto h-9 w-9 text-white drop-shadow" />}
     </button>
   )
 }
 
 /** 전체 화면 뷰어: 사진은 눌러서 확대/축소(뷰포트 확대가 막혀 있어 직접 처리), 영상은 재생. */
-function MediaViewer({ media, index, onClose }: { media: BabyMedia[]; index: number; onClose: () => void }) {
+function MediaViewer({ media, index, onClose, onError }: { media: BabyMedia[]; index: number; onClose: () => void; onError: () => void }) {
   const [i, setI] = useState(index)
   const [zoom, setZoom] = useState(false)
   const cur = media[i]
@@ -33,10 +38,10 @@ function MediaViewer({ media, index, onClose }: { media: BabyMedia[]; index: num
     <div className="fixed inset-0 z-[80] bg-black">
       <div className={`h-full w-full ${zoom ? 'overflow-auto' : 'flex items-center justify-center'}`}>
         {cur.kind === 'video' ? (
-          <video key={cur.id} src={cur.url} controls autoPlay playsInline className="max-h-full max-w-full" />
+          <video key={cur.id} src={cur.url} controls autoPlay playsInline onError={onError} className="max-h-full max-w-full" />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- presigned R2 주소라 next/image 를 못 쓴다
-          <img src={cur.url} alt="" onClick={() => setZoom(z => !z)}
+          <img src={cur.url} alt="" onError={onError} onClick={() => setZoom(z => !z)}
             className={zoom ? 'w-[200%] max-w-none' : 'max-h-full max-w-full object-contain'} />
         )}
       </div>
@@ -59,7 +64,7 @@ function MediaViewer({ media, index, onClose }: { media: BabyMedia[]; index: num
 }
 
 /** 날짜별 카드: 큰 대표 사진 + 나머지 격자, "생후 N일 · 날짜 · 작성자"(시안 B). */
-function MomentCard({ m, days, author, canEdit, onOpen, onEdit, onDelete }: {
+function MomentCard({ m, days, author, canEdit, onOpen, onEdit, onDelete, onMediaError }: {
   m: BabyMoment
   days: number
   author: string
@@ -67,11 +72,12 @@ function MomentCard({ m, days, author, canEdit, onOpen, onEdit, onDelete }: {
   onOpen: (i: number) => void
   onEdit: () => void
   onDelete: () => void
+  onMediaError: () => void
 }) {
   const [first, ...rest] = m.media
   return (
     <div className="overflow-hidden rounded-[24px] bg-white shadow-warm">
-      {first && <MediaThumb media={first} className="h-[260px] w-full" onClick={() => onOpen(0)} />}
+      {first && <MediaThumb media={first} className="h-[260px] w-full" onClick={() => onOpen(0)} onError={onMediaError} />}
       <div className="px-3.5 py-2.5">
         <div className="flex items-center justify-between text-xs text-stone-400">
           <span>생후 {days}일 · {monthDay(m.date)}{author && ` · ${author}`}</span>
@@ -87,7 +93,7 @@ function MomentCard({ m, days, author, canEdit, onOpen, onEdit, onDelete }: {
       {rest.length > 0 && (
         <div className="grid grid-cols-2 gap-2 px-3.5 pb-3.5">
           {rest.map((md, i) => (
-            <MediaThumb key={md.id} media={md} className="h-[110px] rounded-[18px]" onClick={() => onOpen(i + 1)} />
+            <MediaThumb key={md.id} media={md} className="h-[110px] rounded-[18px]" onClick={() => onOpen(i + 1)} onError={onMediaError} />
           ))}
         </div>
       )}
@@ -103,10 +109,13 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
 }) {
   const [moments, setMoments] = useState<BabyMoment[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [viewer, setViewer] = useState<{ media: BabyMedia[]; index: number } | null>(null)
+  // 뷰어는 기록 id 로 들고 있어 다시 받은 새 주소를 바로 쓴다
+  const [viewer, setViewer] = useState<{ momentId: string; index: number } | null>(null)
+  const loadedAt = useRef(0)
   const [composer, setComposer] = useState<BabyMoment | 'new' | null>(null)
 
   const load = useCallback(async () => {
+    loadedAt.current = Date.now()
     try {
       // 서버는 빈 목록·빈 media 를 null 로 줄 수 있다(Go nil 슬라이스)
       const ms = (await apiFetch<BabyMoment[] | null>('/api/baby/moments', accessToken)) ?? []
@@ -117,6 +126,21 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
     }
   }, [accessToken])
   useEffect(() => { load() }, [load])
+
+  // 주소 만료 대비: 오래 숨겨 뒀다 돌아오면 다시 받는다
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && Date.now() - loadedAt.current > STALE_MS) load()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [load])
+
+  // 미디어가 안 열리면(주소 만료 등) 한 번 다시 받는다. 여러 장이 한꺼번에 깨져도 한 번만.
+  const onMediaError = useCallback(() => {
+    if (Date.now() - loadedAt.current > ERROR_RELOAD_GAP_MS) load()
+  }, [load])
+  const viewerMedia = viewer && moments?.find(m => m.id === viewer.momentId)?.media
 
   const remove = async (m: BabyMoment) => {
     if (!confirm('이 기록과 사진·영상을 모두 지울까요?')) return
@@ -152,12 +176,16 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
           days={daysSinceBirth(baby.birth_date, m.date)}
           author={nameOf(m.user_id)}
           canEdit={canEdit}
-          onOpen={i => setViewer({ media: m.media, index: i })}
+          onOpen={i => setViewer({ momentId: m.id, index: i })}
           onEdit={() => setComposer(m)}
           onDelete={() => remove(m)}
+          onMediaError={onMediaError}
         />
       ))}
-      {viewer && <MediaViewer media={viewer.media} index={viewer.index} onClose={() => setViewer(null)} />}
+      {viewer && viewerMedia && viewerMedia.length > 0 && (
+        <MediaViewer media={viewerMedia} index={Math.min(viewer.index, viewerMedia.length - 1)}
+          onClose={() => setViewer(null)} onError={onMediaError} />
+      )}
       {composer && (
         <MomentComposer
           accessToken={accessToken}

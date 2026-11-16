@@ -97,7 +97,14 @@ export function BabyGate({ accessToken, isOwner, children }: {
   const { baby, error, reload } = useBaby(accessToken)
   const [editing, setEditing] = useState(false)
 
-  if (error) return <p className="px-1 text-xs text-rose-500">{error}</p>
+  if (error) {
+    return (
+      <div className="flex items-center gap-2 px-1 text-xs">
+        <span className="text-rose-500">{error}</span>
+        <button type="button" onClick={reload} className="font-semibold text-brand-500">다시 시도</button>
+      </div>
+    )
+  }
   if (baby === undefined) return null
   if (baby === null || editing) {
     if (!isOwner) {
