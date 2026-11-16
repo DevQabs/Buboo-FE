@@ -91,11 +91,12 @@ export function Segmented<K extends string>({ items, value, onChange }: {
 }
 
 /** 머리 오른쪽 둥근 아이콘 버튼. 보이는 크기 32px, 누르는 영역은 before 로 44px */
-export function IconButton({ label, on = false, onClick, children }: { label: string; on?: boolean; onClick: () => void; children: ReactNode }) {
+export function IconButton({ label, on = false, expanded, onClick, children }: { label: string; on?: boolean; expanded?: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button
       type="button"
       aria-label={label}
+      aria-expanded={expanded}
       onClick={onClick}
       className={`relative flex h-8 w-8 items-center justify-center rounded-xl transition-colors before:absolute before:-inset-1.5 before:content-[''] ${
         on ? 'bg-brand-500 text-white' : 'bg-white text-stone-500 shadow-warm'

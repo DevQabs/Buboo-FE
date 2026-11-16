@@ -69,6 +69,8 @@
 | `QuickEntryBar` | 하단 탭 위 빠른 입력 바(가계부 금액 입력, `components/ledger/QuickEntryBar.tsx`) |
 | `showToast` / `toastError` / `Toaster` | 저장 실패 알림(`Toaster`는 대시보드에 하나) |
 
+같은 기능(월 달력 열기 등)은 화면마다 같은 컨트롤을 쓴다.
+
 ## 아바타 색상
 
 `DashboardClient.tsx`에서 users 로드 시 role별 자동 주입:

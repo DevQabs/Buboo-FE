@@ -3,7 +3,7 @@
 // 일정 A (시안 sched-a): 주간 스트립 + 이번 주/이후 아젠다(옆에 D-n) + 기념일 칸(D+) + 월 달력 펼침.
 import { useMemo, useState, type ReactNode } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import { ChevronDownIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { CalendarDaysIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { Card, IconButton, PageTitle, SectionLabel } from '@/components/ui/Card'
 import { toastError } from '@/components/ui/Toast'
 import MiniCalendar from './MiniCalendar'
@@ -105,9 +105,9 @@ export default function ScheduleScreen({ schedules, diaries, currentUserID, canE
         eyebrow="일상"
         title="일정"
         right={<>
-          <button type="button" onClick={() => setShowMonth(v => !v)} className="relative before:absolute before:content-[''] before:-inset-y-3 flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium text-stone-500">
-            월 달력 <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${showMonth ? 'rotate-180' : ''}`} />
-          </button>
+          <IconButton label="월 달력" on={showMonth} expanded={showMonth} onClick={() => setShowMonth(v => !v)}>
+            <CalendarDaysIcon className="h-4 w-4" />
+          </IconButton>
           {canEdit && <IconButton label="일정 추가" onClick={() => setAdding(true)}><PlusIcon className="h-4 w-4" /></IconButton>}
         </>}
       />
