@@ -608,9 +608,6 @@ export default function StockPortfolioCard({
         <div className='flex items-center justify-between px-5 py-4 border-b border-slate-100'>
           <div>
             <h2 className='text-sm font-bold text-stone-800'>보유 종목</h2>
-            {safeAssets.length > 0 && summary?.usd_krw && (
-              <p className='text-xs text-slate-400 mt-0.5'>USD/KRW {summary.usd_krw.toFixed(0)}원 기준</p>
-            )}
             {(summary?.krw_basis_approx_count ?? 0) > 0 && (
               <p className='text-xs text-amber-600 mt-0.5'>
                 {summary!.krw_basis_approx_count}개 종목은 원화 취득가가 없어 환차손익이 빠져 있어요

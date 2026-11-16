@@ -339,14 +339,6 @@ export interface UpdateOtherAssetRequest {
   memo?: string
 }
 
-export interface NetWorthSummary {
-  stock_value_krw: number   // 주식 포트폴리오 합산 (KRW 환산)
-  asset_value_krw: number   // 기타 자산 합산
-  liability_krw: number     // 부채 합산
-  net_worth_krw: number     // 순자산 (주식 + 자산 − 부채)
-  calculated_at: string
-}
-
 // ─────────────────────────────────────────────
 //  FixedExpense (고정비 — 정기 지출 템플릿)
 // ─────────────────────────────────────────────
