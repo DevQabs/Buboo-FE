@@ -1,5 +1,17 @@
+'use client'
+
 // B 톤 공용 조각(설계서 7절). 두 화면 이상이 쓰는 것만 둔다.
 import type { ReactNode } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
+
+/** 탭·세그먼트 선택 표시가 미끄러지는 스프링(설계서 3절). 줄인 움직임이면 바로 옮긴다 */
+export const SPRING = { type: 'spring', stiffness: 500, damping: 32 } as const
+export const NO_MOTION = { duration: 0 } as const
+
+/** 누를 때 짧은 진동. 안드로이드만 되고 나머지(iOS 등)는 아무 일도 없다 */
+export function tapHaptic(): void {
+  navigator.vibrate?.(8)
+}
 
 /** 흰 카드: rounded-[22px] + 따뜻한 그림자 */
 export function Card({ className = '', onClick, children }: { className?: string; onClick?: () => void; children: ReactNode }) {
@@ -49,6 +61,7 @@ export function Segmented<K extends string>({ items, value, onChange }: {
   value: K | undefined
   onChange: (key: K) => void
 }) {
+  const reduce = useReducedMotion()
   return (
     <div role="tablist" className="flex rounded-2xl bg-sand p-1">
       {items.map(it => {
@@ -59,10 +72,16 @@ export function Segmented<K extends string>({ items, value, onChange }: {
             type="button"
             role="tab"
             aria-selected={on}
-            onClick={() => onChange(it.key)}
+            onClick={() => { tapHaptic(); onChange(it.key) }}
             className={`relative h-11 flex-1 rounded-xl text-sm font-semibold transition-colors ${on ? 'text-white' : 'text-stone-500'}`}
           >
-            {on && <span className="absolute inset-0 rounded-xl bg-brand-500 shadow-warm" />}
+            {on && (
+              <motion.span
+                layoutId="segment-pill"
+                transition={reduce ? NO_MOTION : SPRING}
+                className="absolute inset-0 rounded-xl bg-brand-500 shadow-warm"
+              />
+            )}
             <span className="relative">{it.label}</span>
           </button>
         )

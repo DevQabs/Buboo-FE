@@ -77,7 +77,8 @@ import { levelOf, visibleTabs, type TabKey } from '@/lib/menus'
 import { ledgerPeriod, ledgerMonthOf, todayKST } from '@/lib/date'
 import { apiFetch as callApi, latestOnly, ignoreAbort } from '@/lib/api'
 import { attachDiaryPhotos } from '@/lib/media'
-import { Segmented } from '@/components/ui/Card'
+import { motion, useReducedMotion } from 'framer-motion'
+import { NO_MOTION, SPRING, Segmented, tapHaptic } from '@/components/ui/Card'
 import { Toaster, showToast, toastError } from '@/components/ui/Toast'
 
 // 개발: NEXT_PUBLIC_API_URL=http://localhost:8090 으로 직접 호출
@@ -175,6 +176,7 @@ export default function DashboardClient() {
   // ── UI state ──
   const [activeTab, setActiveTab]     = useState<ActiveTab>('ledger')
   const [activeSub, setActiveSub]     = useState<MenuKey | null>(null)
+  const reduceMotion = useReducedMotion()
 
   // ── profile menu ──
   const [showMenu, setShowMenu]       = useState(false)
@@ -1122,11 +1124,24 @@ export default function DashboardClient() {
               return (
                 <button
                   key={t.key}
-                  onClick={() => { setActiveTab(t.key); setActiveSub(null) }}
+                  onClick={() => { tapHaptic(); setActiveTab(t.key); setActiveSub(null) }}
                   className={`flex-1 flex flex-col items-center pt-2.5 pb-4 gap-1 transition-colors ${on ? 'text-brand-500' : 'text-stone-400'}`}
                 >
-                  <div className={`p-1.5 rounded-xl transition-colors ${on ? 'bg-brand-500 text-white' : ''}`}>
-                    <Icon className="h-5 w-5" />
+                  <div className={`relative flex h-8 w-14 items-center justify-center ${on ? 'text-white' : ''}`}>
+                    {on && (
+                      <motion.span
+                        layoutId="nav-pill"
+                        transition={reduceMotion ? NO_MOTION : SPRING}
+                        className="absolute inset-0 rounded-full bg-brand-500"
+                      />
+                    )}
+                    <motion.span
+                      className="relative"
+                      animate={{ scale: on && !reduceMotion ? [1, 1.15, 1] : 1 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </motion.span>
                   </div>
                   <span className="text-[10px] font-semibold tracking-tight">{t.label}</span>
                 </button>
