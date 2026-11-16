@@ -327,7 +327,7 @@ export default function DashboardClient() {
   // loading=false 가 되는 순간 wealth/life/roadmap 를 조용히 병렬 로드.
   // 사용자가 탭을 누를 때 이미 데이터가 준비돼 있으면 스켈레톤 없이 즉시 표시.
   //
-  // ★ .preload() 란?
+  // .preload() 란?
   //   next/dynamic 으로 만든 컴포넌트는 정적 메서드 .preload()를 가진다.
   //   이를 호출하면 렌더링 없이 해당 JS 청크만 네트워크로 미리 다운로드한다.
   //   → 탭 전환 시 "청크 다운로드 + 렌더링" 에서 "렌더링만" 으로 단축된다.
