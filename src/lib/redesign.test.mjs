@@ -106,3 +106,26 @@ test('이번 주(토요일까지)·그 뒤·지난 기념일로 나눈다', () =
   assert.deepEqual(a.later.map(s => s.id), ['n'])
   assert.deepEqual(a.anniversaries.map(s => s.id), ['ann'])
 })
+
+// ── Task 5: 자산현황 ──
+import { allocation, ownerSplit } from './wealth.ts'
+
+test('구성비: 주식·예적금·묶인 자산, 대출은 따로 빼서 순자산', () => {
+  const assets = [
+    { asset_type: '예/적금', is_liability: false, is_locked: false, value_krw: 77_000_000 },
+    { asset_type: '부동산', is_liability: false, is_locked: true, value_krw: 63_000_000 },
+    { asset_type: '대출', is_liability: true, is_locked: false, value_krw: 83_400_000 },
+  ]
+  const a = allocation(94_000_000, assets)
+  assert.equal(a.gross, 234_000_000)
+  assert.equal(a.liability, 83_400_000)
+  assert.equal(a.net, 150_600_000)
+  assert.deepEqual(a.slices.map(s => [s.key, Math.round(s.pct)]), [['stock', 40], ['liquid', 33], ['locked', 27]])
+})
+
+test('명의 분할은 둘 이상일 때만', () => {
+  const names = { u1: { name: '남편' }, u2: { name: '아내' } }
+  assert.equal(ownerSplit([{ user_id: 'u1', quantity: 300 }, { user_id: 'u2', quantity: 112 }], names), '412주 · 남편 300 아내 112')
+  assert.equal(ownerSplit([{ user_id: 'u1', quantity: 98 }], names), '98주')
+  assert.equal(ownerSplit([{ user_id: 'u1', quantity: 0.5 }, { user_id: 'u1', quantity: 1.25 }], names), '1.75주')
+})

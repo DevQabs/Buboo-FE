@@ -25,10 +25,7 @@ function ChunkSkeleton({ h = 100 }: { h?: number }) {
   return <div className="bg-white rounded-3xl animate-pulse w-full" style={{ height: h }} />
 }
 
-// ─── 자산 현황 탭 — 첫 방문 시 로드 + Phase2 .preload() ─────────────────────────
-const NetWorthSummaryCard = dynamic(() => import('@/components/dashboard/NetWorthSummaryCard'), { ssr: false, loading: () => <ChunkSkeleton h={88}  /> })
-const StockPortfolioCard  = dynamic(() => import('@/components/dashboard/StockPortfolioCard'),  { ssr: false, loading: () => <ChunkSkeleton h={260} /> })
-const OtherAssetCard      = dynamic(() => import('@/components/dashboard/OtherAssetCard'),      { ssr: false, loading: () => <ChunkSkeleton h={140} /> })
+const WealthScreen = dynamic(() => import('@/components/wealth/WealthScreen'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
 
 // ─── 라이프 / 로드맵 탭 — 첫 방문 시 로드 ──────────────────────────────────────
 const ScheduleTab = dynamic(() => import('@/components/dashboard/ScheduleTab'), { ssr: false, loading: () => <ChunkSkeleton h={400} /> })
@@ -55,7 +52,6 @@ import type {
   OtherAsset,
   CreateOtherAssetRequest,
   UpdateOtherAssetRequest,
-  NetWorthSummary,
   FixedExpense,
   FixedExpenseSummary,
   CreateFixedExpenseRequest,
@@ -209,24 +205,6 @@ export default function DashboardClient() {
   const [showTradeHistory, setShowTradeHistory] = useState(false)
   const [tradeTransactions, setTradeTransactions] = useState<StockTransaction[]>([])
 
-  // ── derived: 통합 순자산 ──────────────────────────────────────────────────
-  const netWorth = useMemo<NetWorthSummary>(() => {
-    const stockValueKrw  = portfolioSummary?.total_value_krw ?? 0
-    const assetValueKrw  = otherAssets
-      .filter(a => !a.is_liability)
-      .reduce((s, a) => s + a.value_krw, 0)
-    const liabilityKrw   = otherAssets
-      .filter(a => a.is_liability)
-      .reduce((s, a) => s + a.value_krw, 0)
-    return {
-      stock_value_krw: stockValueKrw,
-      asset_value_krw: assetValueKrw,
-      liability_krw:   liabilityKrw,
-      net_worth_krw:   stockValueKrw + assetValueKrw - liabilityKrw,
-      calculated_at:   new Date().toISOString(),
-    }
-  }, [portfolioSummary, otherAssets])
-
   // ── fetch summary by period ───────────────────────────────────────────────
   const fetchSummary = useCallback(async (y: number, m: number, sd: number, signal?: AbortSignal) => {
     const { startDate, endDate } = ledgerPeriod(y, m, sd)
@@ -352,7 +330,7 @@ export default function DashboardClient() {
   const prefetchAll = useCallback(async () => {
     // ── JS 청크 미리 다운로드 (렌더링 없이 네트워크만, 병렬) ──
     ;[
-      NetWorthSummaryCard, StockPortfolioCard, OtherAssetCard,
+      WealthScreen,
       ScheduleTab, ScheduleScreen, RoadmapTab,
       AddStockModal, EditStockModal, BuySellModal, TradeHistoryModal,
     ].forEach(c => (c as any).preload?.())
@@ -623,63 +601,37 @@ export default function DashboardClient() {
 
   // ── stock handlers ────────────────────────────────────────────────────────
   const handleAddStock = async (data: Parameters<React.ComponentProps<typeof AddStockModal>['onAdd']>[0]) => {
-    const res = await fetch(`${API_BASE}/api/stocks`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify({ ...data }),
-    })
-    if (!res.ok) throw new Error(`주식 추가 실패: ${res.status}`)
+    await apiFetch('/api/stocks', { method: 'POST', body: JSON.stringify(data) })
     await refetchPortfolio()
   }
 
-  const handleEditStock = async (id: string, data: {
-    user_id?: string; name?: string; quantity?: number
-    average_price?: number; avg_krw_price?: number; memo?: string
-  }) => {
-    const res = await fetch(`${API_BASE}/api/stocks/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new Error(body?.error ?? `주식 수정 실패: ${res.status}`)
-    }
+  const handleEditStock = async (id: string, data: Parameters<React.ComponentProps<typeof EditStockModal>['onEdit']>[1]) => {
+    await apiFetch(`/api/stocks/${id}`, { method: 'PUT', body: JSON.stringify(data) })
     await refetchPortfolio()
   }
 
   const handleBuySellStock = async (
     mode: 'buy' | 'sell',
-    data: { quantity: number; price: number; exchange_rate: number; memo: string }
+    data: { quantity: number; price: number; exchange_rate: number; memo: string },
   ) => {
     if (!buySellTarget) return
-    const res = await fetch(`${API_BASE}/api/stocks/${buySellTarget.asset.id}/${mode}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new Error(body?.error ?? `${mode === 'buy' ? '매수' : '매도'} 실패: ${res.status}`)
-    }
+    await apiFetch(`/api/stocks/${buySellTarget.asset.id}/${mode}`, { method: 'POST', body: JSON.stringify(data) })
     await refetchPortfolio()
   }
 
   const handleDeleteStock = async (asset: StockAssetWithPrice) => {
-    const res = await fetch(`${API_BASE}/api/stocks/${asset.id}?force=true`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
-    if (!res.ok) throw new Error(`주식 삭제 실패: ${res.status}`)
-    setPortfolio(prev => prev.filter(a => a.id !== asset.id))
-    await refetchPortfolio()
+    try {
+      await apiFetch(`/api/stocks/${asset.id}?force=true`, { method: 'DELETE' })
+      setPortfolio(prev => prev.filter(a => a.id !== asset.id))
+      await refetchPortfolio()
+    } catch (e) {
+      toastError('종목 삭제', e)
+    }
   }
 
   // ── other-asset handlers ──────────────────────────────────────────────────
   const handleAddAsset = async (data: CreateOtherAssetRequest) => {
-    const res = await fetch(`${API_BASE}/api/assets`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify({ ...data }),
-    })
-    if (!res.ok) throw new Error(`자산 추가 실패: ${res.status}`)
+    await apiFetch('/api/assets', { method: 'POST', body: JSON.stringify(data) })
     await refetchAssets()
     if (data.asset_type === '대출') {
       await refetchFixedExpenses()
@@ -688,19 +640,17 @@ export default function DashboardClient() {
   }
 
   const handleEditAsset = async (id: string, data: UpdateOtherAssetRequest) => {
-    const res = await fetch(`${API_BASE}/api/assets/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error(`자산 수정 실패: ${res.status}`)
+    await apiFetch(`/api/assets/${id}`, { method: 'PUT', body: JSON.stringify(data) })
     await refetchAssets()
   }
 
   const handleDeleteAsset = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/assets/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } })
-    if (!res.ok) throw new Error(`자산 삭제 실패: ${res.status}`)
-    setOtherAssets(prev => prev.filter(a => a.id !== id))
+    try {
+      await apiFetch(`/api/assets/${id}`, { method: 'DELETE' })
+      setOtherAssets(prev => prev.filter(a => a.id !== id))
+    } catch (e) {
+      toastError('자산 삭제', e)
+    }
   }
 
   // ── reorder handlers ──────────────────────────────────────────────────────
@@ -715,36 +665,35 @@ export default function DashboardClient() {
   const handleReorderStocks = async (ids: string[]) => {
     const previous = portfolio
     setPortfolio(prev => reorderByIDs(prev, ids))
-    const res = await fetch(`${API_BASE}/api/stocks/reorder`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify({ ids }),
-    })
-    if (!res.ok) {
+    try {
+      await apiFetch('/api/stocks/reorder', { method: 'PATCH', body: JSON.stringify({ ids }) })
+    } catch (e) {
       setPortfolio(previous)
-      throw new Error(`주식 순서 저장 실패: ${res.status}`)
+      toastError('순서 저장', e)
+      throw e
     }
   }
 
   const handleReorderAssets = async (ids: string[]) => {
     const previous = otherAssets
     setOtherAssets(prev => reorderByIDs(prev, ids))
-    const res = await fetch(`${API_BASE}/api/assets/reorder`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_accessToken}` },
-      body: JSON.stringify({ ids }),
-    })
-    if (!res.ok) {
+    try {
+      await apiFetch('/api/assets/reorder', { method: 'PATCH', body: JSON.stringify({ ids }) })
+    } catch (e) {
       setOtherAssets(previous)
-      throw new Error(`자산 순서 저장 실패: ${res.status}`)
+      toastError('순서 저장', e)
+      throw e
     }
   }
 
   const handleCreateLoanExpense = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/assets/${id}/loan-expense`, { method: 'POST', headers: { Authorization: `Bearer ${_accessToken}` } })
-    if (!res.ok) throw new Error(`고정비 생성 실패: ${res.status}`)
-    await refetchFixedExpenses()
-    await fetchCalendar(calendarYear, calendarMonth)
+    try {
+      await apiFetch(`/api/assets/${id}/loan-expense`, { method: 'POST' })
+      await refetchFixedExpenses()
+      await fetchCalendar(calendarYear, calendarMonth)
+    } catch (e) {
+      toastError('대출 고정비 등록', e)
+    }
   }
 
   // ── fixed expense handlers ────────────────────────────────────────────────
@@ -969,7 +918,7 @@ export default function DashboardClient() {
         )}
 
         {/* 2단 메뉴 칩 — 화면이 직접 그리면 여기서는 뺀다(Task 3·5·6) */}
-        {currentTab?.key !== 'life' && chipRow}
+        {currentTab?.key !== 'life' && currentSub?.key !== 'assets' && chipRow}
 
         {/* ══ 아기 (3단계에서 채움) ══ */}
         {currentTab?.key === 'baby' && (
@@ -979,45 +928,32 @@ export default function DashboardClient() {
           </div>
         )}
 
-        {/* ══ Tab 1: 자산 현황 ══ */}
+        {/* ══ 자산현황 ══ */}
         {currentSub?.key === 'assets' && (
-          <div className="space-y-3">
-            {tabLoading === 'wealth' ? <TabSkeleton /> : <>
-            {/* 통합 순자산 요약 */}
-            <NetWorthSummaryCard
-              netWorth={netWorth}
-              portfolioSummary={portfolioSummary}
-            />
-
-            {/* 주식 포트폴리오 */}
-            <StockPortfolioCard
+          tabLoading === 'wealth' ? <TabSkeleton /> : (
+            <WealthScreen
               canEdit={canEdit('assets')}
-              assets={portfolio}
-              users={users}
-              summary={portfolioSummary}
-              onAddClick={() => setShowAddStock(true)}
-              onHistoryClick={() => setShowTradeHistory(true)}
-              onEditClick={setEditingStock}
-              onBuySellClick={(asset, mode) => setBuySellTarget({ asset, mode })}
-              onDeleteClick={handleDeleteStock}
-              onReorder={handleReorderStocks}
-            />
-
-            {/* 기타 자산 */}
-            <OtherAssetCard
-              canEdit={canEdit('assets')}
-              assets={otherAssets}
-              users={users}
+              chips={chipRow}
+              accessToken={session?.user?.accessToken ?? ''}
               currentUserID={currentUserID}
+              users={users}
+              portfolio={portfolio}
+              portfolioSummary={portfolioSummary}
+              otherAssets={otherAssets}
               fixedExpenseTitles={fixedExpenses.map(fe => fe.title)}
-              onAdd={handleAddAsset}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
+              onAddStock={() => setShowAddStock(true)}
+              onHistory={() => setShowTradeHistory(true)}
+              onEditStock={setEditingStock}
+              onBuySell={(asset, mode) => setBuySellTarget({ asset, mode })}
+              onDeleteStock={handleDeleteStock}
+              onReorderStocks={handleReorderStocks}
+              onAddAsset={handleAddAsset}
+              onEditAsset={handleEditAsset}
+              onDeleteAsset={handleDeleteAsset}
               onCreateLoanExpense={handleCreateLoanExpense}
-              onReorder={handleReorderAssets}
+              onReorderAssets={handleReorderAssets}
             />
-            </>}
-          </div>
+          )
         )}
 
         {/* ══ 가계부 ══ */}

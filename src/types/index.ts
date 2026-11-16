@@ -270,12 +270,13 @@ export const OTHER_ASSET_TYPES: OtherAssetType[] = [
   '부동산', '예/적금', '현금', '기타', '대출',
 ]
 
-export const ASSET_TYPE_EMOJI: Record<OtherAssetType, string> = {
-  부동산:   '🏠',
-  '예/적금': '🏦',
-  현금:     '💵',
-  대출:     '💳',
-  기타:     '📦',
+/** 자산 종류 짧은 표시(아이콘 칸 글자) */
+export const ASSET_TYPE_SHORT: Record<OtherAssetType, string> = {
+  부동산:   '집',
+  '예/적금': '예금',
+  현금:     '현금',
+  대출:     '대출',
+  기타:     '기타',
 }
 
 export interface OtherAsset {

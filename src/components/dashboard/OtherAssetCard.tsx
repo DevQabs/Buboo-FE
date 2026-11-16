@@ -15,7 +15,7 @@ import type {
   CreateOtherAssetRequest,
   UpdateOtherAssetRequest,
 } from '@/types'
-import { OTHER_ASSET_TYPES, ASSET_TYPE_EMOJI } from '@/types'
+import { OTHER_ASSET_TYPES, ASSET_TYPE_SHORT } from '@/types'
 
 interface OtherAssetCardProps {
   assets: OtherAsset[]
@@ -227,7 +227,7 @@ function AssetFormModal({ mode, initial, currentUserID, onClose, onSubmit }: Ass
                       : t === '대출' ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  {ASSET_TYPE_EMOJI[t]} {t}
+                  {t}
                 </button>
               ))}
             </div>
@@ -548,10 +548,10 @@ function AssetRow({ asset, user, canEdit, onEdit, onDelete, onCreateLoanExpense,
   return (
     <SortableRow id={asset.id} className="relative flex items-center gap-3 pl-3 pr-5 py-3.5 hover:bg-slate-50 transition-colors">
       <DragHandle />
-      <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg ${
+      <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-extrabold text-stone-600 ${
         isLoan ? 'bg-rose-50' : asset.is_liability ? 'bg-rose-50' : asset.is_locked ? 'bg-amber-50' : 'bg-emerald-50'
       }`}>
-        {ASSET_TYPE_EMOJI[asset.asset_type]}
+        {ASSET_TYPE_SHORT[asset.asset_type]}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -625,12 +625,12 @@ function AssetRow({ asset, user, canEdit, onEdit, onDelete, onCreateLoanExpense,
               </button>
               {isLoan && onCreateLoanExpense && !loanExpenseExists && (
                 <button onClick={() => { setMenuOpen(false); onCreateLoanExpense() }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-violet-600 hover:bg-violet-50 transition-colors whitespace-nowrap">
-                  <span className="text-xs leading-none">📌</span>고정비 등록
+                  고정비 등록
                 </button>
               )}
               {isLoan && loanExpenseExists && (
                 <div className="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-300 whitespace-nowrap cursor-default">
-                  <span className="text-xs leading-none">📌</span>등록됨
+                  등록됨
                 </div>
               )}
               <button onClick={() => { setMenuOpen(false); onDelete() }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-rose-500 hover:bg-rose-50 transition-colors whitespace-nowrap">
@@ -681,7 +681,7 @@ export default function OtherAssetCard({ assets = [], users = [], currentUserID,
 
   return (
     <>
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-card shadow-warm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
             <h2 className="text-sm font-bold text-slate-800">기타 자산</h2>

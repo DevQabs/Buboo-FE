@@ -2,8 +2,6 @@
 
 import { useState, useRef, useCallback } from 'react';
 import {
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
   PencilSquareIcon,
   TrashIcon,
   ExclamationTriangleIcon,
@@ -13,8 +11,12 @@ import {
 import { PlusIcon } from '@heroicons/react/24/solid';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
-const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
-import type { StockAssetWithPrice, User, PortfolioSummary } from '@/types';
+const CHART_COLORS = ['#0F4C81', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
+import type { StockAssetWithPrice, User, PortfolioSummary, TaxCheckResponse } from '@/types';
+import { Chip } from '@/components/ui/Card';
+import { apiFetch } from '@/lib/api';
+import { formatMan } from '@/lib/formatNumber';
+import { ownerSplit } from '@/lib/wealth';
 import { DragHandle, SortableList, SortableRow } from './SortableList';
 
 
@@ -31,6 +33,8 @@ interface StockPortfolioCardProps {
   onReorder: (ids: string[]) => Promise<void>;
   /** false 면 종목 추가·수정·삭제·매수/매도·순서 변경을 숨긴다(보기 전용). */
   canEdit: boolean;
+  /** 삭제 전 세금 확인 호출용 */
+  accessToken: string;
 }
 
 function formatCurrency(value: number, currency: string): string {
@@ -344,39 +348,22 @@ function GroupedStockRow({
       >
         <DragHandle />
 
-        {/* Symbol badge */}
-        <div className='flex-shrink-0 w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center'>
-          <span className='text-[10px] font-bold text-brand-600 leading-tight text-center px-1'>{group.symbol}</span>
-        </div>
-
-        {/* Name + meta */}
-        <div className='flex-1 min-w-0'>
-          <div className='flex items-center gap-1.5'>
-            <p className='text-sm font-semibold text-slate-800 truncate'>{group.name}</p>
-            <span className='text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-medium'>{group.exchange}</span>
-          </div>
-          <div className='flex items-center gap-1.5 mt-0.5'>
-            {/* User avatar dots */}
-            <div className='flex gap-0.5'>
-              {group.assets.map(a => (
-                <span key={a.id} className='w-2 h-2 rounded-full flex-shrink-0'
-                  style={{ backgroundColor: userMap[a.user_id]?.avatar_color ?? '#94a3b8' }} />
-              ))}
-            </div>
-            <span className='text-xs text-slate-400'>
-              총 {group.totalQty}주 · 평균 {formatCurrency(group.weightedAvg, group.currency)}
-            </span>
-          </div>
-        </div>
-
-        {/* Price + P&L */}
-        <div className='flex-shrink-0 text-right'>
-          <p className='text-sm font-bold text-slate-800 tabular-nums'>
-            {formatCurrency(group.current_price, group.currency)}
+        {/* 시안 wealth-b: 국가 표시 · 이름 · 명의 분할 / 평가액 · 수익률 */}
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-[10px] font-extrabold ${
+          group.currency === 'KRW' ? 'bg-emerald-50 text-emerald-700' : 'bg-brand-50 text-brand-500'
+        }`}>
+          {group.currency === 'KRW' ? 'KR' : 'US'}
+        </span>
+        <div className='min-w-0 flex-1'>
+          <p className='truncate text-sm font-bold text-stone-800'>{group.currency === 'KRW' ? group.name : group.symbol}</p>
+          <p className='truncate text-xs text-stone-400'>
+            {ownerSplit(group.assets, userMap)} · {formatCurrency(group.current_price, group.currency)}
           </p>
-          <p className={`text-xs font-semibold tabular-nums flex items-center justify-end gap-0.5 ${isUp ? 'text-emerald-600' : 'text-rose-500'}`}>
-            {isUp ? <ArrowTrendingUpIcon className='h-3 w-3' /> : <ArrowTrendingDownIcon className='h-3 w-3' />}
-            {isUp ? '+' : ''}{pnlPct.toFixed(2)}%
+        </div>
+        <div className='shrink-0 text-right'>
+          <p className='text-sm font-bold tabular-nums text-stone-800'>{formatMan(group.totalValueKRW)}</p>
+          <p className={`text-xs font-semibold tabular-nums ${isUp ? 'text-emerald-600' : 'text-rose-500'}`}>
+            {isUp ? '+' : ''}{pnlPct.toFixed(1)}%
           </p>
         </div>
 
@@ -556,16 +543,19 @@ export default function StockPortfolioCard({
   onDeleteClick,
   onReorder,
   canEdit,
+  accessToken,
 }: StockPortfolioCardProps) {
   const [pendingDelete, setPendingDelete] = useState<StockAssetWithPrice | null>(null);
   const [taxWarning, setTaxWarning] = useState<{ asset: StockAssetWithPrice; year: number } | null>(null);
   const [checkingDelete, setCheckingDelete] = useState<string | null>(null); // asset id
-  const [showChart, setShowChart] = useState(false);
+  // 내 순서(끌기) / 수익률순 / 종목 비중 도넛
+  const [view, setView] = useState<'manual' | 'return' | 'chart'>('manual');
 
   const safeAssets = Array.isArray(assets) ? assets : [];
   const safeUsers = Array.isArray(users) ? users : [];
   const userMap = Object.fromEntries(safeUsers.map((u) => [u.id, u]));
   const groups = groupAssets(safeAssets);
+  const shown = view === 'return' ? [...groups].sort((a, b) => b.pnlPct - a.pnlPct) : groups;
 
   // Rows are dragged one symbol group at a time, but the server orders individual
   // holdings — so expand each group back into its own rows, keeping them adjacent.
@@ -598,20 +588,14 @@ export default function StockPortfolioCard({
 
 
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
-
   const handleDeleteRequest = async (asset: StockAssetWithPrice) => {
     setCheckingDelete(asset.id);
     try {
-      const res = await fetch(`${API_BASE}/api/stocks/${asset.id}/tax-check`);
-      const data = await res.json();
-      if (data.has_sell_current_year) {
-        setTaxWarning({ asset, year: data.year });
-      } else {
-        setPendingDelete(asset);
-      }
+      const data = await apiFetch<TaxCheckResponse>(`/api/stocks/${asset.id}/tax-check`, accessToken);
+      if (data.has_sell_current_year) setTaxWarning({ asset, year: data.year });
+      else setPendingDelete(asset);
     } catch {
-      setPendingDelete(asset);
+      setPendingDelete(asset); // 확인이 실패해도 일반 삭제 확인은 띄운다(지금 동작)
     } finally {
       setCheckingDelete(null);
     }
@@ -619,11 +603,11 @@ export default function StockPortfolioCard({
 
   return (
     <>
-      <div className='bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden'>
+      <div className='bg-white rounded-card shadow-warm overflow-hidden'>
         {/* Header */}
         <div className='flex items-center justify-between px-5 py-4 border-b border-slate-100'>
           <div>
-            <h2 className='text-sm font-bold text-slate-800'>주식 포트폴리오</h2>
+            <h2 className='text-sm font-bold text-stone-800'>보유 종목</h2>
             {safeAssets.length > 0 && summary?.usd_krw && (
               <p className='text-xs text-slate-400 mt-0.5'>USD/KRW {summary.usd_krw.toFixed(0)}원 기준</p>
             )}
@@ -663,90 +647,67 @@ export default function StockPortfolioCard({
           </div>
         </div>
 
-        {/* Horizontal slider — list panel | chart panel */}
-        <div className='overflow-hidden'>
-          <div
-            className='flex transition-transform duration-300 ease-in-out'
-            style={{ transform: showChart ? 'translateX(-50%)' : 'translateX(0)', width: '200%' }}
-          >
-            {/* Panel 1 — stock list */}
-            <div style={{ width: '50%' }}>
-              {groups.length === 0 ? (
-                <div className='px-5 py-10 flex flex-col items-center gap-2 text-center'>
-                  <p className='text-sm font-medium text-slate-400'>보유 주식이 없습니다</p>
-                  {canEdit && <p className='text-xs text-slate-300'>+ 버튼으로 종목을 추가해보세요</p>}
-                </div>
-              ) : (
-                <ul className='divide-y divide-slate-50'>
-                  <SortableList ids={groups.map(groupKeyOf)} onReorder={handleGroupReorder} disabled={!canEdit}>
-                    {groups.map(group => (
-                      <GroupedStockRow
-                        key={groupKeyOf(group)}
-                        groupKey={groupKeyOf(group)}
-                        group={group}
-                        userMap={userMap}
-                        canEdit={canEdit}
-                        onEdit={a => onEditClick?.(a)}
-                        onBuy={a => onBuySellClick?.(a, 'buy')}
-                        onSell={a => onBuySellClick?.(a, 'sell')}
-                        onDelete={a => handleDeleteRequest(a)}
-                      />
-                    ))}
-                  </SortableList>
-                </ul>
-              )}
-              {checkingDelete && (
-                <div className='px-5 py-2 text-xs text-slate-400 text-center animate-pulse'>삭제 전 세금 이력 확인 중...</div>
-              )}
-            </div>
-
-            {/* Panel 2 — chart */}
-            <div style={{ width: '50%' }} className='px-5 py-4'>
-              <p className='text-xs font-semibold text-slate-400 mb-3 tracking-wide uppercase'>종목별 비중</p>
-              {chartData.length > 0 ? (
-                <>
-                  <ResponsiveContainer width='100%' height={240}>
-                    <PieChart>
-                      <Pie
-                        data={chartData}
-                        dataKey='value'
-                        cx='50%'
-                        cy='50%'
-                        innerRadius={65}
-                        outerRadius={105}
-                        paddingAngle={2}
-                        strokeWidth={0}
-                        focusable={false}
-                      >
-                        {chartData.map((_, i) => (
-                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} stroke="none" />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<ChartTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </>
-              ) : (
-                <div className='py-8 text-center text-xs text-slate-300'>데이터 없음</div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Panel indicator dots */}
         {safeAssets.length > 0 && (
-          <div className='flex justify-center gap-2 py-4 border-t border-slate-50'>
-            <button
-              onClick={() => setShowChart(false)}
-              className={`rounded-full transition-all duration-200 ${!showChart ? 'w-6 h-2.5 bg-brand-500' : 'w-2.5 h-2.5 bg-slate-200'}`}
-              aria-label='목록 보기'
-            />
-            <button
-              onClick={() => setShowChart(true)}
-              className={`rounded-full transition-all duration-200 ${showChart ? 'w-6 h-2.5 bg-brand-500' : 'w-2.5 h-2.5 bg-slate-200'}`}
-              aria-label='차트 보기'
-            />
+          <div className='no-scrollbar flex gap-1.5 overflow-x-auto px-4 pt-3'>
+            <Chip on={view === 'manual'} onClick={() => setView('manual')}>내 순서</Chip>
+            <Chip on={view === 'return'} onClick={() => setView('return')}>수익률순</Chip>
+            <Chip on={view === 'chart'} onClick={() => setView('chart')}>종목 비중</Chip>
           </div>
+        )}
+
+        {view === 'chart' ? (
+          <div className='px-5 py-4'>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width='100%' height={240}>
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    dataKey='value'
+                    cx='50%'
+                    cy='50%'
+                    innerRadius={65}
+                    outerRadius={105}
+                    paddingAngle={2}
+                    strokeWidth={0}
+                    focusable={false}
+                  >
+                    {chartData.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} stroke='none' />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className='py-8 text-center text-xs text-stone-300'>데이터 없음</div>
+            )}
+          </div>
+        ) : groups.length === 0 ? (
+          <div className='px-5 py-10 flex flex-col items-center gap-2 text-center'>
+            <p className='text-sm font-medium text-stone-400'>보유 주식이 없습니다</p>
+            {canEdit && <p className='text-xs text-stone-300'>+ 버튼으로 종목을 추가해보세요</p>}
+          </div>
+        ) : (
+          <ul className='divide-y divide-line'>
+            <SortableList ids={shown.map(groupKeyOf)} onReorder={handleGroupReorder} disabled={!canEdit || view !== 'manual'}>
+              {shown.map(group => (
+                <GroupedStockRow
+                  key={groupKeyOf(group)}
+                  groupKey={groupKeyOf(group)}
+                  group={group}
+                  userMap={userMap}
+                  canEdit={canEdit}
+                  onEdit={a => onEditClick?.(a)}
+                  onBuy={a => onBuySellClick?.(a, 'buy')}
+                  onSell={a => onBuySellClick?.(a, 'sell')}
+                  onDelete={a => handleDeleteRequest(a)}
+                />
+              ))}
+            </SortableList>
+          </ul>
+        )}
+        {checkingDelete && (
+          <div className='px-5 py-2 text-xs text-stone-400 text-center animate-pulse'>삭제 전 세금 이력 확인 중...</div>
         )}
       </div>
 
