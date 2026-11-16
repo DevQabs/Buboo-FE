@@ -555,7 +555,7 @@ export default function DashboardClient() {
     const date = `${p.date}T12:00:00+09:00` // 한국 정오 — UTC 로 넘어가 전날이 되지 않게
     const body = {
       user_id: p.user_id, type: p.type, amount: p.amount, currency: 'KRW',
-      category: p.category, title: p.title, payment_method: p.payment_method ?? 'card',
+      category: p.category, title: p.title, payment_method: p.payment_method ?? '카드',
       date, saving_link: p.saving_link,
     }
     const tempID = `temp-${Date.now()}`

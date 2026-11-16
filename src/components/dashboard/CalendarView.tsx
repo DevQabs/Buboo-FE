@@ -29,7 +29,7 @@ export interface AddTransactionPayload {
   title: string
   date: string   // YYYY-MM-DD
   saving_link?: SavingLink
-  payment_method?: string   // 없으면 'card'
+  payment_method?: string   // 없으면 '카드'
 }
 
 const OTHER_ASSET_TYPES: OtherAssetType[] = ['부동산', '예/적금', '현금', '기타']
