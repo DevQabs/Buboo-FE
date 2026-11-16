@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Area, ComposedChart, Line, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 import { apiFetch } from '@/lib/api'
 import { type Metric, ageInMonths, bandLabel, latestDelta, standardAt } from '@/lib/growthStandard'
+import { todayKST } from '@/lib/date'
 import { BabyGate, CARD, localToday } from './BabyProfile'
 import type { Baby, BabyGrowth } from '@/types'
 
@@ -140,6 +141,15 @@ function Growth({ accessToken, baby, canEdit }: { accessToken: string; baby: Bab
   const latest = latestDelta(list, r => r[cur.field])
   const latestRow = [...list].reverse().find(r => r[cur.field] != null)
   const std = latestRow ? standardAt(baby.sex, metric, ageInMonths(baby.birth_date, latestRow.measured_on)) : null
+
+  if (baby.birth_date > todayKST()) {
+    return (
+      <div className={`${CARD} p-8 text-center`}>
+        <p className="text-sm font-semibold text-stone-700">출생 후부터 기록할 수 있어요</p>
+        <p className="mt-1 text-xs text-stone-400">그동안은 사진일기에 태아 사진을 남겨 보세요</p>
+      </div>
+    )
+  }
 
   return (
     <>

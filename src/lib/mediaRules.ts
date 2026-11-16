@@ -25,6 +25,15 @@ export function daysSinceBirth(birth: string, date: string): number {
   return Math.round((Date.parse(date) - Date.parse(birth)) / 86_400_000)
 }
 
+/** 사진 날짜 표시: 태어난 뒤면 "생후 N일", 전이면 출산 예정일(=생일) 기준 임신 주수(마지막 생리일 = 예정일 - 280일)와 D-N. */
+export function babyAgeLabel(birth: string, date: string): string {
+  const d = daysSinceBirth(birth, date)
+  if (d >= 0) return `생후 ${d}일`
+  const left = -d
+  const preg = 280 - left
+  return preg < 0 ? `출산 D-${left}` : `임신 ${Math.floor(preg / 7)}주 ${preg % 7}일 · 출산 D-${left}`
+}
+
 /** 서버와 같은 십진 단위(1GB = 10^9 바이트). */
 export function formatBytes(n: number): string {
   return n >= 1e9 ? `${(n / 1e9).toFixed(1)}GB` : `${(n / 1e6).toFixed(1)}MB`

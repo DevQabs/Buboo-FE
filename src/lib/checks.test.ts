@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { levelOf, permissionSummary, visibleTabs } from './menus.ts'
 import {
-  clampTrimStart, daysSinceBirth, fitWithin, formatBytes, formatClock, usageLevel,
+  babyAgeLabel, clampTrimStart, daysSinceBirth, fitWithin, formatBytes, formatClock, usageLevel,
 } from './mediaRules.ts'
 import { GROWTH_STANDARD, ageInMonths, bandLabel, latestDelta, standardAt } from './growthStandard.ts'
 
@@ -64,6 +64,17 @@ test('자르기 시작점은 0 ~ (길이-30초)', () => {
 test('생후 일수 — 시안: 10월 5일생, 11월 16일은 생후 42일', () => {
   assert.equal(daysSinceBirth('2026-10-05', '2026-11-16'), 42)
   assert.equal(daysSinceBirth('2026-10-05', '2026-10-05'), 0)
+})
+
+test('태어나기 전 사진은 예정일 기준 임신 주수와 D-N', () => {
+  assert.equal(babyAgeLabel('2027-01-15', '2027-01-15'), '생후 0일')
+  assert.equal(babyAgeLabel('2027-01-15', '2027-01-20'), '생후 5일')
+  assert.equal(babyAgeLabel('2027-01-15', '2026-11-16'), '임신 31주 3일 · 출산 D-60')
+  assert.equal(babyAgeLabel('2027-01-15', '2027-01-14'), '임신 39주 6일 · 출산 D-1')
+  assert.equal(babyAgeLabel('2027-01-15', '2026-04-10'), '임신 0주 0일 · 출산 D-280')
+  assert.equal(babyAgeLabel('2027-01-15', '2026-04-09'), '출산 D-281')
+  // 서머타임 구간(3월)을 지나도 하루 밀리지 않는다
+  assert.equal(babyAgeLabel('2026-04-01', '2026-03-01'), '임신 35주 4일 · 출산 D-31')
 })
 
 test('용량·시간 표시', () => {

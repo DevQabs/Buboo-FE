@@ -2,6 +2,7 @@
 
 import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
+import { todayKST } from '@/lib/date'
 import { daysSinceBirth } from '@/lib/mediaRules'
 import type { Baby, BabySex } from '@/types'
 
@@ -84,8 +85,8 @@ function BabyProfileForm({ accessToken, initial, onSaved, onCancel }: {
       <b className="text-sm">{initial ? '아기 정보 고치기' : '아기를 등록해 주세요'}</b>
       <input value={name} onChange={e => setName(e.target.value)} placeholder="이름(태명도 좋아요)" className={input} />
       <label className="block text-xs text-stone-400">
-        생일
-        <input type="date" value={birth} max={localToday()} onChange={e => setBirth(e.target.value)} className={`${input} mt-1`} />
+        생일 (출산 예정일)
+        <input type="date" value={birth} onChange={e => setBirth(e.target.value)} className={`${input} mt-1`} />
       </label>
       <div className="flex gap-2">
         {(['male', 'female'] as const).map(s => {
@@ -164,7 +165,9 @@ export function BabyGate({ accessToken, isOwner, children }: {
         <div className="flex-1">
           <b className="text-[13px]">{baby.name}</b>
           <div className="text-xs text-stone-400">
-            {baby.birth_date.replaceAll('-', '.')} 출생 · 생후 {daysSinceBirth(baby.birth_date, localToday())}일
+            {baby.birth_date > todayKST()
+              ? `${baby.birth_date.replaceAll('-', '.')} 예정일 · 출산까지 D-${-daysSinceBirth(baby.birth_date, todayKST())}`
+              : `${baby.birth_date.replaceAll('-', '.')} 출생 · 생후 ${daysSinceBirth(baby.birth_date, localToday())}일`}
           </div>
         </div>
         {isOwner && (

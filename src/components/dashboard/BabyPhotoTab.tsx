@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon, PlayIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { apiFetch } from '@/lib/api'
-import { daysSinceBirth, MEDIA_ERROR_RELOAD_GAP_MS, MEDIA_STALE_MS } from '@/lib/mediaRules'
+import { babyAgeLabel, MEDIA_ERROR_RELOAD_GAP_MS, MEDIA_STALE_MS } from '@/lib/mediaRules'
 import { BabyGate, CARD } from './BabyProfile'
 import MomentComposer from './MomentComposer'
 import type { Baby, BabyMedia, BabyMoment, User } from '@/types'
@@ -25,7 +25,7 @@ function MediaThumb({ media, className, onClick, onError }: { media: BabyMedia; 
 }
 
 /** 전체 화면 뷰어: 사진은 눌러서 확대/축소(뷰포트 확대가 막혀 있어 직접 처리), 영상은 재생. */
-function MediaViewer({ media, index, onClose, onError }: { media: BabyMedia[]; index: number; onClose: () => void; onError: () => void }) {
+function MediaViewer({ media, index, label, onClose, onError }: { media: BabyMedia[]; index: number; label: string; onClose: () => void; onError: () => void }) {
   const [i, setI] = useState(index)
   const [zoom, setZoom] = useState(false)
   const cur = media[i]
@@ -41,6 +41,7 @@ function MediaViewer({ media, index, onClose, onError }: { media: BabyMedia[]; i
             className={zoom ? 'w-[200%] max-w-none' : 'max-h-full max-w-full object-contain'} />
         )}
       </div>
+      <p className="absolute left-4 top-[calc(env(safe-area-inset-top,0px)+1.25rem)] text-xs text-white/80">{label}</p>
       <button type="button" aria-label="닫기" onClick={onClose}
         className="absolute right-3 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] p-2 text-white">
         <XMarkIcon className="h-6 w-6" />
@@ -59,10 +60,10 @@ function MediaViewer({ media, index, onClose, onError }: { media: BabyMedia[]; i
   )
 }
 
-/** 날짜별 카드: 큰 대표 사진 + 나머지 격자, "생후 N일 · 날짜 · 작성자"(시안 B). */
-function MomentCard({ m, days, author, canEdit, onOpen, onEdit, onDelete, onMediaError }: {
+/** 날짜별 카드: 큰 대표 사진 + 나머지 격자, "생후 N일(태어나기 전엔 임신 주수) · 날짜 · 작성자"(시안 B). */
+function MomentCard({ m, age, author, canEdit, onOpen, onEdit, onDelete, onMediaError }: {
   m: BabyMoment
-  days: number
+  age: string
   author: string
   canEdit: boolean
   onOpen: (i: number) => void
@@ -76,7 +77,7 @@ function MomentCard({ m, days, author, canEdit, onOpen, onEdit, onDelete, onMedi
       {first && <MediaThumb media={first} className="h-[260px] w-full" onClick={() => onOpen(0)} onError={onMediaError} />}
       <div className="px-3.5 py-2.5">
         <div className="flex items-center justify-between text-xs text-stone-400">
-          <span>생후 {days}일 · {monthDay(m.date)}{author && ` · ${author}`}</span>
+          <span>{age} · {monthDay(m.date)}{author && ` · ${author}`}</span>
           {canEdit && (
             <span className="flex gap-2.5">
               <button type="button" onClick={onEdit} className="relative before:absolute before:-inset-x-1 before:-inset-y-4 before:content-['']">수정</button>
@@ -136,7 +137,8 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
   const onMediaError = useCallback(() => {
     if (Date.now() - loadedAt.current > MEDIA_ERROR_RELOAD_GAP_MS) load()
   }, [load])
-  const viewerMedia = viewer && moments?.find(m => m.id === viewer.momentId)?.media
+  const viewerMoment = viewer && moments?.find(m => m.id === viewer.momentId)
+  const viewerMedia = viewerMoment && viewerMoment.media
 
   const remove = async (m: BabyMoment) => {
     if (!confirm('이 기록과 사진·영상을 모두 지울까요?')) return
@@ -169,7 +171,7 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
         <MomentCard
           key={m.id}
           m={m}
-          days={daysSinceBirth(baby.birth_date, m.date)}
+          age={babyAgeLabel(baby.birth_date, m.date)}
           author={nameOf(m.user_id)}
           canEdit={canEdit}
           onOpen={i => setViewer({ momentId: m.id, index: i })}
@@ -180,6 +182,7 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
       ))}
       {viewer && viewerMedia && viewerMedia.length > 0 && (
         <MediaViewer media={viewerMedia} index={Math.min(viewer.index, viewerMedia.length - 1)}
+          label={`${babyAgeLabel(baby.birth_date, viewerMoment.date)} · ${monthDay(viewerMoment.date)}`}
           onClose={() => setViewer(null)} onError={onMediaError} />
       )}
       {composer && (
