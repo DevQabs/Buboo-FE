@@ -11,7 +11,8 @@ export class ApiError extends Error {
 // 백엔드 호출 공용 함수. 토큰을 붙이고, 실패 응답은 서버의 {"error"} 문구로 ApiError 를 던진다.
 // 화면은 실패를 잡아 낙관적 반영을 되돌리고 토스트를 띄운다(4단계에서 화면별로 교체).
 export async function apiFetch<T = unknown>(path: string, accessToken: string, options?: RequestInit): Promise<T> {
-  const headers = new Headers({ Authorization: `Bearer ${accessToken}` })
+  const headers = new Headers()
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`) // 빈 토큰 = 공개 API(초대 정보 등)
   if (!(options?.body instanceof FormData)) headers.set('Content-Type', 'application/json')
   new Headers(options?.headers).forEach((v, k) => headers.set(k, v))
   let res: Response

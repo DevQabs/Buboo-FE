@@ -3,8 +3,7 @@
 import { useSession, signIn } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
+import { apiFetch, ApiError } from '@/lib/api'
 
 interface InviteInfo {
   couple_id: string
@@ -28,16 +27,12 @@ export default function InvitePage() {
 
   useEffect(() => {
     if (!code) return
-    fetch(`${API_BASE}/api/auth/invite/${code}`)
-      .then((r) => r.json())
+    apiFetch<InviteInfo>(`/api/auth/invite/${code}`, '')
       .then((data) => {
-        if (data.error) setInviteError(data.error)
-        else {
-          setInviteInfo(data)
-          setNickname(data.nickname ?? '')
-        }
+        setInviteInfo(data)
+        setNickname(data.nickname ?? '')
       })
-      .catch(() => setInviteError('초대 정보를 불러올 수 없습니다'))
+      .catch((e) => setInviteError(e instanceof ApiError && e.status > 0 ? e.message : '초대 정보를 불러올 수 없습니다'))
   }, [code])
 
   // If user is logged in with Google but hasn't joined yet, join automatically
