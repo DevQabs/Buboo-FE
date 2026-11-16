@@ -51,6 +51,7 @@
 - **이모지 금지** — 화면 문구, 코드, 주석, 커밋 어디에도
 - `emerald` / `rose` / `slate` / `amber` 의미 바꾸지 말 것
 - **`fetch(` 직접 호출 금지** → `@/lib/api`의 `apiFetch(path, accessToken, options)` (토큰·`res.ok` 검사). 실패는 `toastError()`(`@/components/ui/Toast`) 또는 폼 오류 문구로 알리고, 낙관적 반영은 되돌린다
+- **누르는 요소 최소 44px(필터 칩 40px), 2단 메뉴는 전체 폭 세그먼트** — 작은 아이콘 버튼은 `before:` 로 누르는 영역을 넓힌다(`IconButton`)
 - 오늘 날짜는 `todayKST()` (`@/lib/date`). `toISOString().slice(0, 10)` 금지
 
 ## 공용 조각 (`@/components/ui/Card`, `@/components/ui/Toast`)
@@ -60,7 +61,8 @@
 | `Card` | 흰 카드 `rounded-card bg-white shadow-warm` |
 | `PageTitle` | 화면 머리(시안 `.hd`) |
 | `SectionLabel` | 카드 위 작은 소제목(시안 `.lb`) |
-| `Chip` | 2단 메뉴·선택 칩, 선택 시 `brand-500` 채움 |
+| `Chip` | 화면 안 필터·선택 칩(`min-h-10 py-2.5 text-sm`), 선택 시 `brand-500` 채움 |
+| `Segmented` | 2단 메뉴 전체 폭 세그먼트(칸 같은 폭, `h-11 text-sm font-semibold`) |
 | `IconButton` | 머리 오른쪽 둥근 아이콘 버튼 |
 | `FloatingBar` | 하단 탭 위 입력 바(가계부 금액 입력, 일기 쓰기) |
 | `showToast` / `toastError` / `Toaster` | 저장 실패 알림(`Toaster`는 대시보드에 하나) |

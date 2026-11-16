@@ -28,13 +28,13 @@ export function SectionLabel({ children }: { children: ReactNode }) {
   return <p className="px-2 text-xs font-medium text-stone-400">{children}</p>
 }
 
-/** 2단 메뉴·선택 칩. 선택 시 brand-500 채움 */
+/** 화면 안 필터·선택 칩. 선택 시 brand-500 채움. 누르는 높이 40px */
 export function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+      className={`inline-flex min-h-10 shrink-0 items-center rounded-full border px-4 py-2.5 text-sm font-semibold transition-colors ${
         on ? 'border-brand-500 bg-brand-500 text-white' : 'border-line bg-white text-stone-500'
       }`}
     >
@@ -43,14 +43,42 @@ export function Chip({ on, onClick, children }: { on: boolean; onClick: () => vo
   )
 }
 
-/** 머리 오른쪽 둥근 아이콘 버튼 */
+/** 2단 메뉴: 전체 폭 세그먼트. 칸은 같은 폭, 높이 44px */
+export function Segmented<K extends string>({ items, value, onChange }: {
+  items: { key: K; label: string }[]
+  value: K | undefined
+  onChange: (key: K) => void
+}) {
+  return (
+    <div role="tablist" className="flex rounded-2xl bg-sand p-1">
+      {items.map(it => {
+        const on = it.key === value
+        return (
+          <button
+            key={it.key}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            onClick={() => onChange(it.key)}
+            className={`relative h-11 flex-1 rounded-xl text-sm font-semibold transition-colors ${on ? 'text-white' : 'text-stone-500'}`}
+          >
+            {on && <span className="absolute inset-0 rounded-xl bg-brand-500 shadow-warm" />}
+            <span className="relative">{it.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/** 머리 오른쪽 둥근 아이콘 버튼. 보이는 크기 32px, 누르는 영역은 before 로 44px */
 export function IconButton({ label, on = false, onClick, children }: { label: string; on?: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
-      className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors ${
+      className={`relative flex h-8 w-8 items-center justify-center rounded-xl transition-colors before:absolute before:-inset-1.5 before:content-[''] ${
         on ? 'bg-brand-500 text-white' : 'bg-white text-stone-500 shadow-warm'
       }`}
     >

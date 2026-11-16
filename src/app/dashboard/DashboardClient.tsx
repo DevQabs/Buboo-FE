@@ -77,7 +77,7 @@ import { levelOf, visibleTabs, type TabKey } from '@/lib/menus'
 import { ledgerPeriod, ledgerMonthOf, todayKST } from '@/lib/date'
 import { apiFetch as callApi, latestOnly, ignoreAbort } from '@/lib/api'
 import { attachDiaryPhotos } from '@/lib/media'
-import { Chip } from '@/components/ui/Card'
+import { Segmented } from '@/components/ui/Card'
 import { Toaster, showToast, toastError } from '@/components/ui/Toast'
 
 // 개발: NEXT_PUBLIC_API_URL=http://localhost:8090 으로 직접 호출
@@ -859,13 +859,9 @@ export default function DashboardClient() {
   const currentTab = tabs.find(t => t.key === activeTab) ?? tabs[0]
   const currentSub = currentTab?.subs.find(s => s.key === activeSub) ?? currentTab?.subs[0]
   const canEdit = (m: MenuKey) => levelOf(perms, m) === 'edit'
-  // 2단 메뉴 칩 줄. 하나뿐이면 숨김. 시안처럼 화면 제목 아래에 두려고 화면에 prop 으로 넘긴다.
+  // 2단 메뉴 세그먼트. 하나뿐이면 숨김. 시안처럼 화면 제목 아래에 두려고 화면에 prop 으로 넘긴다.
   const chipRow = currentTab && currentTab.subs.length > 1 ? (
-    <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
-      {currentTab.subs.map(s => (
-        <Chip key={s.key} on={currentSub?.key === s.key} onClick={() => setActiveSub(s.key)}>{s.label}</Chip>
-      ))}
-    </div>
+    <Segmented items={currentTab.subs} value={currentSub?.key} onChange={setActiveSub} />
   ) : null
 
   return (
