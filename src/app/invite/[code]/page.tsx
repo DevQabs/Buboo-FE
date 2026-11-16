@@ -67,15 +67,10 @@ export default function InvitePage() {
     setError('')
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/callback`, {
+      const res = await fetch('/api/account/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          google_email: session.user.googleEmail ?? session.user.email,
-          google_sub: session.user.googleSub,
-          invite_code: code,
-          nickname,
-        }),
+        body: JSON.stringify({ invite_code: code, nickname }),
       })
       const data = await res.json()
       if (!res.ok || !data.access_token) {

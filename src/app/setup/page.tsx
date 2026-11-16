@@ -4,8 +4,6 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
-
 export default function SetupPage() {
   const { data: session, update } = useSession()
   const router = useRouter()
@@ -22,37 +20,13 @@ export default function SetupPage() {
     setError('')
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/setup`, {
+      const res = await fetch('/api/account/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          google_email: session.user.googleEmail ?? session.user.email,
-          google_sub: session.user.googleSub,
-          couple_name: coupleName,
-          nickname,
-          role,
-        }),
+        body: JSON.stringify({ couple_name: coupleName, nickname, role }),
       })
       const data = await res.json()
-      if (!res.ok) {
-        // User already registered (e.g. first click succeeded but session update failed)
-        // Try callback to get JWT for existing user
-        if (res.status === 409) {
-          const cbRes = await fetch(`${API_BASE}/api/auth/callback`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              google_email: session.user.googleEmail ?? session.user.email,
-              google_sub: session.user.googleSub,
-            }),
-          })
-          const cbData = await cbRes.json()
-          if (cbData.access_token) {
-            await update({ accessToken: cbData.access_token, backendUser: cbData.user, needsSetup: false })
-            router.push('/dashboard')
-            return
-          }
-        }
+      if (!res.ok || !data.access_token) {
         setError(data.error ?? '오류가 발생했습니다')
         return
       }

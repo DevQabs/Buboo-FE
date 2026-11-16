@@ -1,8 +1,7 @@
 import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
 import type { User } from '@/types'
-
-const API_URL = process.env.API_INTERNAL_URL ?? 'http://localhost:8090'
+import { callBackendAuth } from '@/lib/backendAuth'
 
 // Backend access tokens are issued with a 30-day expiry (see IssueToken in
 // internal/auth/jwt.go). Refresh a day early so an active session never
@@ -10,12 +9,13 @@ const API_URL = process.env.API_INTERNAL_URL ?? 'http://localhost:8090'
 const ACCESS_TOKEN_TTL_MS = 29 * 24 * 60 * 60 * 1000
 
 async function fetchBackendToken(googleEmail: string, googleSub: string, inviteCode?: string) {
-  const res = await fetch(`${API_URL}/api/auth/callback`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ google_email: googleEmail, google_sub: googleSub, invite_code: inviteCode }),
+  const { status, data } = await callBackendAuth('/api/auth/callback', {
+    google_email: googleEmail,
+    google_sub: googleSub,
+    invite_code: inviteCode,
   })
-  return res.json()
+  if (status >= 400) throw new Error(`backend auth ${status}: ${data?.error ?? ''}`)
+  return data
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
