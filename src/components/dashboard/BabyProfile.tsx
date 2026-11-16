@@ -167,7 +167,7 @@ export function BabyGate({ accessToken, isOwner, children }: {
           <div className="text-xs text-stone-400">
             {baby.birth_date > todayKST()
               ? `${baby.birth_date.replaceAll('-', '.')} 예정일 · 출산까지 D-${-daysSinceBirth(baby.birth_date, todayKST())}`
-              : `${baby.birth_date.replaceAll('-', '.')} 출생 · 생후 ${daysSinceBirth(baby.birth_date, localToday())}일`}
+              : `${baby.birth_date.replaceAll('-', '.')} 출생 · 생후 ${daysSinceBirth(baby.birth_date, todayKST())}일`}
           </div>
         </div>
         {isOwner && (

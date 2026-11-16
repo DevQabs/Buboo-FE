@@ -71,9 +71,9 @@ export default function CategoryBreakdownCard({ items, total }: { items: Categor
                   >
                     {items.map((_, i) => <Cell key={i} fill={color(i)} stroke="none" />)}
                   </Pie>
-                  <Tooltip content={<CategoryChartTooltip />} />
+                  <Tooltip content={<CategoryChartTooltip />} wrapperStyle={{ zIndex: 20 }} />
                 </PieChart>
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <div className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center">
                   <span className="text-[10px] font-medium text-stone-400">총 지출</span>
                   <span className="text-sm font-black tabular-nums text-stone-800">{formatMan(total)}</span>
                 </div>
