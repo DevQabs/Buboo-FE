@@ -2,7 +2,7 @@
 //  Domain Types (mirrors Go models)
 // ─────────────────────────────────────────────
 
-export type UserRole = 'husband' | 'wife'
+export type UserRole = 'husband' | 'wife' | 'family'
 export type TransactionType = 'income' | 'expense' | 'saving'
 
 export type SavingKind = 'stock' | 'deposit' | 'general'
@@ -31,8 +31,27 @@ export interface User {
   google_sub?: string
   role: UserRole
   avatar_color: string
+  is_owner?: boolean
   created_at: string
 }
+
+// ─── 메뉴 권한 (설계서 3·4절) ───────────────────────────────────────────────
+export type MenuKey = 'baby_photo' | 'baby_growth' | 'ledger' | 'schedule' | 'diary' | 'assets' | 'roadmap'
+export type PermLevel = 'hidden' | 'view' | 'edit'
+
+/** GET /api/me/permissions */
+export interface MyPermissions {
+  is_owner: boolean
+  menus: Partial<Record<MenuKey, PermLevel>>
+}
+
+/** GET /api/members — owner 는 menus 가 전부 edit */
+export interface Member extends User {
+  is_owner: boolean
+  menus: Record<MenuKey, PermLevel>
+}
+
+export type InvitePreset = 'spouse' | 'grandparent' | 'custom'
 
 export interface Couple {
   id: string

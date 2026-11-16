@@ -814,6 +814,8 @@ interface ScheduleTabProps {
   schedules: Schedule[]
   diaries: DiaryEntry[]
   currentUserID: string
+  /** 대시보드의 일상 칩(일정/일기)이 고른 쪽만 그린다. */
+  section: 'schedule' | 'diary'
   onAddSchedule: (req: CreateScheduleRequest) => Promise<void>
   onEditSchedule: (id: string, req: UpdateScheduleRequest) => Promise<void>
   onDeleteSchedule: (id: string) => Promise<void>
@@ -823,7 +825,7 @@ interface ScheduleTabProps {
 }
 
 export default function ScheduleTab({
-  schedules, diaries, currentUserID,
+  schedules, diaries, currentUserID, section,
   onAddSchedule, onEditSchedule, onDeleteSchedule,
   onAddDiary, onDiaryEdited, onDeleteDiary,
 }: ScheduleTabProps) {
@@ -835,7 +837,6 @@ export default function ScheduleTab({
   const [showAddDiary, setShowAddDiary]       = useState(false)
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null)
   const [editingDiary, setEditingDiary]       = useState<DiaryEntry | null>(null)
-  const [activeSection, setActiveSection]     = useState<'schedule' | 'diary'>('schedule')
 
   const prevMonth = () => {
     if (month === 1) { setYear(y => y - 1); setMonth(12) }
@@ -862,7 +863,7 @@ export default function ScheduleTab({
   return (
     <div className="space-y-4">
       {/* D-Day Banner */}
-      {ddaySchedules.length > 0 && (
+      {section === 'schedule' && ddaySchedules.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">D-Day</p>
           <DDayBanner schedules={ddaySchedules} />
@@ -880,34 +881,18 @@ export default function ScheduleTab({
       {/* Section tabs + add buttons */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-50">
-          <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
-            <button
-              onClick={() => setActiveSection('schedule')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeSection === 'schedule' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500'}`}
-            >
-              일정
-            </button>
-            <button
-              onClick={() => setActiveSection('diary')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeSection === 'diary' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-500'}`}
-            >
-              일기
-            </button>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-slate-400">{selectedDate} · {lunarFullLabel(selectedDate)}</span>
-            <button
-              onClick={() => activeSection === 'schedule' ? setShowAddSchedule(true) : setShowAddDiary(true)}
-              className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-                activeSection === 'schedule' ? 'bg-brand-50 hover:bg-brand-100 text-brand-600' : 'bg-amber-50 hover:bg-amber-100 text-amber-600'
-              }`}
-            >
-              <PlusIcon className="h-4 w-4" />
-            </button>
-          </div>
+          <span className="text-xs text-slate-400">{selectedDate} · {lunarFullLabel(selectedDate)}</span>
+          <button
+            onClick={() => section === 'schedule' ? setShowAddSchedule(true) : setShowAddDiary(true)}
+            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+              section === 'schedule' ? 'bg-brand-50 hover:bg-brand-100 text-brand-600' : 'bg-amber-50 hover:bg-amber-100 text-amber-600'
+            }`}
+          >
+            <PlusIcon className="h-4 w-4" />
+          </button>
         </div>
 
-        {activeSection === 'schedule' ? (
+        {section === 'schedule' ? (
           <div>
             {dateSchedules.length === 0 ? (
               <div className="px-4 py-8 text-center">

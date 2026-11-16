@@ -13,7 +13,7 @@ import { useSession, signOut } from 'next-auth/react'
 import dynamic from 'next/dynamic'
 import Lottie from 'lottie-react'
 import loadingAnimation from '@/assets/loading.json'
-import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, FlagIcon, UserPlusIcon, ArrowRightOnRectangleIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ChartPieIcon, BookOpenIcon, CalendarDaysIcon, FaceSmileIcon, UserPlusIcon, ArrowRightOnRectangleIcon, ClipboardDocumentIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 // ─── 가계부 탭 (초기 탭) — 정적 import ────────────────────────────────────────
 import SummaryCard from '@/components/dashboard/SummaryCard'
@@ -74,13 +74,28 @@ import type {
   StockTransaction,
   RoadmapProjection,
   RoadmapAssumptionsResponse,
+  MenuKey,
+  MyPermissions,
 } from '@/types'
+import { levelOf, visibleTabs, type TabKey } from '@/lib/menus'
 
 // 개발: NEXT_PUBLIC_API_URL=http://localhost:8090 으로 직접 호출
 // 프로덕션: 빈 문자열 → /api/* 경로로 → next.config.mjs rewrite가 백엔드로 프록시
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
 
-type ActiveTab = 'wealth' | 'ledger' | 'life' | 'roadmap'
+type ActiveTab = TabKey
+
+const TAB_ICONS: Record<TabKey, typeof BookOpenIcon> = {
+  baby: FaceSmileIcon,
+  ledger: BookOpenIcon,
+  life: CalendarDaysIcon,
+  wealth: ChartPieIcon,
+}
+
+const AVATAR_COLORS: Record<string, string> = { husband: '#0F4C81', wife: '#FDA4AF' }
+function withAvatarColors(list: User[] | null): User[] {
+  return (Array.isArray(list) ? list : []).map(u => ({ ...u, avatar_color: AVATAR_COLORS[u.role] ?? u.avatar_color }))
+}
 
 
 
@@ -102,6 +117,20 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   if (!res.ok) throw new Error(`API ${path} → ${res.status}`)
   if (res.status === 204 || res.headers.get('content-length') === '0') return undefined as T
   return res.json() as Promise<T>
+}
+
+// Module-level permissions set by fetchAll, read by the fetch callbacks below
+// (same pattern as _accessToken). Never request a menu the user cannot see.
+let _perms: MyPermissions | null = null
+const canSee = (m: MenuKey) => levelOf(_perms, m) !== 'hidden'
+// 가계부(저축 연동·배당·고정비)도 종목·자산 목록을 쓴다
+const canSeeHoldings = () => canSee('assets') || canSee('ledger')
+
+function fetchLife(): Promise<[Schedule[], DiaryEntry[]]> {
+  return Promise.all([
+    canSee('schedule') ? apiFetch<Schedule[]>('/api/schedules') : Promise.resolve([]),
+    canSee('diary') ? apiFetch<DiaryEntry[]>('/api/diaries') : Promise.resolve([]),
+  ])
 }
 
 /** Build the start/end date strings for a given display-month + startDay. */
@@ -151,6 +180,7 @@ export default function DashboardClient() {
 
   // ── core data ──
   const [users, setUsers]             = useState<User[]>([])
+  const [perms, setPerms]             = useState<MyPermissions | null>(null)
   const [couple, setCouple]           = useState<Couple | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [calendarTransactions, setCalendarTransactions] = useState<Transaction[]>([])
@@ -172,6 +202,7 @@ export default function DashboardClient() {
 
   // ── UI state ──
   const [activeTab, setActiveTab]     = useState<ActiveTab>('ledger')
+  const [activeSub, setActiveSub]     = useState<MenuKey | null>(null)
 
   // ── profile menu ──
   const [showMenu, setShowMenu]       = useState(false)
@@ -289,8 +320,14 @@ export default function DashboardClient() {
       const y = now.getFullYear()
       const m = now.getMonth() + 1
 
-      // ── Step 1: couple ──
-      const coupleData = await apiFetch<Couple>('/api/couple')
+      // ── Step 1: couple + 내 권한 ──
+      const [coupleData, permData] = await Promise.all([
+        apiFetch<Couple>('/api/couple'),
+        apiFetch<MyPermissions>('/api/me/permissions'),
+      ])
+      _perms = permData
+      setPerms(permData)
+      setActiveTab(visibleTabs(permData)[0]?.key ?? 'ledger')
       const dbStartDay = (coupleData?.ledger_start_day >= 1 && coupleData?.ledger_start_day <= 28)
         ? coupleData.ledger_start_day
         : 1
@@ -308,6 +345,12 @@ export default function DashboardClient() {
 
       const { startDate, endDate } = buildDateRange(periodYear, adjMonth, dbStartDay)
 
+      // 가계부를 못 보는 사람(예: 조부모)은 구성원 목록만 받는다
+      if (!canSee('ledger')) {
+        setUsers(withAvatarColors(await apiFetch<User[]>('/api/users')))
+        return
+      }
+
       // ── Step 2: 가계부 탭 + users (9개 병렬) ──
       const nextCalM = m === 12 ? 1 : m + 1
       const nextCalY = m === 12 ? y + 1 : y
@@ -323,13 +366,7 @@ export default function DashboardClient() {
         apiFetch<Transaction[]>(`/api/transactions?year=${nextCalY}&month=${nextCalM}`),
       ])
 
-      const AVATAR_COLORS: Record<string, string> = { husband: '#0F4C81', wife: '#FDA4AF' }
-      setUsers(
-        (Array.isArray(usersData) ? usersData : []).map(u => ({
-          ...u,
-          avatar_color: AVATAR_COLORS[u.role] ?? u.avatar_color,
-        }))
-      )
+      setUsers(withAvatarColors(usersData))
       const txList = Array.isArray(txData) ? txData : []
       setTransactions(txList)
       const calTxAll = [...(Array.isArray(calTxCur) ? calTxCur : []), ...(Array.isArray(calTxNext) ? calTxNext : [])]
@@ -372,8 +409,8 @@ export default function DashboardClient() {
     ].forEach(c => (c as any).preload?.())
 
     await Promise.allSettled([
-      // ── 자산 현황 탭 ──
-      (async () => {
+      // ── 종목·자산 (자산 탭, 가계부 공용) ──
+      canSeeHoldings() && (async () => {
         try {
           const [port, assets, stockTx] = await Promise.all([
             apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
@@ -387,20 +424,17 @@ export default function DashboardClient() {
           loadedTabs.current.add('wealth')
         } catch { /* 실패해도 탭 진입 시 fetchTabData 가 다시 시도 */ }
       })(),
-      // ── 라이프 탭 ──
-      (async () => {
+      // ── 일상 탭 ──
+      (canSee('schedule') || canSee('diary')) && (async () => {
         try {
-          const [sch, dia] = await Promise.all([
-            apiFetch<Schedule[]>('/api/schedules'),
-            apiFetch<DiaryEntry[]>('/api/diaries'),
-          ])
+          const [sch, dia] = await fetchLife()
           setSchedules(Array.isArray(sch) ? sch : [])
           setDiaries(Array.isArray(dia) ? dia : [])
           loadedTabs.current.add('life')
         } catch {}
       })(),
-      // ── 로드맵 탭 ──
-      (async () => {
+      // ── 로드맵 ──
+      canSee('roadmap') && (async () => {
         try {
           const [projection, assumptions] = await Promise.all([
             apiFetch<RoadmapProjection>('/api/roadmap/projection'),
@@ -412,7 +446,6 @@ export default function DashboardClient() {
               assumptions: assumptions.assumptions,
               candidates: assumptions.dividend_candidates ?? [],
             })
-            loadedTabs.current.add('roadmap')
           }
         } catch {}
       })(),
@@ -428,7 +461,7 @@ export default function DashboardClient() {
   const fetchTabData = useCallback(async (tab: ActiveTab) => {
     setTabLoading(tab)
     try {
-      if (tab === 'wealth') {
+      if (tab === 'wealth' && canSeeHoldings()) {
         const [port, assets, stockTx] = await Promise.all([
           apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
           apiFetch<OtherAsset[]>('/api/assets'),
@@ -439,10 +472,7 @@ export default function DashboardClient() {
         setOtherAssets(Array.isArray(assets) ? assets : [])
         setTradeTransactions(Array.isArray(stockTx) ? stockTx : [])
       } else if (tab === 'life') {
-        const [sch, dia] = await Promise.all([
-          apiFetch<Schedule[]>('/api/schedules'),
-          apiFetch<DiaryEntry[]>('/api/diaries'),
-        ])
+        const [sch, dia] = await fetchLife()
         setSchedules(Array.isArray(sch) ? sch : [])
         setDiaries(Array.isArray(dia) ? dia : [])
       }
@@ -464,10 +494,7 @@ export default function DashboardClient() {
     }
     // 재방문 → 가벼운 refresh
     if (activeTab === 'life') {
-      Promise.all([
-        apiFetch<Schedule[]>('/api/schedules'),
-        apiFetch<DiaryEntry[]>('/api/diaries'),
-      ]).then(([sch, dia]) => {
+      fetchLife().then(([sch, dia]) => {
         setSchedules(Array.isArray(sch) ? sch : [])
         setDiaries(Array.isArray(dia) ? dia : [])
       }).catch(() => {})
@@ -484,7 +511,7 @@ export default function DashboardClient() {
         setCalendarData(cal as CalendarSummaryResponse)
         setFixedExpenses(Array.isArray(fe) ? fe : [])
       }).catch(() => {})
-    } else if (activeTab === 'wealth') {
+    } else if (activeTab === 'wealth' && canSeeHoldings()) {
       Promise.all([
         apiFetch<PortfolioResponse>('/api/stocks/portfolio'),
         apiFetch<OtherAsset[]>('/api/assets'),
@@ -1004,6 +1031,9 @@ export default function DashboardClient() {
 
   // ── render ────────────────────────────────────────────────────────────────
   const currentUserID = session?.user?.backendUser?.id ?? users[0]?.id ?? ''
+  const tabs = visibleTabs(perms)
+  const currentTab = tabs.find(t => t.key === activeTab) ?? tabs[0]
+  const currentSub = currentTab?.subs.find(s => s.key === activeSub) ?? currentTab?.subs[0]
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1092,11 +1122,49 @@ export default function DashboardClient() {
 
       {/* ── Main content ── */}
       <main
-        className="max-w-2xl mx-auto px-3 pt-4 pb-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1rem)] space-y-3"
+        className={`max-w-2xl mx-auto px-3 pt-4 space-y-3 ${
+          tabs.length > 1
+            ? 'pb-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1rem)]'
+            : 'pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]'
+        }`}
       >
 
+        {!currentTab && (
+          <div className="bg-white rounded-[22px] p-8 text-center shadow-[0_4px_14px_rgba(120,90,60,.07)]">
+            <p className="text-sm font-semibold text-stone-700">아직 볼 수 있는 메뉴가 없어요</p>
+            <p className="mt-1 text-xs text-stone-400">가족 관리자에게 권한을 요청해 주세요</p>
+          </div>
+        )}
+
+        {/* 2단 메뉴 칩 — 하나뿐이면 숨김 */}
+        {currentTab && currentTab.subs.length > 1 && (
+          <div className="flex gap-1.5 overflow-x-auto">
+            {currentTab.subs.map(s => (
+              <button
+                key={s.key}
+                onClick={() => setActiveSub(s.key)}
+                className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                  currentSub?.key === s.key
+                    ? 'bg-brand-500 border-brand-500 text-white'
+                    : 'bg-white border-[#eee7dd] text-stone-500'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ══ 아기 (3단계에서 채움) ══ */}
+        {currentTab?.key === 'baby' && (
+          <div className="bg-white rounded-[22px] p-8 text-center shadow-[0_4px_14px_rgba(120,90,60,.07)]">
+            <p className="text-sm font-semibold text-stone-700">{currentSub?.label}</p>
+            <p className="mt-1 text-xs text-stone-400">곧 열려요. 조금만 기다려 주세요.</p>
+          </div>
+        )}
+
         {/* ══ Tab 1: 자산 현황 ══ */}
-        {activeTab === 'wealth' && (
+        {currentSub?.key === 'assets' && (
           <div className="space-y-3">
             {tabLoading === 'wealth' ? <TabSkeleton /> : <>
             {/* 통합 순자산 요약 */}
@@ -1135,7 +1203,7 @@ export default function DashboardClient() {
         )}
 
         {/* ══ Tab 2: 가계부 ══ */}
-        {activeTab === 'ledger' && (
+        {currentSub?.key === 'ledger' && (
           <div className="space-y-3">
             {/* 네이버페이 결제 카드 */}
             <NaverPayCard
@@ -1229,13 +1297,14 @@ export default function DashboardClient() {
         )}
 
         {/* ══ Tab 3: 일정/일기 ══ */}
-        {activeTab === 'life' && (
+        {currentTab?.key === 'life' && (
           <div>
             {tabLoading === 'life' ? <TabSkeleton /> : (
               <ScheduleTab
                 schedules={schedules}
                 diaries={diaries}
                 currentUserID={currentUserID}
+                section={currentSub?.key === 'diary' ? 'diary' : 'schedule'}
                 onAddSchedule={handleAddSchedule}
                 onEditSchedule={handleEditSchedule}
                 onDeleteSchedule={handleDeleteSchedule}
@@ -1248,7 +1317,7 @@ export default function DashboardClient() {
         )}
 
         {/* ══ Tab 4: 로드맵 ══ */}
-        {activeTab === 'roadmap' && (
+        {currentSub?.key === 'roadmap' && (
           <RoadmapTab accessToken={session?.user?.accessToken} prefetched={roadmap} />
         )}
 
@@ -1291,70 +1360,32 @@ export default function DashboardClient() {
       )}
 
       {/* ── Bottom navigation bar ── */}
-      <nav className="fixed bottom-0 inset-x-0 z-50 bg-white/90 backdrop-blur-lg border-t border-slate-100 shadow-[0_-1px_12px_rgba(0,0,0,0.06)]">
-        <div className="max-w-2xl mx-auto flex pb-safe">
-          <button
-            onClick={() => setActiveTab('ledger')}
-            className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
-              activeTab === 'ledger' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
-            }`}
-          >
-            <div className={`p-1.5 rounded-xl transition-all duration-200 ${
-              activeTab === 'ledger' ? 'bg-brand-50' : ''
-            }`}>
-              <BookOpenIcon className="h-5 w-5" />
-            </div>
-            <span className={`text-[10px] font-semibold tracking-tight ${
-              activeTab === 'ledger' ? 'text-brand-600' : 'text-slate-400'
-            }`}>가계부</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('life')}
-            className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
-              activeTab === 'life' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
-            }`}
-          >
-            <div className={`p-1.5 rounded-xl transition-all duration-200 ${
-              activeTab === 'life' ? 'bg-brand-50' : ''
-            }`}>
-              <CalendarDaysIcon className="h-5 w-5" />
-            </div>
-            <span className={`text-[10px] font-semibold tracking-tight ${
-              activeTab === 'life' ? 'text-brand-600' : 'text-slate-400'
-            }`}>일정/일기</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('wealth')}
-            className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
-              activeTab === 'wealth' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
-            }`}
-          >
-            <div className={`p-1.5 rounded-xl transition-all duration-200 ${
-              activeTab === 'wealth' ? 'bg-brand-50' : ''
-            }`}>
-              <ChartPieIcon className="h-5 w-5" />
-            </div>
-            <span className={`text-[10px] font-semibold tracking-tight ${
-              activeTab === 'wealth' ? 'text-brand-600' : 'text-slate-400'
-            }`}>자산 현황</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('roadmap')}
-            className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
-              activeTab === 'roadmap' ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
-            }`}
-          >
-            <div className={`p-1.5 rounded-xl transition-all duration-200 ${
-              activeTab === 'roadmap' ? 'bg-brand-50' : ''
-            }`}>
-              <FlagIcon className="h-5 w-5" />
-            </div>
-            <span className={`text-[10px] font-semibold tracking-tight ${
-              activeTab === 'roadmap' ? 'text-brand-600' : 'text-slate-400'
-            }`}>로드맵</span>
-          </button>
-        </div>
-      </nav>
+      {tabs.length > 1 && (
+        <nav className="fixed bottom-0 inset-x-0 z-50 bg-white/90 backdrop-blur-lg border-t border-slate-100 shadow-[0_-1px_12px_rgba(0,0,0,0.06)]">
+          <div className="max-w-2xl mx-auto flex pb-safe">
+            {tabs.map(t => {
+              const Icon = TAB_ICONS[t.key]
+              const on = currentTab?.key === t.key
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => { setActiveTab(t.key); setActiveSub(null) }}
+                  className={`flex-1 flex flex-col items-center pt-3 pb-5 gap-1 transition-all duration-200 ${
+                    on ? 'text-brand-600' : 'text-slate-400 active:text-slate-600'
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-xl transition-all duration-200 ${on ? 'bg-brand-50' : ''}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <span className={`text-[10px] font-semibold tracking-tight ${on ? 'text-brand-600' : 'text-slate-400'}`}>
+                    {t.label}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   )
 }
