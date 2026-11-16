@@ -109,7 +109,7 @@ export default function LedgerScreen(p: LedgerScreenProps) {
   }
 
   return (
-    <div className="space-y-3 pb-20">
+    <div className={`space-y-3 ${p.canEdit ? '' : 'pb-20'}`}>{/* 편집 가능하면 빠른 입력 바가 제 높이만큼 빈 칸을 둔다 */}
       <PageTitle
         eyebrow={`${p.summaryMonth}월 · ${p.startDay}일 시작`}
         title="가계부"

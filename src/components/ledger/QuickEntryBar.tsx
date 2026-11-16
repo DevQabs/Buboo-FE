@@ -74,6 +74,8 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
   const [method, setMethod] = useState<PayMethod>('카드')
   const inputRef = useRef<HTMLInputElement>(null)
   const dateRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+  const [barH, setBarH] = useState(0)
   const saveSeq = useRef(0) // 마지막으로 시작한 저장 번호 — 되돌리기는 이 저장만 가리킨다
   const keyboard = useKeyboardInset()
   const { expenseCategories, incomeCategories, addCategory, removeCategory } = useCategories(accessToken)
@@ -88,6 +90,15 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
 
   useEffect(() => {
     try { setMethod(readPayMethod(localStorage.getItem(PAY_METHOD_KEY))) } catch { /* 저장소 막힘: 기본 카드 */ }
+  }, [])
+
+  // 떠 있는 바 높이만큼 본문 끝에 빈 칸을 둬 마지막 카드가 바 밑에 숨지 않게 한다(패널이 열리면 같이 늘어난다)
+  useEffect(() => {
+    const el = formRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setBarH(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [])
 
   const pickMethod = (m: PayMethod) => {
@@ -159,7 +170,9 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
 
   return (
     <>
+      <div aria-hidden style={{ height: barH }} />
       <form
+        ref={formRef}
         onSubmit={onFormSubmit}
         className={`fixed inset-x-0 z-50 px-3 ${position}`}
         style={keyboard ? { bottom: keyboard + 8 } : undefined}
