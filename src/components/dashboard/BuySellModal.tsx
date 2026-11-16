@@ -63,7 +63,7 @@ export default function BuySellModal({ asset, mode, exchangeRate = 0, onClose, o
     }
     setLoading(true)
     try {
-      await onSubmit(mode, { quantity: qty, price: prc, exchange_rate: rate, memo })
+      await onSubmit(mode, { quantity: qty, price: prc, exchange_rate: isUSD && exchangeRate > 0 ? exchangeRate : 0, memo })
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : '요청 실패')

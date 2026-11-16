@@ -13,6 +13,7 @@ interface EditStockModalProps {
     name?: string
     quantity?: number
     average_price?: number
+    avg_krw_price?: number
     memo?: string
   }) => Promise<void>
 }
@@ -23,20 +24,29 @@ export default function EditStockModal({ asset, onClose, onEdit }: EditStockModa
   const [avgPrice, setAvgPrice] = useState(formatAmountInput(String(asset.average_price), true))
   const [memo, setMemo] = useState(asset.memo ?? '')
   const [loading, setLoading] = useState(false)
+  const isUSD = asset.currency === 'USD'
+  const initialKRW = asset.avg_krw_price > 0 ? formatAmountInput(String(Math.round(asset.avg_krw_price))) : ''
+  const [avgKRW, setAvgKRW] = useState(initialKRW)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name || !quantity || !avgPrice) return
+    setError(null)
     setLoading(true)
+    const krw = parseFloat(avgKRW.replace(/,/g, ''))
     try {
       await onEdit(asset.id, {
         user_id: asset.user_id,
         name: name.trim(),
         quantity: parseFloat(quantity),
         average_price: parseFloat(avgPrice.replace(/,/g, '')),
+        ...(isUSD && avgKRW !== initialKRW && krw > 0 ? { avg_krw_price: krw } : {}),
         memo,
       })
       onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '수정 실패')
     } finally {
       setLoading(false)
     }
@@ -116,6 +126,21 @@ export default function EditStockModal({ asset, onClose, onEdit }: EditStockModa
             </div>
           )}
 
+          {isUSD && (
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">원화 평균 매입가 (원, 선택)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={avgKRW}
+                onChange={e => setAvgKRW(formatAmountInput(e.target.value))}
+                placeholder="예: 19,600"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300 placeholder:font-normal"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">매수 당시 환율로 환산한 1주당 원화 가격이에요. 없으면 환차손익이 빠져요.</p>
+            </div>
+          )}
+
           {/* 메모 */}
           <div>
             <label className="text-xs font-medium text-slate-500 mb-1 block">메모 (선택)</label>
@@ -127,6 +152,10 @@ export default function EditStockModal({ asset, onClose, onEdit }: EditStockModa
               className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300"
             />
           </div>
+
+          {error && (
+            <p className="text-xs text-rose-500 bg-rose-50 px-3 py-2 rounded-lg">{error}</p>
+          )}
 
           {/* Submit */}
           <button
