@@ -74,7 +74,7 @@ export default function MiniCalendar({
             <button
               key={i}
               onClick={() => onDayClick(dateStr)}
-              className={`flex flex-col items-center py-1 rounded-lg transition-colors ${
+              className={`flex min-h-11 flex-col items-center py-1 rounded-lg transition-colors ${
                 isSelected ? 'bg-brand-500' : isToday ? 'bg-brand-50' : 'hover:bg-slate-50'
               }`}
             >
@@ -85,7 +85,7 @@ export default function MiniCalendar({
                 : col === 6 ? 'text-brand-400'
                 : 'text-slate-700'
               }`}>{day}</span>
-              <span className={`text-[8px] leading-none ${isSelected ? 'text-brand-100' : 'text-slate-300'}`}>
+              <span className={`text-[10px] leading-none ${isSelected ? 'text-brand-100' : 'text-stone-400'}`}>
                 {lunarCellDay(dateStr)}
               </span>
               <div className="flex gap-0.5 mt-0.5 h-1">
