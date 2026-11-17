@@ -208,10 +208,11 @@ export default function ScheduleScreen({ section, schedules, diaries, currentUse
               type="button"
               onClick={() => setSelected(d)}
               title={holidays[d]}
-              className={`relative flex w-[calc((100vw-1.5rem-2.25rem)/7)] max-w-16 shrink-0 snap-start flex-col items-center rounded-2xl py-1.5 text-xs ${on ? 'bg-brand-500 text-white' : 'bg-white shadow-warm'}`}
+              className={`flex w-[calc((100vw-1.5rem-2.25rem)/7)] max-w-16 shrink-0 snap-start flex-col items-center rounded-2xl py-1.5 text-xs ${on ? 'bg-brand-500 text-white' : 'bg-white shadow-warm'}`}
             >
-              {Number(d.slice(8)) === 1 && <span className={`absolute -top-1 left-1 text-[10px] font-semibold ${on ? 'text-white/80' : 'text-brand-500'}`}>{Number(d.slice(5, 7))}월</span>}
-              <span className={on ? 'text-white/80' : red ? 'text-rose-500' : i === 6 ? 'text-brand-400' : 'text-stone-400'}>{WD[i]}</span>
+              {Number(d.slice(8)) === 1
+                ? <span className={`font-bold ${on ? 'text-white' : 'text-brand-500'}`}>{Number(d.slice(5, 7))}월</span>
+                : <span className={on ? 'text-white/80' : red ? 'text-rose-500' : i === 6 ? 'text-brand-400' : 'text-stone-400'}>{WD[i]}</span>}
               <span className={`text-sm font-bold ${!on && d === today ? 'text-brand-500' : ''}`}>{Number(d.slice(8))}</span>
               <span className={`mt-0.5 h-1 w-1 rounded-full ${scheduleDays.has(d) ? (on ? 'bg-white' : 'bg-brand-500') : 'bg-transparent'}`} />
             </button>
