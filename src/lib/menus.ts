@@ -25,6 +25,14 @@ export function visibleTabs(p: MyPermissions | null): TabDef[] {
     .filter(t => t.subs.length > 0)
 }
 
+/** 알림 딥링크 `?tab=&menu=` 에서 보이는 탭·메뉴를 고른다. 탭이 없거나 안 보이면 null, 모르는 메뉴면 그 탭 첫 메뉴. */
+export function pickDeepLink(tabs: TabDef[], q: URLSearchParams): { tab: TabKey; sub: MenuKey } | null {
+  const t = tabs.find(x => x.key === q.get('tab'))
+  if (!t) return null
+  const s = t.subs.find(x => x.key === q.get('menu')) ?? t.subs[0]
+  return { tab: t.key, sub: s.key }
+}
+
 /** 구성원 목록 한 줄 요약. 예: "사진일기·성장 편집, 일정 보기" */
 export function permissionSummary(p: MyPermissions): string {
   if (p.is_owner) return '관리자 · 전체'

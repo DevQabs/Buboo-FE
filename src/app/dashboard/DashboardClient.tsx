@@ -73,7 +73,8 @@ import type {
   MenuKey,
   MyPermissions,
 } from '@/types'
-import { levelOf, visibleTabs, type TabKey } from '@/lib/menus'
+import { levelOf, pickDeepLink, visibleTabs, type TabKey } from '@/lib/menus'
+import { registerPushWorker } from '@/lib/push'
 import { ledgerPeriod, ledgerMonthOf, todayKST } from '@/lib/date'
 import { apiFetch as callApi, latestOnly, ignoreAbort } from '@/lib/api'
 import { attachDiaryPhotos } from '@/lib/media'
@@ -335,8 +336,15 @@ export default function DashboardClient() {
       ])
       _perms = permData
       setPerms(permData)
-      first = visibleTabs(permData)[0]?.key ?? 'ledger'
+      // 알림에서 열면 ?tab=&menu= 화면부터(볼 수 있는 메뉴일 때만). 주소창의 쿼리는 바로 지운다
+      const seen = visibleTabs(permData)
+      const link = pickDeepLink(seen, new URLSearchParams(window.location.search))
+      first = link?.tab ?? seen[0]?.key ?? 'ledger'
       setActiveTab(first)
+      if (link) {
+        setActiveSub(link.sub)
+        window.history.replaceState(null, '', window.location.pathname)
+      }
       const dbStartDay = (coupleData?.ledger_start_day >= 1 && coupleData?.ledger_start_day <= 28)
         ? coupleData.ledger_start_day
         : 1
@@ -367,7 +375,9 @@ export default function DashboardClient() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (status === 'authenticated') fetchAll()
+    if (status !== 'authenticated') return
+    fetchAll()
+    registerPushWorker()
   }, [fetchAll, status])
 
   // ── 나머지 탭 백그라운드 프리패치 ─────────────────────────────────────────────

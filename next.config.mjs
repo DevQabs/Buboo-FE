@@ -21,6 +21,11 @@ const nextConfig = {
       fallback: [],
     }
   },
+
+  // 서비스 워커는 매번 새로 확인한다(push 설계서 7절)
+  async headers() {
+    return [{ source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache' }] }]
+  },
 }
 
 export default nextConfig
