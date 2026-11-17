@@ -176,7 +176,7 @@ export default function LedgerScreen(p: LedgerScreenProps) {
         <UpcomingStrip events={upcoming} />
       </Section>
 
-      <SectionLabel>{p.canEdit ? '내역 · 누르면 그날 달력에서 고칠 수 있어요' : '내역'}</SectionLabel>
+      <SectionLabel>내역</SectionLabel>
       <Section s={p.sections.feed} minH={160}>
         <LedgerFeed transactions={p.transactions} users={p.users} onSelectDate={openDay} />
       </Section>

@@ -1,7 +1,7 @@
 'use client'
 
 // 일정 A (시안 sched-a): 주간 스트립 + 이번 주/이후 아젠다(옆에 D-n) + 기념일 칸(D+) + 월 달력 펼침.
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { CalendarDaysIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { Card, IconButton, PageTitle, SectionLabel } from '@/components/ui/Card'
@@ -10,7 +10,7 @@ import { Section } from '@/components/ui/Loading'
 import type { SectionState } from '@/lib/loadState'
 import MiniCalendar from './MiniCalendar'
 import { AddScheduleModal, COLOR_MAP, EditScheduleModal } from './ScheduleModals'
-import { addDays, daysBetween, todayKST, weekdayOf } from '@/lib/date'
+import { addDays, daysBetween, stripDays, todayKST, weekdayOf } from '@/lib/date'
 import { buildAgenda, ddayBadge, fmtDDay, schedulesOn, weekBuckets } from '@/lib/dday'
 import { getHolidaysForMonth } from '@/lib/koreanHolidays'
 import { lunarFullLabel } from '@/lib/lunar'
@@ -123,14 +123,32 @@ export default function ScheduleScreen({ section, schedules, diaries, currentUse
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Schedule | null>(null)
 
-  const week = Array.from({ length: 7 }, (_, i) => addDays(selected, i - weekdayOf(selected)))
-  const first = week[0]
-  const last = week[6]
-  // 한 주가 두 달에 걸칠 수 있어 양쪽 달 공휴일을 합친다
-  const holidays = useMemo(() => ({
-    ...getHolidaysForMonth(Number(first.slice(0, 4)), Number(first.slice(5, 7))),
-    ...getHolidaysForMonth(Number(last.slice(0, 4)), Number(last.slice(5, 7))),
-  }), [first, last])
+  // 주간 스트립: 처음엔 다음 주까지, 오른쪽 끝에 닿으면 2주씩 더 붙인다
+  const [moreWeeks, setMoreWeeks] = useState(0)
+  const strip = stripDays(today, selected, moreWeeks)
+  const first = strip[0]
+  const last = strip[strip.length - 1]
+  const stripRef = useRef<HTMLDivElement>(null)
+  const endRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const root = stripRef.current, end = endRef.current
+    if (!root || !end) return
+    const io = new IntersectionObserver(es => { if (es[0].isIntersecting) setMoreWeeks(w => w + 2) }, { root, rootMargin: '0px 200px 0px 0px' })
+    io.observe(end)
+    return () => io.disconnect()
+  }, [])
+  // 고른 날이 보이게(달력에서 고르거나 오늘로)
+  useEffect(() => {
+    stripRef.current?.querySelector<HTMLElement>(`[data-day="${selected}"]`)?.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' })
+  }, [selected])
+  // 스트립이 여러 달에 걸쳐 그 달들의 공휴일을 합친다
+  const holidays = useMemo(() => {
+    const out: Record<string, string> = {}
+    for (let y = Number(first.slice(0, 4)), m = Number(first.slice(5, 7)); y * 12 + m <= Number(last.slice(0, 4)) * 12 + Number(last.slice(5, 7)); m === 12 ? (y++, m = 1) : m++) {
+      Object.assign(out, getHolidaysForMonth(y, m))
+    }
+    return out
+  }, [first, last])
   const scheduleDays = new Set(schedules.map(s => ymd(s.start_date)))
   const agenda = buildAgenda(schedules, today)
   const dayList = schedulesOn(schedules, selected)
@@ -178,24 +196,28 @@ export default function ScheduleScreen({ section, schedules, diaries, currentUse
       )}
 
       {/* 주간 스트립 */}
-      <div className="flex gap-1.5">
-        {week.map((d, i) => {
+      <div ref={stripRef} className="-mx-3 flex snap-x gap-1.5 overflow-x-auto scroll-px-3 px-3 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {strip.map(d => {
+          const i = weekdayOf(d)
           const on = d === selected
           const red = i === 0 || Boolean(holidays[d])
           return (
             <button
               key={d}
+              data-day={d}
               type="button"
               onClick={() => setSelected(d)}
               title={holidays[d]}
-              className={`flex flex-1 flex-col items-center rounded-2xl py-1.5 text-xs ${on ? 'bg-brand-500 text-white' : 'bg-white shadow-warm'}`}
+              className={`relative flex w-[calc((100vw-1.5rem-2.25rem)/7)] max-w-16 shrink-0 snap-start flex-col items-center rounded-2xl py-1.5 text-xs ${on ? 'bg-brand-500 text-white' : 'bg-white shadow-warm'}`}
             >
+              {Number(d.slice(8)) === 1 && <span className={`absolute -top-1 left-1 text-[10px] font-semibold ${on ? 'text-white/80' : 'text-brand-500'}`}>{Number(d.slice(5, 7))}월</span>}
               <span className={on ? 'text-white/80' : red ? 'text-rose-500' : i === 6 ? 'text-brand-400' : 'text-stone-400'}>{WD[i]}</span>
               <span className={`text-sm font-bold ${!on && d === today ? 'text-brand-500' : ''}`}>{Number(d.slice(8))}</span>
               <span className={`mt-0.5 h-1 w-1 rounded-full ${scheduleDays.has(d) ? (on ? 'bg-white' : 'bg-brand-500') : 'bg-transparent'}`} />
             </button>
           )
         })}
+        <div ref={endRef} className="w-px shrink-0" aria-hidden />
       </div>
 
       <Section s={section} minH={160}>

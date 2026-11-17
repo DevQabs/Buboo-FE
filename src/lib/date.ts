@@ -47,3 +47,13 @@ export function daysLeftInPeriod(today: string, start: string, end: string): num
   if (today >= end) return 0
   return daysBetween(today, end)
 }
+
+/** 일정 주간 스트립 날짜들: 오늘(또는 고른 날) 주의 일요일부터 다음 주 토요일 + 더 불러온 주까지. 고른 날이 밖이면 그 주까지 늘린다. */
+export function stripDays(today: string, selected: string, moreWeeks: number): string[] {
+  const sunday = (d: string) => addDays(d, -weekdayOf(d))
+  const from = sunday(selected < today ? selected : today)
+  let to = addDays(sunday(today), 13 + 7 * moreWeeks)
+  const selEnd = addDays(sunday(selected), 6)
+  if (selEnd > to) to = selEnd
+  return Array.from({ length: daysBetween(from, to) + 1 }, (_, i) => addDays(from, i))
+}
