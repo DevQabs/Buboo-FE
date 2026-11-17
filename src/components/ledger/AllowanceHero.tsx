@@ -82,10 +82,10 @@ export default function AllowanceHero({
           className="min-w-0 flex-1 rounded-lg border border-line px-2 py-1.5 text-right text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-brand-500"
         />
         <span className="shrink-0 text-xs text-stone-400">원</span>
-        <button onClick={save} disabled={saving} aria-label="저장" className="rounded-lg bg-brand-500 p-1.5 text-white disabled:opacity-50">
+        <button onClick={save} disabled={saving} aria-label="저장" className="relative before:absolute before:-inset-2 before:content-[''] rounded-lg bg-brand-500 p-1.5 text-white disabled:opacity-50">
           <CheckIcon className="h-4 w-4" />
         </button>
-        <button onClick={() => setEditing(false)} aria-label="취소" className="rounded-lg p-1.5 text-stone-400">
+        <button onClick={() => setEditing(false)} aria-label="취소" className="relative before:absolute before:-inset-2 before:content-[''] rounded-lg p-1.5 text-stone-400">
           <XMarkIcon className="h-4 w-4" />
         </button>
       </Card>
@@ -110,7 +110,7 @@ export default function AllowanceHero({
   return (
     <Card className="relative px-4 pb-4 pt-5 text-center">
       {onUpdateBudget && (
-        <button onClick={startEditing} aria-label="예산 수정" className="absolute right-3 top-3 rounded-lg p-1.5 text-stone-400 hover:bg-stone-100">
+        <button onClick={startEditing} aria-label="예산 수정" className="absolute right-3 top-3 rounded-lg before:absolute before:-inset-2 before:content-[''] p-1.5 text-stone-400 hover:bg-stone-100">
           <PencilSquareIcon className="h-4 w-4" />
         </button>
       )}
