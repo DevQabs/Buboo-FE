@@ -1,10 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline'
+import { CheckIcon, ChevronRightIcon, ClipboardDocumentIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { apiFetch } from '@/lib/api'
 import { TABS, permissionSummary, visibleTabs } from '@/lib/menus'
 import StorageWarning from '@/components/ui/StorageWarning'
+import { IconButton } from '@/components/ui/Card'
 import { Section } from '@/components/ui/Loading'
 import type { SectionState } from '@/lib/loadState'
 import type { InvitePreset, Member, MenuKey, PermLevel } from '@/types'
@@ -30,9 +31,9 @@ function Header({ small, title, onBack }: { small: string; title: string; onBack
         <small className="block text-xs text-stone-400">{small}</small>
         <b className="text-xl font-extrabold">{title}</b>
       </div>
-      <button type="button" onClick={onBack} aria-label="뒤로" className="p-2 text-stone-400">
-        <ChevronLeftIcon className="h-5 w-5" />
-      </button>
+      <IconButton label="닫기" onClick={onBack}>
+        <XMarkIcon className="h-5 w-5" />
+      </IconButton>
     </div>
   )
 }
