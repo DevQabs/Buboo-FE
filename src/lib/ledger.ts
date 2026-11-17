@@ -123,18 +123,21 @@ export function applySummaryDelta<S extends SummaryTotals>(s: S | null, type: 'e
   }
 }
 
-// 카테고리 색: 정해진 이름은 고정 색, 나머지는 이름을 해시해 팔레트 안에서 늘 같은 색
-export const CATEGORY_PALETTE = ['rose', 'amber', 'emerald', 'teal', 'violet', 'orange', 'lime', 'stone', 'brand'] as const
+// 카테고리 색: 정해진 이름은 고정 색, 나머지는 이름을 해시해 팔레트 안에서 늘 같은 색.
+// 회색(stone)은 기타 전용이라 해시에서 뺀다. 기본 카테고리(useCategories)끼리는 색이 겹치지 않는다.
+export const CATEGORY_PALETTE = ['rose', 'amber', 'emerald', 'teal', 'violet', 'orange', 'lime', 'pink', 'stone', 'brand'] as const
 export type CategoryColor = (typeof CATEGORY_PALETTE)[number]
+const HASH_PALETTE = CATEGORY_PALETTE.filter(c => c !== 'stone')
 const KNOWN_CATEGORY_COLOR: Record<string, CategoryColor> = {
   식비: 'rose', 카페: 'amber', 생활: 'emerald', 교통: 'teal', 쇼핑: 'violet', 육아: 'orange', 의료: 'lime', 기타: 'stone',
+  장보기: 'emerald', 주거: 'brand', 문화: 'orange', 아기용품: 'pink',
 }
 
 export function categoryColor(name: string): CategoryColor {
   if (Object.hasOwn(KNOWN_CATEGORY_COLOR, name)) return KNOWN_CATEGORY_COLOR[name]
   let h = 0
   for (const ch of name) h = (h * 31 + ch.codePointAt(0)!) >>> 0
-  return CATEGORY_PALETTE[h % CATEGORY_PALETTE.length]
+  return HASH_PALETTE[h % HASH_PALETTE.length]
 }
 
 /** 내용을 비우고 저장할 때 넣는 기본 내용(N페이 결제). 자주 쓴 내용에서는 뺀다. */

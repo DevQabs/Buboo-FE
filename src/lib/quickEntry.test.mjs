@@ -57,6 +57,11 @@ test('카테고리 색: 정해진 이름은 고정 색, 모르는 이름은 늘 
     assert.equal(categoryColor(name), categoryColor(name))
     assert.ok(CATEGORY_PALETTE.includes(categoryColor(name)), name)
   }
+  // 기본 카테고리(useCategories DEFAULT_EXPENSE)와 아기용품은 서로 다른 색
+  const defaults = ['식비', '카페', '장보기', '주거', '교통', '의료', '문화', '쇼핑', '기타', '아기용품']
+  assert.equal(new Set(defaults.map(categoryColor)).size, defaults.length)
+  // 회색은 기타 전용: 모르는 이름은 해시해도 stone 이 안 나온다
+  for (let i = 0; i < 200; i++) assert.notEqual(categoryColor(`카테고리${i}`), 'stone')
   assert.ok(!CATEGORY_PALETTE.includes('indigo') && !CATEGORY_PALETTE.includes('blue'))
 })
 

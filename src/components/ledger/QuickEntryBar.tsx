@@ -30,6 +30,7 @@ export const CAT_CLASS: Record<CategoryColor, { dot: string; soft: string; solid
   violet: { dot: 'bg-violet-500', soft: 'border-violet-200 bg-violet-50 text-violet-700', solid: 'border-violet-500 bg-violet-500 text-white ring-2 ring-violet-200', pill: 'bg-violet-100 text-violet-800' },
   orange: { dot: 'bg-orange-500', soft: 'border-orange-200 bg-orange-50 text-orange-700', solid: 'border-orange-600 bg-orange-600 text-white ring-2 ring-orange-200', pill: 'bg-orange-100 text-orange-800' },
   lime: { dot: 'bg-lime-500', soft: 'border-lime-200 bg-lime-50 text-lime-800', solid: 'border-lime-700 bg-lime-700 text-white ring-2 ring-lime-200', pill: 'bg-lime-100 text-lime-800' },
+  pink: { dot: 'bg-pink-500', soft: 'border-pink-200 bg-pink-50 text-pink-700', solid: 'border-pink-500 bg-pink-500 text-white ring-2 ring-pink-200', pill: 'bg-pink-100 text-pink-800' },
   stone: { dot: 'bg-stone-400', soft: 'border-stone-200 bg-stone-50 text-stone-600', solid: 'border-stone-500 bg-stone-500 text-white ring-2 ring-stone-200', pill: 'bg-stone-100 text-stone-700' },
   brand: { dot: 'bg-brand-500', soft: 'border-brand-100 bg-brand-50 text-brand-700', solid: 'border-brand-500 bg-brand-500 text-white ring-2 ring-brand-200', pill: 'bg-brand-100 text-brand-700' },
 }
