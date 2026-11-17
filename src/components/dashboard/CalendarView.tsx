@@ -809,7 +809,7 @@ export default function CalendarView({
                 monthTotal.expense / budgetLimit >= 0.9 ? 'text-amber-500' :
                 'text-brand-500'
               }`}>
-                {Math.round(monthTotal.expense / budgetLimit * 100)}%
+                예산 {Math.round(monthTotal.expense / budgetLimit * 100)}%
               </span>
             )}
           </div>
