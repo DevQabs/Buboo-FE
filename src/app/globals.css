@@ -18,6 +18,8 @@
   body {
     @apply bg-cream text-stone-800 antialiased;
     font-feature-settings: 'kern' 1;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
 
   /* 숫자 tabular-nums 기본 적용 */
