@@ -18,7 +18,6 @@ import type { CreateScheduleRequest, DiaryEntry, Schedule, UpdateScheduleRequest
 
 const WD = ['일', '월', '화', '수', '목', '금', '토']
 const ymd = (iso: string) => iso.slice(0, 10)
-const dayText = (d: string) => `${WD[weekdayOf(d)]} ${Number(d.slice(8))}일`
 
 function AgendaRow({ s, today, canEdit, onOpen, onRemove }: {
   s: Schedule
@@ -39,7 +38,9 @@ function AgendaRow({ s, today, canEdit, onOpen, onRemove }: {
           {s.dday_label && <span className="font-normal text-stone-400"> · {s.dday_label}</span>}
         </p>
         <p className="text-xs text-stone-400">
-          {dayText(start)}{s.end_date ? ` ~ ${dayText(ymd(s.end_date))}` : ''}<span className="whitespace-nowrap"> · {lunarFullLabel(start)}</span>
+          <FullDate d={start} />
+          {s.end_date && <> ~ <FullDate d={ymd(s.end_date)} /></>}
+          <span className="whitespace-nowrap"> · {lunarFullLabel(start)}</span>
         </p>
         {s.description && <p className="truncate text-xs text-stone-500">{s.description}</p>}
       </button>
