@@ -51,7 +51,7 @@ const OTHER_ASSET_TYPES: OtherAssetType[] = ['부동산', '예/적금', '현금'
 
 function OwnerBadge({ owner }: { owner: FixedExpenseOwner }) {
   return (
-    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${OWNER_COLOR[owner]}`}>
+    <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${OWNER_COLOR[owner]}`}>
       {OWNER_LABEL[owner]}
     </span>
   )
@@ -59,7 +59,7 @@ function OwnerBadge({ owner }: { owner: FixedExpenseOwner }) {
 
 function KindBadge({ kind }: { kind: FixedExpenseKind }) {
   return kind === 'saving' ? (
-    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-700">저축</span>
+    <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-700">저축</span>
   ) : null
 }
 
@@ -701,8 +701,8 @@ function FeRow({
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${fe.is_active ? 'bg-amber-400' : 'bg-slate-200'}`} />
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-xs font-medium text-slate-800 truncate">{fe.title}</span>
+        <div className="flex items-center gap-1">
+          <span className="min-w-0 text-xs font-medium text-slate-800 truncate">{fe.title}</span>
           <OwnerBadge owner={fe.owner} />
           <KindBadge kind={fe.kind ?? 'spending'} />
         </div>
