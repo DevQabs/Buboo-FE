@@ -882,7 +882,7 @@ export default function DashboardClient() {
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(v => !v)}
-              className="relative flex -space-x-2 focus:outline-none before:absolute before:-inset-x-1 before:-inset-y-1.5 before:content-['']"
+              className="relative flex gap-1 focus:outline-none before:absolute before:-inset-x-1 before:-inset-y-1.5 before:content-['']"
             >
               {(users ?? []).map(u => (
                 <div
