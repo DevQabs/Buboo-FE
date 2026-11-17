@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PlusIcon, Cog6ToothIcon, PencilIcon, TrashIcon, CheckIcon } from '@heroicons/react/24/outline'
-import { formatAmountInput } from '@/lib/formatNumber'
+import { formatAmountInput, formatMan } from '@/lib/formatNumber'
 import { useCategories } from '@/hooks/useCategories'
 import CategoryManager from '@/components/dashboard/CategoryManager'
 import { getHolidaysForMonth } from '@/lib/koreanHolidays'
@@ -50,13 +50,10 @@ function todayKey(): string {
   return toDateKey(getNowKST())
 }
 
+// 달력 칸용 짧은 금액: 1만 미만은 "9,900" 그대로, 그 위는 formatMan("5만"·"320만"·"1.2억")
 function fmtCell(v: number): string {
   if (v === 0) return ''
-  if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(1)}억`
-  if (v >= 1_000_000)   return `${(v / 10_000).toFixed(0)}만`
-  if (v >= 10_000)      return `${(v / 10_000).toFixed(1)}만`
-  if (v >= 1_000)       return `${(v / 1_000).toFixed(0)}천`
-  return `${v}`
+  return Math.abs(v) < 10_000 ? v.toLocaleString('ko-KR') : formatMan(v)
 }
 
 function fmtTime(iso: string): string {
@@ -260,7 +257,7 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
     <button
       onClick={onClick}
       className={`
-        h-12 sm:h-14 rounded-lg p-0.5 flex flex-col items-center
+        min-h-12 sm:min-h-14 rounded-lg p-0.5 flex flex-col items-center
         text-left transition-all duration-150 relative
         ${isSelected
           ? 'bg-brand-500 shadow-md ring-2 ring-brand-100'
@@ -284,7 +281,7 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
       </span>
 
       {hasExpense && (
-        <span className={`text-[9px] font-bold tabular-nums leading-none ${
+        <span className={`text-[10px] font-bold tabular-nums leading-none ${
           isSelected ? 'text-red-200' : budgetRatio > 1 ? 'text-rose-600' : 'text-rose-500'
         }`}>
           {fmtCell(dayData!.total_expense)}
@@ -292,7 +289,7 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
       )}
 
       {hasIncome && (
-        <span className={`text-[8px] tabular-nums leading-none ${
+        <span className={`text-[10px] tabular-nums leading-none ${
           isSelected ? 'text-green-200' : 'text-emerald-500'
         }`}>
           +{fmtCell(dayData!.total_income)}
@@ -306,7 +303,7 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
       {feEvents.length > 0 && (
         <span
           title={feEvents.map(e => e.title).join(', ')}
-          className={`text-[8px] font-semibold tabular-nums leading-none ${isSelected ? 'text-violet-200' : 'text-violet-400'}`}
+          className={`text-[10px] font-semibold tabular-nums leading-none ${isSelected ? 'text-violet-200' : 'text-violet-400'}`}
         >
           -{fmtCell(feEvents.reduce((s, e) => s + e.amount, 0))}
         </span>
@@ -314,7 +311,7 @@ function CalendarCell({ day, dateKey, dayData, events, isToday, isSelected, isOt
       {divEvents.length > 0 && (
         <span
           title={divEvents.map(e => e.title).join(', ')}
-          className={`text-[8px] font-semibold tabular-nums leading-none ${isSelected ? 'text-teal-200' : 'text-teal-500'}`}
+          className={`text-[10px] font-semibold tabular-nums leading-none ${isSelected ? 'text-teal-200' : 'text-teal-500'}`}
         >
           +{fmtCell(divEvents.reduce((s, e) => s + e.amount, 0))}
         </span>
