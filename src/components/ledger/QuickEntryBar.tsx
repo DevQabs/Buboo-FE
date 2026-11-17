@@ -22,7 +22,7 @@ type QuickType = 'expense' | 'income'
 
 // 카테고리 색 → 클래스. Tailwind JIT 가 찾도록 완성된 문자열로 둔다.
 // dot: 칩 점 / soft: 안 고른 칩 / solid: 고른 칩 / pill: 금액 옆 알약(브랜드 바 위)
-const CAT_CLASS: Record<CategoryColor, { dot: string; soft: string; solid: string; pill: string }> = {
+export const CAT_CLASS: Record<CategoryColor, { dot: string; soft: string; solid: string; pill: string }> = {
   rose: { dot: 'bg-rose-500', soft: 'border-rose-200 bg-rose-50 text-rose-700', solid: 'border-rose-500 bg-rose-500 text-white ring-2 ring-rose-200', pill: 'bg-rose-100 text-rose-800' },
   amber: { dot: 'bg-amber-500', soft: 'border-amber-200 bg-amber-50 text-amber-800', solid: 'border-amber-600 bg-amber-600 text-white ring-2 ring-amber-200', pill: 'bg-amber-100 text-amber-800' },
   emerald: { dot: 'bg-emerald-500', soft: 'border-emerald-200 bg-emerald-50 text-emerald-700', solid: 'border-emerald-600 bg-emerald-600 text-white ring-2 ring-emerald-200', pill: 'bg-emerald-100 text-emerald-800' },
