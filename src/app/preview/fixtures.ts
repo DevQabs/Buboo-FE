@@ -159,7 +159,7 @@ const sch = (id: string, title: string, start: string, color: Schedule['color'],
   dday_label: '', color, created_at: T, updated_at: T, ...extra,
 })
 export const schedules: Schedule[] = [
-  sch('sc1', '소아과 BCG 접종', '2026-11-17', 'rose'),
+  sch('sc1', '소아과 BCG 접종', '2026-11-17', 'rose', { reminders: ['d1_9'] }),
   sch('sc2', '서연이 대학 동기 결혼식 (더채플앳청담 3층 그랜드볼룸, 축의금 챙기기)', '2026-11-21', 'amber', { description: '주차 2시간 무료, 오후 1시 30분 예식' }),
   sch('sc3', '부모님 김장 도와드리기', '2026-11-28', 'emerald', { end_date: '2026-11-29' }),
   sch('sc4', '아기 100일', '2026-12-01', 'indigo', { is_dday: true, dday_label: '100일' }),

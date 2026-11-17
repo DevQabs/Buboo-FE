@@ -2,6 +2,8 @@
 //  Domain Types (mirrors Go models)
 // ─────────────────────────────────────────────
 
+import type { ReminderCode } from '@/lib/reminders'
+
 export type UserRole = 'husband' | 'wife' | 'family'
 export type TransactionType = 'income' | 'expense' | 'saving'
 
@@ -509,6 +511,7 @@ export interface Schedule {
   is_anniversary: boolean   // 지나도 D+N 으로 센다(기념일 칸)
   dday_label: string
   color: ScheduleColor
+  reminders?: ReminderCode[]  // 알림 시점(옛 응답·미리보기엔 없을 수 있다)
   created_at: string
   updated_at: string
 }
@@ -524,6 +527,7 @@ export interface CreateScheduleRequest {
   is_anniversary?: boolean
   dday_label?: string
   color?: ScheduleColor
+  reminders?: ReminderCode[]
 }
 
 export interface UpdateScheduleRequest {
@@ -536,6 +540,7 @@ export interface UpdateScheduleRequest {
   is_anniversary?: boolean
   dday_label?: string
   color?: ScheduleColor
+  reminders?: ReminderCode[]
 }
 
 // ─────────────────────────────────────────────

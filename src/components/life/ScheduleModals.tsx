@@ -5,6 +5,8 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { todayKST } from '@/lib/date'
 import type { CreateScheduleRequest, Schedule, ScheduleColor, UpdateScheduleRequest } from '@/types'
+import { Chip } from '@/components/ui/Card'
+import { REMINDER_LABELS, fitReminders, reminderOptions, toggleReminder, type ReminderCode } from '@/lib/reminders'
 
 export const COLOR_MAP: Record<ScheduleColor, { bg: string; text: string; dot: string }> = {
   indigo:  { bg: 'bg-brand-50',  text: 'text-brand-700',  dot: 'bg-brand-500' },
@@ -12,6 +14,24 @@ export const COLOR_MAP: Record<ScheduleColor, { bg: string; text: string; dot: s
   emerald: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-400' },
   amber:   { bg: 'bg-amber-50',   text: 'text-amber-700',   dot: 'bg-amber-400' },
   sky:     { bg: 'bg-sky-50',     text: 'text-sky-700',     dot: 'bg-sky-400' },
+}
+
+// 모달은 시각 입력 없이 항상 하루 종일(all_day: true)로 저장한다 — 선택지도 하루 종일 것만
+const ALL_DAY = true
+
+function ReminderChips({ value, onChange }: { value: ReminderCode[]; onChange: (v: ReminderCode[]) => void }) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-slate-500 mb-2 block">알림</label>
+      <div className="flex flex-wrap gap-2">
+        {reminderOptions(ALL_DAY).map(c => (
+          <Chip key={c} on={value.includes(c)} onClick={() => onChange(toggleReminder(value, c))}>
+            {REMINDER_LABELS[c]}
+          </Chip>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export function AddScheduleModal({ currentUserID, initialDate, onClose, onSave }: {
@@ -28,6 +48,7 @@ export function AddScheduleModal({ currentUserID, initialDate, onClose, onSave }
   const [ddayLabel, setLabel]   = useState('')
   const [isAnniv, setIsAnniv] = useState(false)
   const [color, setColor]       = useState<ScheduleColor>('indigo')
+  const [reminders, setReminders] = useState<ReminderCode[]>([])
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState('')
 
@@ -38,7 +59,7 @@ export function AddScheduleModal({ currentUserID, initialDate, onClose, onSave }
       await onSave({
         user_id: currentUserID, title, description: desc,
         start_date: startDate, end_date: endDate || undefined,
-        all_day: true, is_dday: isDDay, is_anniversary: isAnniv, dday_label: ddayLabel, color,
+        all_day: ALL_DAY, is_dday: isDDay, is_anniversary: isAnniv, dday_label: ddayLabel, color, reminders,
       })
       onClose()
     } catch (e) {
@@ -95,6 +116,7 @@ export function AddScheduleModal({ currentUserID, initialDate, onClose, onSave }
               ))}
             </div>
           </div>
+          <ReminderChips value={reminders} onChange={setReminders} />
 
           {/* D-Day */}
           <div className="flex items-center gap-3">
@@ -154,6 +176,7 @@ export function EditScheduleModal({ schedule, onClose, onSave }: {
   const [ddayLabel, setLabel] = useState(schedule.dday_label)
   const [isAnniv, setIsAnniv] = useState(schedule.is_anniversary ?? false)
   const [color, setColor]     = useState<ScheduleColor>(schedule.color)
+  const [reminders, setReminders] = useState<ReminderCode[]>(fitReminders(schedule.reminders ?? [], ALL_DAY))
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
 
@@ -164,7 +187,7 @@ export function EditScheduleModal({ schedule, onClose, onSave }: {
       await onSave(schedule.id, {
         title, description: desc,
         start_date: startDate, end_date: endDate || undefined,
-        all_day: true, is_dday: isDDay, is_anniversary: isAnniv, dday_label: ddayLabel, color,
+        all_day: ALL_DAY, is_dday: isDDay, is_anniversary: isAnniv, dday_label: ddayLabel, color, reminders,
       })
       onClose()
     } catch (e) {
@@ -219,6 +242,7 @@ export function EditScheduleModal({ schedule, onClose, onSave }: {
               ))}
             </div>
           </div>
+          <ReminderChips value={reminders} onChange={setReminders} />
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 cursor-pointer">
               <div

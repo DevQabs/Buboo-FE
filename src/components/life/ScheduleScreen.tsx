@@ -3,7 +3,7 @@
 // 일정 A (시안 sched-a): 주간 스트립 + 이번 주/이후 아젠다(옆에 D-n) + 기념일 칸(D+) + 월 달력 펼침.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import { CalendarDaysIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { BellIcon, CalendarDaysIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { Card, IconButton, PageTitle, SectionLabel } from '@/components/ui/Card'
 import { toastError } from '@/components/ui/Toast'
 import { Section } from '@/components/ui/Loading'
@@ -36,6 +36,7 @@ function AgendaRow({ s, today, canEdit, onOpen, onRemove }: {
         <p className="truncate text-sm font-semibold text-stone-800">
           {s.title}
           {s.dday_label && <span className="font-normal text-stone-400"> · {s.dday_label}</span>}
+          {(s.reminders?.length ?? 0) > 0 && <BellIcon aria-label="알림 있음" className="ml-1 inline h-3.5 w-3.5 align-[-2px] text-stone-400" />}
         </p>
         <p className="text-xs text-stone-400">
           <FullDate d={start} />
@@ -80,6 +81,7 @@ function LaterRow({ s, today, canEdit, onOpen, onRemove }: {
           <p className="truncate text-sm font-semibold text-stone-800">
             {s.title}
             {s.dday_label && <span className="font-normal text-stone-400"> · {s.dday_label}</span>}
+            {(s.reminders?.length ?? 0) > 0 && <BellIcon aria-label="알림 있음" className="ml-1 inline h-3.5 w-3.5 align-[-2px] text-stone-400" />}
           </p>
           <p className="text-xs text-stone-500">
             <FullDate d={start} />
