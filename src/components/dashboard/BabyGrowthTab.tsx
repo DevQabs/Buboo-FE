@@ -172,13 +172,15 @@ function Growth({ accessToken, baby, canEdit }: { accessToken: string; baby: Bab
       <div className="grid grid-cols-3 gap-2">
         {METRICS.map(m => {
           const d = latestDelta(list, r => r[m.field])
+          const on = [...list].reverse().find(r => r[m.field] != null)?.measured_on
           return (
             <div key={m.key} className={`${CARD} p-2.5 text-center`}>
               <div className="text-xs text-stone-400">{m.label}</div>
               <b className="tabular-nums">{d ? `${num(d.value)}${m.unit}` : '-'}</b>
               {d?.delta != null && (
-                <div className={`text-xs tabular-nums ${d.delta >= 0 ? 'text-emerald-700' : 'text-rose-500'}`}>{signed(d.delta)}</div>
+                <div className={`text-xs tabular-nums ${d.delta >= 0 ? 'text-emerald-700' : 'text-rose-500'}`}>{signed(d.delta)}{m.unit}</div>
               )}
+              {on && <div className="text-xs text-stone-400">{Number(on.slice(5, 7))}/{Number(on.slice(8, 10))} 측정</div>}
             </div>
           )
         })}
