@@ -16,6 +16,8 @@ const METRICS: { key: Metric; label: string; short: string; field: Field; unit: 
   { key: 'head', label: '머리둘레', short: '머리', field: 'head_cm', unit: 'cm' },
 ]
 const num = (v: number) => String(Number(v.toFixed(2)))
+const ORDER: Metric[] = ['weight', 'height', 'head']
+const shortDate = (d: string) => `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}일`
 const signed = (v: number) => `${v >= 0 ? '+' : ''}${num(v)}`
 
 interface Point { m: number; band?: [number, number]; p50?: number; value?: number }
@@ -221,14 +223,15 @@ function Growth({ accessToken, baby, canEdit }: { accessToken: string; baby: Bab
         <div className={`${CARD} px-4 py-1.5`}>
           {[...list].reverse().map((r, i, arr) => (
             <button key={r.id} type="button" disabled={!canEdit} onClick={() => setForm(r)}
-              className={`flex w-full items-center justify-between py-2.5 text-left text-xs ${i < arr.length - 1 ? 'border-b border-[#f5f0e8]' : ''}`}>
-              <span className="text-stone-500">{r.measured_on}{r.memo && ` · ${r.memo}`}</span>
-              <span className="tabular-nums text-stone-700">
-                {METRICS.flatMap(m => {
+              className={`flex min-h-11 w-full flex-col justify-center py-2 text-left ${i < arr.length - 1 ? 'border-b border-[#f5f0e8]' : ''}`}>
+              <span className="block text-xs tabular-nums text-stone-700">
+                {[shortDate(r.measured_on), ...ORDER.flatMap(k => {
+                  const m = METRICS.find(x => x.key === k)!
                   const v = r[m.field]
                   return v == null ? [] : [`${m.short} ${num(v)}${m.unit}`]
-                }).join(' · ')}
+                })].join(' · ')}
               </span>
+              {r.memo && <span className="mt-0.5 block truncate text-xs text-stone-400">{r.memo}</span>}
             </button>
           ))}
         </div>
