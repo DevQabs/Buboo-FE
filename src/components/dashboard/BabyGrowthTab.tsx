@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Area, ComposedChart, Line, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 import { apiFetch } from '@/lib/api'
+import { Segmented } from '@/components/ui/Card'
 import { Section } from '@/components/ui/Loading'
 import { type Metric, ageInMonths, bandLabel, latestDelta, standardAt } from '@/lib/growthStandard'
 import { todayKST } from '@/lib/date'
@@ -185,13 +186,8 @@ function Growth({ accessToken, baby, canEdit }: { accessToken: string; baby: Bab
 
       {/* 항목 세그먼트 + 추이 그래프(또래 표준 3~97 음영, 50 점선) */}
       <div className={`${CARD} p-3`}>
-        <div className="mb-2 flex rounded-[10px] bg-sand p-0.5 text-xs font-bold">
-          {METRICS.map(m => (
-            <button key={m.key} type="button" onClick={() => setMetric(m.key)}
-              className={`relative before:absolute before:content-[''] before:-inset-y-2 flex-1 rounded-lg py-1.5 ${metric === m.key ? 'bg-white text-brand-500 shadow-sm' : 'text-stone-400'}`}>
-              {m.short}
-            </button>
-          ))}
+        <div className="mb-2">
+          <Segmented items={METRICS.map(m => ({ key: m.key, label: m.short }))} value={metric} onChange={setMetric} pillId="growth-metric-pill" />
         </div>
         <ResponsiveContainer width="100%" height={180}>
           <ComposedChart data={data} margin={{ top: 6, right: 8, bottom: 0, left: -16 }}>

@@ -56,7 +56,9 @@ export function Chip({ on, onClick, children }: { on: boolean; onClick: () => vo
 }
 
 /** 2단 메뉴: 전체 폭 세그먼트. 칸은 같은 폭, 높이 44px */
-export function Segmented<K extends string>({ items, value, onChange }: {
+export function Segmented<K extends string>({ items, value, onChange, pillId = 'segment-pill' }: {
+  /** 한 화면에 세그먼트가 둘 이상이면 서로 다른 값을 준다(같으면 알약이 서로 뺏는다) */
+  pillId?: string
   items: { key: K; label: string }[]
   value: K | undefined
   onChange: (key: K) => void
@@ -77,7 +79,7 @@ export function Segmented<K extends string>({ items, value, onChange }: {
           >
             {on && (
               <motion.span
-                layoutId="segment-pill"
+                layoutId={pillId}
                 transition={reduce ? NO_MOTION : SPRING}
                 className="absolute inset-0 rounded-xl bg-brand-500 shadow-warm"
               />
