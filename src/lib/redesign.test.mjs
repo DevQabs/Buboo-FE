@@ -176,6 +176,7 @@ test('명의 분할은 둘 이상일 때만', () => {
   assert.equal(ownerSplit([{ user_id: 'u1', quantity: 300 }, { user_id: 'u2', quantity: 112 }], names), '412주 · 남편 300 아내 112')
   assert.equal(ownerSplit([{ user_id: 'u1', quantity: 98 }], names), '98주')
   assert.equal(ownerSplit([{ user_id: 'u1', quantity: 0.5 }, { user_id: 'u1', quantity: 1.25 }], names), '1.75주')
+  assert.equal(ownerSplit([{ user_id: 'u1', quantity: 1204 }], names), '1,204주')
 })
 
 // ── Task 6: 로드맵 ──

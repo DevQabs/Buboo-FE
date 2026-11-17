@@ -29,7 +29,7 @@ export function allocation(stockKRW: number, assets: AssetFields[]): { slices: S
   }
 }
 
-const qty = (n: number) => String(parseFloat(n.toFixed(4)))
+const qty = (n: number) => n.toLocaleString('ko-KR', { maximumFractionDigits: 4 })
 
 /** "412주 · 남편 300 아내 112". 한 사람만 가졌으면 "98주". */
 export function ownerSplit(
