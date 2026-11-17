@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Card, PageTitle } from '@/components/ui/Card';
+import { Chip, PageTitle } from '@/components/ui/Card';
 import { toastError } from '@/components/ui/Toast';
 import { SectionError, SectionLoading, Spinner } from '@/components/ui/Loading';
 import { AssumptionSlider, NextMilestoneCard, RoadmapHero } from '@/components/wealth/RoadmapCards';
@@ -150,20 +150,10 @@ export default function RoadmapTab({
       <div className='bg-white rounded-card shadow-warm px-5 py-4'>
         <div className='flex items-center justify-between mb-3'>
           <p className='text-xs font-semibold text-stone-400 tracking-wide uppercase'>자산 추이</p>
-          <div className='flex items-center gap-3'>
-            <div className='flex rounded-lg bg-stone-100 p-0.5'>
-              {(['month', 'year'] as const).map(s => (
-                <button
-                  key={s}
-                  onClick={() => setScale(s)}
-                  className={`relative before:absolute before:content-[''] before:-inset-y-3 px-2 py-0.5 rounded-md text-[10px] font-semibold transition-colors ${
-                    scale === s ? 'bg-white text-stone-700 shadow-sm' : 'text-stone-400'
-                  }`}
-                >
-                  {s === 'year' ? '연도' : '월'}
-                </button>
-              ))}
-            </div>
+          <div className='flex items-center gap-1.5'>
+            {(['month', 'year'] as const).map(s => (
+              <Chip key={s} on={scale === s} onClick={() => setScale(s)}>{s === 'year' ? '연도' : '월'}</Chip>
+            ))}
           </div>
         </div>
         <ResponsiveContainer width='100%' height={200}>
@@ -195,17 +185,9 @@ export default function RoadmapTab({
       <div className='bg-white rounded-card shadow-warm px-5 py-4'>
         <div className='flex items-center justify-between mb-3'>
           <p className='text-xs font-semibold text-stone-400 tracking-wide uppercase'>마일스톤</p>
-          <div className='flex rounded-lg bg-stone-100 p-0.5'>
+          <div className='flex items-center gap-1.5'>
             {(['month', 'year'] as const).map(s => (
-              <button
-                key={s}
-                onClick={() => setTableScale(s)}
-                className={`relative before:absolute before:content-[''] before:-inset-y-3 px-2 py-0.5 rounded-md text-[10px] font-semibold transition-colors ${
-                  tableScale === s ? 'bg-white text-stone-700 shadow-sm' : 'text-stone-400'
-                }`}
-              >
-                {s === 'year' ? '연도' : '월'}
-              </button>
+              <Chip key={s} on={tableScale === s} onClick={() => setTableScale(s)}>{s === 'year' ? '연도' : '월'}</Chip>
             ))}
           </div>
         </div>
