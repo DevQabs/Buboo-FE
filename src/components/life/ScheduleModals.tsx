@@ -125,7 +125,7 @@ export function AddScheduleModal({ currentUserID, initialDate, onClose, onSave }
                 onClick={() => setIsDDay(v => !v)}
                 className={`w-10 h-5 rounded-full transition-colors ${isDDay ? 'bg-brand-500' : 'bg-slate-200'} relative`}
               >
-                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isDDay ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                <div className={`absolute left-0 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isDDay ? 'translate-x-5' : 'translate-x-0.5'}`} />
               </div>
               <span className="text-sm text-slate-700">D-Day 카운터</span>
             </label>
@@ -139,7 +139,7 @@ export function AddScheduleModal({ currentUserID, initialDate, onClose, onSave }
             className="flex items-center gap-2"
           >
             <span className={`relative h-5 w-10 rounded-full transition-colors ${isAnniv ? 'bg-brand-500' : 'bg-slate-200'}`}>
-              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${isAnniv ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${isAnniv ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </span>
             <span className="text-sm text-slate-700">기념일 (지나도 D+로 계속 세기)</span>
           </button>
@@ -249,7 +249,7 @@ export function EditScheduleModal({ schedule, onClose, onSave }: {
                 onClick={() => setIsDDay(v => !v)}
                 className={`w-10 h-5 rounded-full transition-colors ${isDDay ? 'bg-brand-500' : 'bg-slate-200'} relative`}
               >
-                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isDDay ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                <div className={`absolute left-0 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isDDay ? 'translate-x-5' : 'translate-x-0.5'}`} />
               </div>
               <span className="text-sm text-slate-700">D-Day 카운터</span>
             </label>
@@ -263,7 +263,7 @@ export function EditScheduleModal({ schedule, onClose, onSave }: {
             className="flex items-center gap-2"
           >
             <span className={`relative h-5 w-10 rounded-full transition-colors ${isAnniv ? 'bg-brand-500' : 'bg-slate-200'}`}>
-              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${isAnniv ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${isAnniv ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </span>
             <span className="text-sm text-slate-700">기념일 (지나도 D+로 계속 세기)</span>
           </button>
