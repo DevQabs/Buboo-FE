@@ -171,7 +171,7 @@ export default function RoadmapTab({
             <CartesianGrid stroke='#F1F5F9' vertical={false} />
             <XAxis
               dataKey='label' tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false}
-              interval='preserveStartEnd' minTickGap={24}
+              interval='preserveStartEnd' minTickGap={24} padding={{ left: 8, right: 8 }}
             />
             <YAxis
               tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false}
@@ -185,7 +185,7 @@ export default function RoadmapTab({
             />
             <Line
               type={scale === 'month' ? 'stepAfter' : 'monotone'}
-              dataKey='actual' stroke='#10B981' strokeWidth={2} strokeDasharray='4 4' dot={{ r: 3 }} connectNulls
+              dataKey='actual' stroke='#10B981' strokeWidth={2} strokeDasharray='4 4' dot={{ r: 3, strokeDasharray: '0', fill: '#10B981' }} connectNulls
             />
           </LineChart>
         </ResponsiveContainer>
