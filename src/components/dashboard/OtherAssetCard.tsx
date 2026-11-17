@@ -589,7 +589,7 @@ function AssetRow({ asset, user, canEdit, onEdit, onDelete, onCreateLoanExpense,
         {afterTaxMaturity !== null && (
           <p className="text-[10px] text-brand-500 font-semibold tabular-nums">만기 {formatMan(afterTaxMaturity)}</p>
         )}
-        {pnl !== null && afterTaxMaturity === null && (
+        {pnl !== null && pnl !== 0 && afterTaxMaturity === null && (
           <p className={`text-xs font-semibold tabular-nums ${isUp ? 'text-emerald-600' : 'text-rose-500'}`}>
             {isUp ? '+' : ''}{formatMan(pnl)}
           </p>
