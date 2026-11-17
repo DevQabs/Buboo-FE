@@ -10,7 +10,7 @@ import {
   BoltIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline'
-import { formatAmountInput } from '@/lib/formatNumber'
+import { formatAmountInput, formatMan } from '@/lib/formatNumber'
 import type {
   FixedExpense,
   FixedExpenseOwner,
@@ -27,12 +27,6 @@ import type {
 } from '@/types'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
-
-function formatKRW(v: number): string {
-  if (Math.abs(v) >= 100_000_000) return `${(v / 100_000_000).toFixed(2)}억원`
-  if (Math.abs(v) >= 10_000) return `${(v / 10_000).toFixed(1)}만원`
-  return `${v.toLocaleString()}원`
-}
 
 const OWNER_LABEL: Record<FixedExpenseOwner, string> = {
   husband: '남편',
@@ -232,7 +226,7 @@ function SavingLinkForm({ stocks, otherAssets, initial, onChange }: SavingLinkFo
         <select value={assetId} onChange={e => setAssetId(e.target.value)} className={inputCls}>
           {otherAssets.length === 0
             ? <option value="">등록된 기타 자산 없음</option>
-            : otherAssets.map(a => <option key={a.id} value={a.id}>{a.name} ({formatKRW(a.value_krw)})</option>)
+            : otherAssets.map(a => <option key={a.id} value={a.id}>{a.name} ({formatMan(a.value_krw)})</option>)
           }
         </select>
       )}
@@ -428,7 +422,7 @@ function FeModal({ users, stocks, otherAssets, editing, onClose, onSave }: FeMod
               className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
             {amount && parseInt(amount.replace(/,/g, '')) > 0 && (
-              <p className="text-xs text-brand-500 mt-1">= {formatKRW(parseInt(amount.replace(/,/g, '')))}</p>
+              <p className="text-xs text-brand-500 mt-1">= {formatMan(parseInt(amount.replace(/,/g, '')))}</p>
             )}
           </div>
 
@@ -607,7 +601,7 @@ export default function FixedExpenseCard({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-medium text-amber-600 mb-0.5">고정비 · {period}</p>
-            <p className="text-xl font-black text-slate-900 tabular-nums">{formatKRW(totalAmount)}</p>
+            <p className="text-xl font-black text-slate-900 tabular-nums">{formatMan(totalAmount)}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -719,7 +713,7 @@ function FeRow({
       </div>
 
       <span className="text-xs font-bold text-slate-700 tabular-nums shrink-0">
-        {formatKRW(fe.amount)}
+        {formatMan(fe.amount)}
       </span>
 
       {canEdit && <FeMenu onEdit={onEdit} onDelete={onDelete} onToggle={onToggle} isActive={fe.is_active} />}
