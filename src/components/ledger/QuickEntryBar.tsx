@@ -250,6 +250,8 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
         className={`fixed inset-x-0 z-50 px-3 ${position}`}
         style={keyboard ? { bottom: keyboard + 8 } : undefined}
       >
+        {/* 카테고리 판이 열린 동안 바·판·칩 줄 뒤를 흐린 크림 판으로 덮어 뒤 글자가 비치지 않게(하단 탭 위까지) */}
+        {pickerOpen && <div aria-hidden className="absolute inset-x-0 -bottom-3 -top-3 -z-10 bg-cream/90 backdrop-blur-sm" />}
         <div className="mx-auto flex w-full max-w-[calc(42rem-1.5rem)] flex-col gap-2">
           {undoID && (
             <div role="status" className="flex items-center justify-between self-center rounded-full bg-stone-800 py-1 pl-4 pr-1 text-sm text-white shadow-warm">
