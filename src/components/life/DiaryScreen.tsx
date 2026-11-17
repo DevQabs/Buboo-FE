@@ -141,9 +141,22 @@ export default function DiaryScreen({
                 {Number(d.date.slice(5, 7))}월 {Number(d.date.slice(8))}일 · {lunarFullLabel(d.date)}
                 {userMap[d.user_id] ? ` · ${userMap[d.user_id].name}` : ''}
               </span>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${MOOD_TONE[d.mood]?.badge ?? 'bg-stone-100 text-stone-600'}`}>
-                {MOOD_LABEL[d.mood] ?? d.mood}
-              </span>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${MOOD_TONE[d.mood]?.badge ?? 'bg-stone-100 text-stone-600'}`}>
+                  {MOOD_LABEL[d.mood] ?? d.mood}
+                </span>
+                {canEdit && (confirmDel === d.id ? (
+                  <>
+                    <button type="button" onClick={() => remove(d.id)} className="relative before:absolute before:content-[''] before:-inset-y-2.5 rounded-lg bg-rose-500 px-2.5 py-1 text-xs font-medium text-white">삭제</button>
+                    <button type="button" onClick={() => setConfirmDel(null)} className="relative before:absolute before:content-[''] before:-inset-y-2.5 rounded-lg bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">취소</button>
+                  </>
+                ) : (
+                  <>
+                    <IconButton label="수정" onClick={() => setEditing(d)}><PencilSquareIcon className="h-4 w-4" /></IconButton>
+                    <IconButton label="삭제" onClick={() => setConfirmDel(d.id)}><TrashIcon className="h-4 w-4" /></IconButton>
+                  </>
+                ))}
+              </div>
             </div>
             <button type="button" onClick={() => setExpanded(e => (e === d.id ? null : d.id))} className="mt-1.5 block w-full text-left">
               <p className={`whitespace-pre-wrap text-sm leading-relaxed text-stone-700 ${expanded === d.id ? '' : 'line-clamp-3'}`}>{d.content}</p>
@@ -154,21 +167,6 @@ export default function DiaryScreen({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img key={d.photos[k + 1] ?? k} src={photoSrc(ph)} alt="" onError={onPhotoError} onClick={() => setLightbox(photoSrc(ph))} className="h-20 w-20 cursor-pointer rounded-xl object-cover" />
                 ))}
-              </div>
-            )}
-            {canEdit && (
-              <div className="mt-2 flex justify-end gap-1">
-                {confirmDel === d.id ? (
-                  <>
-                    <button type="button" onClick={() => remove(d.id)} className="relative before:absolute before:content-[''] before:-inset-y-2.5 rounded-lg bg-rose-500 px-2.5 py-1 text-xs font-medium text-white">삭제</button>
-                    <button type="button" onClick={() => setConfirmDel(null)} className="relative before:absolute before:content-[''] before:-inset-y-2.5 rounded-lg bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-500">취소</button>
-                  </>
-                ) : (
-                  <>
-                    <IconButton label="수정" onClick={() => setEditing(d)}><PencilSquareIcon className="h-4 w-4" /></IconButton>
-                    <IconButton label="삭제" onClick={() => setConfirmDel(d.id)}><TrashIcon className="h-4 w-4" /></IconButton>
-                  </>
-                )}
               </div>
             )}
           </div>
