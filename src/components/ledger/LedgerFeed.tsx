@@ -1,11 +1,19 @@
 // 날짜별 내역 (시안 ledger-a "오늘 · -50,400" 아래 카드). 행을 누르면 그날 달력 상세로 간다(수정·삭제).
 import { Card, SectionLabel } from '@/components/ui/Card'
 import { addDays, todayKST, weekdayOf } from '@/lib/date'
+import { formatMan } from '@/lib/formatNumber'
 import { categoryColor, feedGroups } from '@/lib/ledger'
 import { CAT_CLASS } from './QuickEntryBar'
 import type { Transaction, User } from '@/types'
 
 const WD = ['일', '월', '화', '수', '목', '금', '토']
+
+// 날짜 머리 합계: 순합계(수입 − 지출), 0 이면 숨기고 저축만 있으면 저축 합
+function dayTotal(g: { items: Transaction[]; net: number }): string {
+  if (g.net !== 0) return ` · ${g.net > 0 ? '+' : ''}${g.net.toLocaleString('ko-KR')}`
+  const saved = g.items.reduce((s, t) => s + (t.type === 'saving' ? t.amount : 0), 0)
+  return saved > 0 ? ` · 저축 ${formatMan(saved)}` : ''
+}
 
 function dayLabel(date: string, today: string): string {
   if (date === today) return '오늘'
@@ -29,7 +37,7 @@ export default function LedgerFeed({ transactions, users, onSelectDate }: {
     <div className="space-y-2">
       {groups.map(g => (
         <section key={g.date} className="space-y-1">
-          <SectionLabel>{dayLabel(g.date, today)} · {g.net > 0 ? '+' : ''}{g.net.toLocaleString('ko-KR')}</SectionLabel>
+          <SectionLabel>{dayLabel(g.date, today)}{dayTotal(g)}</SectionLabel>
           <Card className="px-3 py-1">
             {g.items.map(tx => (
               <button key={tx.id} type="button" onClick={() => onSelectDate(g.date)} className="flex w-full items-center gap-2.5 py-2 text-left">
