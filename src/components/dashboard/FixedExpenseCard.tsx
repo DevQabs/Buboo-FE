@@ -713,7 +713,7 @@ function FeRow({
       </div>
 
       <span className="text-xs font-bold text-slate-700 tabular-nums shrink-0">
-        {formatMan(fe.amount)}
+        {fe.amount.toLocaleString('ko-KR')}원
       </span>
 
       {canEdit && <FeMenu onEdit={onEdit} onDelete={onDelete} onToggle={onToggle} isActive={fe.is_active} />}
