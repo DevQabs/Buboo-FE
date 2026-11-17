@@ -66,7 +66,7 @@ export default function UpcomingStrip({ events }: { events: CalendarEvent[] }) {
                     return (
                       <div key={`${e.title}-${i}`} className={`ml-0.5 flex justify-between gap-3 border-l-[3px] py-1 pl-2.5 text-xs ${income ? 'border-emerald-500' : 'border-amber-300'}`}>
                         <span className="min-w-0 truncate text-stone-600">{e.title}</span>
-                        <span className={`shrink-0 font-semibold tabular-nums ${income ? 'text-emerald-600' : 'text-stone-800'}`}>{income ? '+' : ''}{formatMan(e.amount)}</span>
+                        <span className={`shrink-0 font-semibold tabular-nums ${income ? 'text-emerald-600' : 'text-stone-800'}`}>{income ? '+' : '-'}{e.amount.toLocaleString('ko-KR')}원</span>
                       </div>
                     )
                   })}
