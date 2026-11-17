@@ -390,7 +390,7 @@ export default function DividendCard({
               <p className="text-[10px] text-slate-400">
                 세후 ${fmtUSD(summary?.total_after_tax_usd ?? 0)}
                 {portfolioSummary?.usd_krw && (
-                  <span className="ml-1 text-slate-300">· {portfolioSummary.usd_krw.toFixed(0)}</span>
+                  <span className="ml-1 text-stone-400">· 환율 {Math.round(portfolioSummary.usd_krw).toLocaleString('ko-KR')}원</span>
                 )}
               </p>
             </div>
