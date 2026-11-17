@@ -214,9 +214,9 @@ export default function RoadmapTab({
             <tr className='text-slate-400'>
               <th className='text-left font-medium pb-2'>{tableScale === 'year' ? '연도' : '월'}</th>
               <th className='text-right font-medium pb-2'>적립</th>
-              <th className='text-right font-medium pb-2'>세후 배당(예상)</th>
-              <th className='text-right font-medium pb-2'>목표</th>
-              <th className='text-right font-medium pb-2'>실적</th>
+              <th className='text-right font-medium pb-2 pl-3'>배당(세후)</th>
+              <th className='text-right font-medium pb-2 pl-3'>목표</th>
+              <th className='text-right font-medium pb-2 pl-3'>실적</th>
             </tr>
           </thead>
           <tbody>
@@ -244,7 +244,7 @@ export default function RoadmapTab({
                     <tr key={m.month} className='border-t border-slate-50'>
                       <td className='py-1.5 font-semibold text-slate-700'>
                         {m.month.replace('-', '.')}
-                        {isAnchor && <span className='text-slate-300'> · 현재</span>}
+                        {isAnchor && <span className='ml-1.5 rounded-full bg-brand-50 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-brand-500'>현재</span>}
                       </td>
                       {/* 적립은 실제로 넣은 돈이다. 아직 오지 않은 달은 비운다. */}
                       <td className='text-right text-slate-500'>
