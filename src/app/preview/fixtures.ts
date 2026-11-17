@@ -268,6 +268,7 @@ export function respond(path: string, q: URLSearchParams): unknown {
     case '/api/roadmap/projection': return roadmapProjection
     case '/api/roadmap/assumptions': return roadmapAssumptions
     case '/api/categories': return categories
+    case '/api/push/public-key': return { public_key: 'preview' }
     default: return null
   }
 }

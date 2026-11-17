@@ -43,6 +43,7 @@ const ROUTES: Record<string, string[]> = {
   'baby-photo': ['아기', '사진일기'],
   'baby-growth': ['아기', '성장'],
   'family-settings': ['@avatar', '가족 구성원'],
+  'push-menu': ['@avatar'],
 }
 
 function clickByText(text: string): boolean {

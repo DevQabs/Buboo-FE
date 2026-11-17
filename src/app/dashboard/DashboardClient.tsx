@@ -75,6 +75,7 @@ import type {
 } from '@/types'
 import { levelOf, pickDeepLink, visibleTabs, type TabKey } from '@/lib/menus'
 import { registerPushWorker } from '@/lib/push'
+import PushToggle from '@/components/ui/PushToggle'
 import { ledgerPeriod, ledgerMonthOf, todayKST } from '@/lib/date'
 import { apiFetch as callApi, latestOnly, ignoreAbort } from '@/lib/api'
 import { attachDiaryPhotos } from '@/lib/media'
@@ -907,7 +908,7 @@ export default function DashboardClient() {
             </button>
 
             {showMenu && (
-              <div className="absolute right-0 top-10 w-56 bg-white rounded-2xl shadow-lg border border-slate-100 py-1.5 z-60">
+              <div className="absolute right-0 top-10 w-72 bg-white rounded-2xl shadow-lg border border-slate-100 py-1.5 z-60">
                 {perms?.is_owner && (
                   <button
                     onClick={() => { setShowMenu(false); setShowFamily(true) }}
@@ -917,6 +918,7 @@ export default function DashboardClient() {
                     가족 구성원
                   </button>
                 )}
+                <PushToggle accessToken={session?.user?.accessToken ?? ''} />
                 <button
                   onClick={() => signOut({ callbackUrl: '/login' })}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-500 hover:bg-rose-50 transition-colors"
