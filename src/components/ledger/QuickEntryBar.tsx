@@ -377,7 +377,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
               aria-expanded={pickerOpen}
               aria-controls="quick-cat-picker"
               {...keepFocusTap(togglePicker)}
-              className="flex h-11 min-w-11 max-w-[6.5rem] shrink-0 items-center justify-center px-0.5"
+              className="flex h-11 min-w-11 max-w-[8.5rem] shrink-0 items-center justify-center px-0.5"
             >
               <motion.span
                 key={`${activeCategory}-${pillPop}`}
