@@ -550,7 +550,7 @@ function AssetRow({ asset, user, canEdit, onEdit, onDelete, onCreateLoanExpense,
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <p className="text-sm font-semibold text-slate-800 truncate">{asset.name}</p>
+          <p className="text-sm font-semibold text-slate-800 line-clamp-2 break-words min-w-0">{asset.name}</p>
           {isLoan && (
             <span className="text-[10px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded font-medium">대출</span>
           )}
@@ -566,9 +566,9 @@ function AssetRow({ asset, user, canEdit, onEdit, onDelete, onCreateLoanExpense,
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1 mt-0.5">
-          {user && <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: user.avatar_color }} />}
-          <span className="text-xs text-slate-400 truncate">
+        <div className="flex items-start gap-1 mt-0.5">
+          {user && <span className="inline-block w-2 h-2 mt-1 rounded-full flex-shrink-0" style={{ backgroundColor: user.avatar_color }} />}
+          <span className="text-xs text-slate-400 break-words min-w-0">
             {user?.name}
             {asset.description ? ` · ${asset.description}` : ''}
             {asset.interest_rate != null ? ` · ${asset.interest_rate}%` : ''}
