@@ -278,7 +278,7 @@ function MemberDetail({ member, accessToken, onBack, onChanged }: {
                   aria-label={`${tab.label} 전체 변경`}
                   className="bg-transparent text-xs text-stone-400 focus:outline-none"
                 >
-                  <option value="" disabled>전체 ▾</option>
+                  <option value="" disabled>전체</option>
                   {LEVELS.map(l => <option key={l.key} value={l.key}>전체 {l.label}</option>)}
                 </select>
               </div>
