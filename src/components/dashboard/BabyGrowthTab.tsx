@@ -211,7 +211,7 @@ function Growth({ accessToken, baby, canEdit }: { accessToken: string; baby: Bab
 
       {canEdit && (
         <button type="button" onClick={() => setForm('new')}
-          className={`${CARD} w-full py-3 text-center text-[13px] font-bold text-brand-500`}>
+          className={`${CARD} w-full py-3 text-center text-sm font-bold text-brand-500`}>
           + 오늘 잰 값 기록
         </button>
       )}

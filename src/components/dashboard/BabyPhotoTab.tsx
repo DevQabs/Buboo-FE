@@ -86,7 +86,7 @@ function MomentCard({ m, age, author, canEdit, onOpen, onEdit, onDelete, onMedia
             </span>
           )}
         </div>
-        {m.content && <p className="mt-0.5 whitespace-pre-wrap text-[13px] font-semibold text-stone-800">{m.content}</p>}
+        {m.content && <p className="mt-0.5 whitespace-pre-wrap text-sm font-semibold text-stone-800">{m.content}</p>}
       </div>
       {rest.length > 0 && (
         <div className="grid grid-cols-2 gap-2 px-3.5 pb-3.5">
@@ -164,7 +164,7 @@ function MomentFeed({ accessToken, users, baby, canEdit }: {
     <>
       {canEdit && (
         <button type="button" onClick={() => setComposer('new')}
-          className={`${CARD} w-full py-3 text-center text-[13px] font-bold text-brand-500`}>
+          className={`${CARD} w-full py-3 text-center text-sm font-bold text-brand-500`}>
           + 오늘의 순간 남기기
         </button>
       )}

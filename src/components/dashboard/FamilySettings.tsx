@@ -284,7 +284,7 @@ function MemberDetail({ member, accessToken, onBack, onChanged }: {
               </div>
               {tab.subs.map(s => (
                 <div key={s.key} className="flex items-center justify-between py-1">
-                  <span className="text-[13px]">{s.label}</span>
+                  <span className="text-sm">{s.label}</span>
                   <Segment label={s.label} value={menus[s.key]} disabled={saving} onChange={l => setOne(s.key, l)} />
                 </div>
               ))}
