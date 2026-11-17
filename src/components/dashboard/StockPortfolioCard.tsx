@@ -42,14 +42,6 @@ function formatCurrency(value: number, currency: string): string {
   return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function formatKRW(v: number): string {
-  const abs = Math.abs(v);
-  const sign = v < 0 ? '-' : '';
-  if (abs >= 100_000_000) return `${sign}${(abs / 100_000_000).toFixed(2)}억원`;
-  if (abs >= 10_000) return `${sign}${Math.round(abs / 10_000).toLocaleString()}만원`;
-  return `${sign}${abs.toLocaleString()}원`;
-}
-
 // ─── KRW 플래시 카드 (롱프레스 시 종목 row 내 오버레이) ──────────────────────────
 
 function KRWFlashCard({
@@ -94,7 +86,7 @@ function KRWFlashCard({
         {/* 보유금액 */}
         <div className='flex-1 min-w-0'>
           <p className='text-[9px] text-slate-400'>보유</p>
-          <p className='text-sm font-black text-slate-900 tabular-nums leading-tight'>{formatKRW(valueKRW)}</p>
+          <p className='text-sm font-black text-slate-900 tabular-nums leading-tight'>{formatMan(valueKRW)}</p>
         </div>
 
         <div className='w-px h-7 bg-slate-100 flex-shrink-0 mt-1' />
@@ -102,7 +94,7 @@ function KRWFlashCard({
         {/* 매수금액 */}
         <div className='flex-1 min-w-0'>
           <p className='text-[9px] text-slate-400'>매수</p>
-          <p className='text-xs font-bold text-slate-600 tabular-nums leading-tight'>{formatKRW(costKRW)}</p>
+          <p className='text-xs font-bold text-slate-600 tabular-nums leading-tight'>{formatMan(costKRW)}</p>
         </div>
 
         <div className='w-px h-7 bg-slate-100 flex-shrink-0 mt-1' />
@@ -113,7 +105,7 @@ function KRWFlashCard({
             {isUp ? '수익' : '손실'}
           </p>
           <p className={`text-xs font-bold tabular-nums leading-tight ${isUp ? 'text-emerald-700' : 'text-rose-600'}`}>
-            {isUp ? '+' : ''}{formatKRW(pnlKRW)}
+            {isUp ? '+' : ''}{formatMan(pnlKRW)}
           </p>
           <p className={`text-[9px] tabular-nums ${isUp ? 'text-emerald-500' : 'text-rose-400'}`}>
             {isUp ? '+' : ''}{pnlPct.toFixed(2)}%
@@ -511,12 +503,12 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: Array<{
         </div>
         <div className='flex justify-between gap-4 text-xs'>
           <span className='text-slate-400'>평가금액</span>
-          <span className='font-semibold text-slate-700 tabular-nums'>₩{Math.round(d.value / 10000).toLocaleString()}만</span>
+          <span className='font-semibold text-slate-700 tabular-nums'>{formatMan(d.value)}</span>
         </div>
         <div className='flex justify-between gap-4 text-xs'>
           <span className='text-slate-400'>손익</span>
           <span className={`font-bold tabular-nums ${isUp ? 'text-emerald-600' : 'text-rose-500'}`}>
-            {isUp ? '+' : ''}₩{Math.round(d.pnlKRW / 10000).toLocaleString()}만
+            {isUp ? '+' : ''}{formatMan(d.pnlKRW)}
           </span>
         </div>
         <div className='flex justify-between gap-4 text-xs'>
@@ -617,9 +609,9 @@ export default function StockPortfolioCard({
           <div className='flex items-center gap-3'>
             {safeAssets.length > 0 && (
               <div className='text-right'>
-                <p className='text-base font-black text-slate-800 tabular-nums'>₩{Math.round(netAfterTaxKRW / 10000).toLocaleString()}만</p>
+                <p className='text-base font-black text-slate-800 tabular-nums'>{formatMan(netAfterTaxKRW)}</p>
                 <p className={`text-xs font-semibold tabular-nums ${isOverallUp ? 'text-emerald-600' : 'text-rose-500'}`}>
-                  {isOverallUp ? '+' : '-'}₩{Math.abs(Math.round(afterTaxPnlKRW / 10000)).toLocaleString()}만
+                  {isOverallUp ? '+' : ''}{formatMan(afterTaxPnlKRW)}
                 </p>
               </div>
             )}

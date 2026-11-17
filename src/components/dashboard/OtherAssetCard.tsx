@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { PencilSquareIcon, TrashIcon, XMarkIcon, LockClosedIcon } from '@heroicons/react/24/outline'
 import { PlusIcon } from '@heroicons/react/24/solid'
-import { formatAmountInput } from '@/lib/formatNumber'
+import { formatAmountInput, formatMan } from '@/lib/formatNumber'
 import { todayKST } from '@/lib/date'
 import { DragHandle, SortableList, SortableRow } from './SortableList'
 import type {
@@ -33,12 +33,6 @@ interface OtherAssetCardProps {
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
-
-function formatKRW(v: number): string {
-  if (Math.abs(v) >= 100_000_000) return `${(v / 100_000_000).toFixed(2)}억`
-  if (Math.abs(v) >= 10_000) return `${(v / 10_000).toFixed(1)}만`
-  return `${v.toLocaleString()}원`
-}
 
 // 예/적금 세후 만기 수령액 (단리, 이자소득세 15.4%)
 function calcAfterTaxMaturity(
@@ -433,12 +427,12 @@ function AssetFormModal({ mode, initial, currentUserID, onClose, onSubmit }: Ass
           {isLoan && loanPayment !== null && (
             <div className="rounded-xl bg-rose-50 border border-rose-100 px-4 py-3 space-y-2">
               <p className="text-xs font-semibold text-rose-700">월 납입금 (예상)</p>
-              <p className="text-lg font-bold text-rose-900 tabular-nums">{formatKRW(loanPayment.total)}</p>
+              <p className="text-lg font-bold text-rose-900 tabular-nums">{formatMan(loanPayment.total)}</p>
               <div className="grid grid-cols-2 gap-2 text-[10px] text-rose-500">
                 {loanType !== '만기일시상환' && (
-                  <span>원금 {formatKRW(loanPayment.principal)}</span>
+                  <span>원금 {formatMan(loanPayment.principal)}</span>
                 )}
-                <span>이자 {formatKRW(loanPayment.interest)}</span>
+                <span>이자 {formatMan(loanPayment.interest)}</span>
                 <span className="col-span-2 text-rose-400">잔여 {loanPayment.remainingMonths}개월 · 매월 {paymentDay}일 납입</span>
               </div>
               {loanType === '원금균등상환' && (
@@ -451,11 +445,11 @@ function AssetFormModal({ mode, initial, currentUserID, onClose, onSubmit }: Ass
           {isDeposit && afterTaxMaturity !== null && (
             <div className="rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 space-y-1.5">
               <p className="text-xs font-semibold text-brand-700">세후 만기 수령액 (예상)</p>
-              <p className="text-lg font-bold text-brand-700 tabular-nums">{formatKRW(afterTaxMaturity)}</p>
+              <p className="text-lg font-bold text-brand-700 tabular-nums">{formatMan(afterTaxMaturity)}</p>
               <div className="flex items-center justify-between text-[10px] text-brand-500">
-                <span>원금 {formatKRW(parseFloat(valueKRW.replace(/,/g, '')) || 0)}</span>
+                <span>원금 {formatMan(parseFloat(valueKRW.replace(/,/g, '')) || 0)}</span>
                 <span>+</span>
-                <span>세후이자 {formatKRW(afterTaxMaturity - (parseFloat(valueKRW.replace(/,/g, '')) || 0))}</span>
+                <span>세후이자 {formatMan(afterTaxMaturity - (parseFloat(valueKRW.replace(/,/g, '')) || 0))}</span>
                 <span className="text-brand-500">(세율 15.4%)</span>
               </div>
             </div>
@@ -585,19 +579,19 @@ function AssetRow({ asset, user, canEdit, onEdit, onDelete, onCreateLoanExpense,
 
       <div className="flex-shrink-0 text-right mr-1">
         <p className={`text-sm font-bold tabular-nums ${asset.is_liability || isLoan ? 'text-rose-500' : 'text-slate-800'}`}>
-          {asset.is_liability || isLoan ? '-' : ''}{formatKRW(asset.value_krw)}
+          {asset.is_liability || isLoan ? '-' : ''}{formatMan(asset.value_krw)}
         </p>
         {loanPayment !== null && (
           <p className="text-[10px] text-rose-400 font-semibold tabular-nums">
-            월 {formatKRW(loanPayment.total)}
+            월 {formatMan(loanPayment.total)}
           </p>
         )}
         {afterTaxMaturity !== null && (
-          <p className="text-[10px] text-brand-500 font-semibold tabular-nums">만기 {formatKRW(afterTaxMaturity)}</p>
+          <p className="text-[10px] text-brand-500 font-semibold tabular-nums">만기 {formatMan(afterTaxMaturity)}</p>
         )}
         {pnl !== null && afterTaxMaturity === null && (
           <p className={`text-xs font-semibold tabular-nums ${isUp ? 'text-emerald-600' : 'text-rose-500'}`}>
-            {isUp ? '+' : ''}{formatKRW(pnl)}
+            {isUp ? '+' : ''}{formatMan(pnl)}
           </p>
         )}
         {asset.maturity_date && (
@@ -692,15 +686,15 @@ export default function OtherAssetCard({ assets = [], users = [], currentUserID,
           <div className="flex items-center gap-3">
             {safeAssets.length > 0 && (
               <div className="text-right">
-                <p className="text-base font-black text-slate-800 tabular-nums">{formatKRW(net)}</p>
+                <p className="text-base font-black text-slate-800 tabular-nums">{formatMan(net)}</p>
                 <div className="flex items-center gap-1.5 justify-end mt-0.5">
                   {totalLocked > 0 && (
                     <span className="text-[10px] text-amber-500 tabular-nums flex items-center gap-0.5">
-                      <LockClosedIcon className="h-2.5 w-2.5" />{formatKRW(totalLocked)}
+                      <LockClosedIcon className="h-2.5 w-2.5" />{formatMan(totalLocked)}
                     </span>
                   )}
                   {totalLiability > 0 && (
-                    <span className="text-[10px] text-rose-500 tabular-nums">-{formatKRW(totalLiability)}</span>
+                    <span className="text-[10px] text-rose-500 tabular-nums">-{formatMan(totalLiability)}</span>
                   )}
                 </div>
               </div>
