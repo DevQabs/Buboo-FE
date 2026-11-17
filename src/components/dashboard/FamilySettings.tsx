@@ -45,7 +45,7 @@ function Segment({ label, value, disabled, onChange }: {
   onChange: (v: PermLevel) => void
 }) {
   return (
-    <div role="group" aria-label={label} className="flex w-[150px] rounded-[10px] bg-[#f5efe6] p-0.5 text-xs font-bold">
+    <div role="group" aria-label={label} className="flex w-[168px] rounded-[10px] bg-[#f5efe6] p-0.5 text-xs font-bold">
       {LEVELS.map(l => (
         <button
           key={l.key}
@@ -53,7 +53,7 @@ function Segment({ label, value, disabled, onChange }: {
           aria-pressed={value === l.key}
           disabled={disabled}
           onClick={() => onChange(l.key)}
-          className={`flex-1 rounded-lg py-1.5 disabled:opacity-60 ${value === l.key ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-400'}`}
+          className={`min-h-10 flex-1 rounded-lg py-1.5 disabled:opacity-60 ${value === l.key ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-400'}`}
         >
           {l.label}
         </button>
