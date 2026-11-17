@@ -355,7 +355,7 @@ export default function QuickEntryBar({ hasNav, currentUserID, accessToken, tran
             onBlur={onBarBlur}
             className="w-full rounded-[18px] bg-brand-500 text-white shadow-bar"
           >
-          <div className="flex w-full items-center gap-1 pl-4 pr-1.5">
+          <div className="flex w-full items-center gap-1 pl-4 pr-3">
             <label className="flex min-w-0 flex-1 items-center gap-2">
               <span className="text-lg font-bold text-white/70">+</span>
               <input
