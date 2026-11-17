@@ -79,7 +79,7 @@ import { apiFetch as callApi, latestOnly, ignoreAbort } from '@/lib/api'
 import { attachDiaryPhotos } from '@/lib/media'
 import { applySummaryDelta } from '@/lib/ledger'
 import { motion, useReducedMotion } from 'framer-motion'
-import { NO_MOTION, SPRING, Segmented, tapHaptic } from '@/components/ui/Card'
+import { NO_MOTION, PageTitle, SPRING, Segmented, tapHaptic } from '@/components/ui/Card'
 import { Toaster, showToast, toastError } from '@/components/ui/Toast'
 import { TopProgress } from '@/components/ui/Loading'
 import { stepLoad, sectionView, mergeViews, type LoadState, type SectionState } from '@/lib/loadState'
@@ -937,7 +937,12 @@ export default function DashboardClient() {
         )}
 
         {/* 2단 메뉴 칩 — 화면이 직접 그리면 여기서는 뺀다(Task 3·5·6) */}
-        {currentTab?.key === 'baby' && chipRow}
+        {currentTab?.key === 'baby' && (
+          <>
+            <PageTitle eyebrow="아기" title={currentSub?.label ?? '아기'} />
+            {chipRow}
+          </>
+        )}
 
         {/* ══ 아기 ══ */}
         {currentSub?.key === 'baby_photo' && (
