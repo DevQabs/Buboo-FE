@@ -19,6 +19,21 @@ export function upcomingEvents(events: CalendarEvent[], today: string, startDate
   return events.filter(e => e.date >= from && e.date < endDate).sort((a, b) => a.date.localeCompare(b.date))
 }
 
+export interface EventDay { date: string; items: CalendarEvent[]; out: number; in: number }
+
+/** 곧 나갈/들어올 돈을 날짜별로 묶는다(입력 순서 유지). out = 고정비 합, in = 배당 합. */
+export function eventDays(events: CalendarEvent[]): EventDay[] {
+  const out: EventDay[] = []
+  for (const e of events) {
+    let g = out[out.length - 1]
+    if (!g || g.date !== e.date) out.push(g = { date: e.date, items: [], out: 0, in: 0 })
+    g.items.push(e)
+    if (e.type === 'dividend') g.in += e.amount
+    else g.out += e.amount
+  }
+  return out
+}
+
 export interface DayGroup { date: string; items: Transaction[]; net: number }
 
 // 거래 시각을 한국 날짜로. date.ts 의 todayKST 와 같은 식(런타임 import 를 피하려고 한 줄 둔다).

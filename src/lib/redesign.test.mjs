@@ -28,7 +28,7 @@ test('금액 짧게 쓰기', () => {
 })
 
 // ── Task 2: 가계부 ──
-import { categoryBreakdown, dailyAllowance, fixedSpendingTotal, groupByDate, sortCategoriesByUse, upcomingEvents } from './ledger.ts'
+import { categoryBreakdown, dailyAllowance, fixedSpendingTotal, groupByDate, sortCategoriesByUse, upcomingEvents, eventDays } from './ledger.ts'
 
 test('하루 쓸 돈 = 남은 예산 ÷ 남은 일수, 100원 아래 버림', () => {
   assert.deepEqual(dailyAllowance(2_000_000, 970_000, 14), { remaining: 1_030_000, perDay: 73_500 })
@@ -273,4 +273,16 @@ test('같은 날 시작하면 먼저 끝나는 일정이 앞, 여러 날 일정�
   const b = weekBuckets(list, '2026-11-17')
   assert.equal(b.length, 1)
   assert.deepEqual(b[0].items.map(s => s.id), ['one', 'long'])
+})
+
+test('곧 나갈 돈은 날짜별로 묶고 나갈/들어올 합을 따로 낸다', () => {
+  const ev = [
+    { date: '2026-11-20', type: 'dividend', title: 'AAPL', amount: 30000 },
+    { date: '2026-11-25', type: 'fixed_expense', title: '보험', amount: 130000 },
+    { date: '2026-11-25', type: 'fixed_expense', title: '통신', amount: 30000 },
+    { date: '2026-11-25', type: 'dividend', title: 'SCHD', amount: 5000 },
+  ]
+  const g = eventDays(ev)
+  assert.deepEqual(g.map(d => [d.date, d.items.length, d.out, d.in]), [['2026-11-20', 1, 0, 30000], ['2026-11-25', 3, 160000, 5000]])
+  assert.deepEqual(eventDays([]), [])
 })

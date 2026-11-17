@@ -172,7 +172,7 @@ export default function LedgerScreen(p: LedgerScreenProps) {
         </Section>
       )}
 
-      <Section s={upcomingSection} minH={112}>
+      <Section s={upcomingSection} minH={56}>
         <UpcomingStrip events={upcoming} />
       </Section>
 
