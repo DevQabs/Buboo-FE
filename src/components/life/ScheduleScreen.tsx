@@ -39,7 +39,7 @@ function AgendaRow({ s, today, canEdit, onOpen, onRemove }: {
           {s.dday_label && <span className="font-normal text-stone-400"> · {s.dday_label}</span>}
         </p>
         <p className="text-xs text-stone-400">
-          {dayText(start)}{s.end_date ? ` ~ ${dayText(ymd(s.end_date))}` : ''} · {lunarFullLabel(start)}
+          {dayText(start)}{s.end_date ? ` ~ ${dayText(ymd(s.end_date))}` : ''}<span className="whitespace-nowrap"> · {lunarFullLabel(start)}</span>
         </p>
         {s.description && <p className="truncate text-xs text-stone-500">{s.description}</p>}
       </button>
@@ -83,7 +83,7 @@ function LaterRow({ s, today, canEdit, onOpen, onRemove }: {
           <p className="text-xs text-stone-500">
             <FullDate d={start} />
             {end && end !== start && <> – <FullDate d={end} withMonth={end.slice(0, 7) !== start.slice(0, 7)} /></>}
-            <span className="text-stone-400"> · {lunarFullLabel(start)}</span>
+            <span className="whitespace-nowrap text-stone-400"> · {lunarFullLabel(start)}</span>
           </p>
           {s.description && <p className="truncate text-xs text-stone-400">{s.description}</p>}
         </button>
