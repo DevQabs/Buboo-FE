@@ -108,14 +108,14 @@ export default function DiaryScreen({
       {/* 한 달 기분 띠 */}
       <Card className="px-3 py-2.5">
         <p className="mb-1.5 text-xs text-stone-400">{m}월 기분</p>
-        <div className="grid gap-[3px]" style={{ gridTemplateColumns: 'repeat(16, minmax(0, 1fr))' }}>
+        <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: daysInMonth }, (_, i) => {
             const mood = moodByDay.get(i + 1)
             return (
               <span
                 key={i}
                 title={`${i + 1}일${mood ? ` · ${MOOD_LABEL[mood]}` : ''}`}
-                className={`h-2.5 rounded-[3px] ${mood ? MOOD_TONE[mood].strip : 'bg-sand'}`}
+                className={`h-3.5 rounded ${mood ? MOOD_TONE[mood].strip : 'bg-sand'} ${ym === today.slice(0, 7) && i + 1 === Number(today.slice(8)) ? 'ring-2 ring-brand-500' : ''}`}
               />
             )
           })}
