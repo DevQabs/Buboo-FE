@@ -153,14 +153,22 @@ import { allocation, ownerSplit } from './wealth.ts'
 test('구성비: 주식·예적금·묶인 자산, 대출은 따로 빼서 순자산', () => {
   const assets = [
     { asset_type: '예/적금', is_liability: false, is_locked: false, value_krw: 77_000_000 },
-    { asset_type: '부동산', is_liability: false, is_locked: true, value_krw: 63_000_000 },
+    { asset_type: '기타', is_liability: false, is_locked: true, value_krw: 63_000_000 },
     { asset_type: '대출', is_liability: true, is_locked: false, value_krw: 83_400_000 },
   ]
   const a = allocation(94_000_000, assets)
   assert.equal(a.gross, 234_000_000)
   assert.equal(a.liability, 83_400_000)
   assert.equal(a.net, 150_600_000)
-  assert.deepEqual(a.slices.map(s => [s.key, Math.round(s.pct)]), [['stock', 40], ['liquid', 33], ['locked', 27]])
+  assert.deepEqual(a.slices.map(s => [s.key, Math.round(s.pct)]), [['stock', 40], ['liquid', 33], ['estate', 0], ['locked', 27]])
+})
+
+test('부동산은 예적금·묶인 자산과 따로 한 조각', () => {
+  const a = allocation(0, [
+    { asset_type: '부동산', is_liability: false, is_locked: false, value_krw: 1_250_000_000 },
+    { asset_type: '예/적금', is_liability: false, is_locked: false, value_krw: 50_000_000 },
+  ])
+  assert.deepEqual(a.slices.map(s => [s.key, Math.round(s.pct)]), [['stock', 0], ['liquid', 4], ['estate', 96], ['locked', 0]])
 })
 
 test('명의 분할은 둘 이상일 때만', () => {
