@@ -27,7 +27,7 @@ export default function StorageWarning({ accessToken, className }: { accessToken
         <div className={`h-2 rounded-full ${level === 'full' ? 'bg-rose-500' : 'bg-amber-400'}`} style={{ width: `${pct}%` }} />
       </div>
       <p className="mt-1.5 text-xs text-stone-400">
-        {level === 'full' ? '새 사진·영상을 올릴 수 없어요. ' : ''}한도는 서버 설정(STORAGE_LIMIT_BYTES)에서만 올릴 수 있어요.
+        {level === 'full' ? '새 사진·영상을 올릴 수 없어요. ' : ''}더 올리려면 오래된 영상을 지우거나 관리자에게 한도를 늘려 달라고 해 주세요.
       </p>
     </div>
   )
