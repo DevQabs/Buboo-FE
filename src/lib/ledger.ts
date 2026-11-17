@@ -8,6 +8,13 @@ export function dailyAllowance(budget: number, spent: number, daysLeft: number):
   return { remaining, perDay }
 }
 
+/** 가계부 기간 [startDate, endDate) 를 "11.10 ~ 12.9" 로. endDate 는 다음 기간 첫날이라 하루 뺀다. */
+export function periodLabel(startDate: string, endDate: string, sep = ' ~ '): string {
+  const last = new Date(Date.parse(`${endDate}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+  const md = (d: string) => `${Number(d.slice(5, 7))}.${Number(d.slice(8))}`
+  return `${md(startDate)}${sep}${md(last)}`
+}
+
 /** 활성 지출 고정비 합계. 옛 SummaryCard 의 fixedExpenseTotal 과 같은 식. */
 export function fixedSpendingTotal(list: Pick<FixedExpense, 'is_active' | 'kind' | 'amount'>[]): number {
   return list.filter(fe => fe.is_active && fe.kind === 'spending').reduce((s, fe) => s + fe.amount, 0)

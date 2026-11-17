@@ -16,7 +16,7 @@ import EntrySheet from './EntrySheet'
 import QuickEntryBar from './QuickEntryBar'
 import { apiFetch } from '@/lib/api'
 import { daysLeftInPeriod, ledgerPeriod, todayKST } from '@/lib/date'
-import { categoryBreakdown, fixedSpendingTotal, upcomingEvents } from '@/lib/ledger'
+import { categoryBreakdown, fixedSpendingTotal, periodLabel, upcomingEvents } from '@/lib/ledger'
 import type { SectionState } from '@/lib/loadState'
 import type {
   CalendarEvent, CalendarSummaryResponse, Couple, CreateDividendRequest, CreateFixedExpenseRequest, DividendYearlySummary,
@@ -124,7 +124,7 @@ export default function LedgerScreen(p: LedgerScreenProps) {
   return (
     <div className={`space-y-3 ${p.canEdit ? '' : 'pb-20'}`}>{/* 편집 가능하면 빠른 입력 바가 제 높이만큼 빈 칸을 둔다 */}
       <PageTitle
-        eyebrow={`${p.summaryMonth}월 · ${p.startDay}일 시작`}
+        eyebrow={periodLabel(startDate, endDate)}
         title="가계부"
         right={<>
           <IconButton label="이전 달" onClick={() => goMonth(-1)}><ChevronLeftIcon className="h-4 w-4" /></IconButton>
@@ -191,7 +191,6 @@ export default function LedgerScreen(p: LedgerScreenProps) {
         portfolio={p.portfolio}
         portfolioSummary={p.portfolioSummary}
         users={p.users}
-        year={p.calendarYear}
         month={p.calendarMonth}
         onAdd={p.onAddDividend}
         onDelete={p.onDeleteDividend}
@@ -206,8 +205,7 @@ export default function LedgerScreen(p: LedgerScreenProps) {
         users={p.users}
         stocks={p.portfolio}
         otherAssets={p.otherAssets}
-        year={p.summaryYear}
-        month={p.summaryMonth}
+        period={periodLabel(startDate, endDate, '~')}
         onAdd={p.onAddFixedExpense}
         onEdit={p.onEditFixedExpense}
         onDelete={p.onDeleteFixedExpense}

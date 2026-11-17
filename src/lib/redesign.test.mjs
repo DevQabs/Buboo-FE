@@ -28,7 +28,13 @@ test('금액 짧게 쓰기', () => {
 })
 
 // ── Task 2: 가계부 ──
-import { categoryBreakdown, dailyAllowance, fixedSpendingTotal, groupByDate, sortCategoriesByUse, upcomingEvents, eventDays } from './ledger.ts'
+import { categoryBreakdown, dailyAllowance, fixedSpendingTotal, groupByDate, periodLabel, sortCategoriesByUse, upcomingEvents, eventDays } from './ledger.ts'
+
+test('periodLabel: 가계부 기간을 "11.10 ~ 12.9" 로(끝은 다음 기간 첫날 하루 전)', () => {
+  assert.equal(periodLabel('2026-11-10', '2026-12-10'), '11.10 ~ 12.9')
+  assert.equal(periodLabel('2026-12-01', '2027-01-01', '~'), '12.1~12.31')
+  assert.equal(periodLabel('2027-02-01', '2027-03-01'), '2.1 ~ 2.28')
+})
 
 test('하루 쓸 돈 = 남은 예산 ÷ 남은 일수, 100원 아래 버림', () => {
   assert.deepEqual(dailyAllowance(2_000_000, 970_000, 14), { remaining: 1_030_000, perDay: 73_500 })

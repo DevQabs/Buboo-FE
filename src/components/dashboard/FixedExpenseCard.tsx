@@ -562,8 +562,8 @@ interface FixedExpenseCardProps {
   users: User[]
   stocks: StockAssetWithPrice[]
   otherAssets: OtherAsset[]
-  year: number
-  month: number
+  /** 가계부 기간 "11.10~12.9" */
+  period: string
   onAdd: (data: CreateFixedExpenseRequest) => Promise<void>
   onEdit: (id: string, data: UpdateFixedExpenseRequest) => Promise<void>
   onDelete: (id: string) => Promise<void>
@@ -577,8 +577,7 @@ export default function FixedExpenseCard({
   users,
   stocks,
   otherAssets,
-  year,
-  month,
+  period,
   onAdd,
   onEdit,
   onDelete,
@@ -607,7 +606,7 @@ export default function FixedExpenseCard({
       <div className={`bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 rounded-t-card overflow-hidden ${isOpen ? 'border-b border-amber-100' : 'rounded-b-card'}`}>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-medium text-amber-600 mb-0.5">{year}년 {month}월 고정비</p>
+            <p className="text-[10px] font-medium text-amber-600 mb-0.5">고정비 · {period}</p>
             <p className="text-xl font-black text-slate-900 tabular-nums">{formatKRW(totalAmount)}</p>
           </div>
 
