@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { formatAmountInput } from '@/lib/formatNumber';
+import { Chip } from '@/components/ui/Card';
 
 interface AddStockModalProps {
   currentUserID: string;
@@ -22,7 +23,12 @@ interface AddStockModalProps {
   }) => Promise<void>;
 }
 
-const EXCHANGES = ['NASDAQ', 'NYSE', 'KRX', '기타'];
+// 시장 하나로 거래소(시세 조회 접미사 .KS/.KQ)와 통화를 함께 정한다. 미국은 거래소 구분이 시세에 안 쓰인다.
+const MARKETS = [
+  { label: '미국', exchange: 'NASDAQ', currency: 'USD' },
+  { label: '코스피', exchange: 'KRX', currency: 'KRW' },
+  { label: '코스닥', exchange: 'KOSDAQ', currency: 'KRW' },
+] as const;
 
 export default function AddStockModal({ currentUserID, exchangeRate = 0, onClose, onAdd }: AddStockModalProps) {
   const [symbol, setSymbol] = useState('');
@@ -34,11 +40,12 @@ export default function AddStockModal({ currentUserID, exchangeRate = 0, onClose
   const [memo, setMemo] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Auto-set currency when exchange changes
-  const handleExchangeChange = (ex: string) => {
-    setExchange(ex);
-    if (ex === 'KRX' || ex === 'KOSDAQ') setCurrency('KRW');
-    else if (ex !== '기타') setCurrency('USD');
+  const pickMarket = (m: (typeof MARKETS)[number]) => { setExchange(m.exchange); setCurrency(m.currency); };
+  // 숫자 6자리 종목코드면 한국 주식: 미국이 골라져 있으면 코스피로
+  const changeSymbol = (v: string) => {
+    const t = v.toUpperCase();
+    setSymbol(t);
+    if (/^\d{6}$/.test(t.trim()) && exchange === 'NASDAQ') pickMarket(MARKETS[1]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,33 +95,25 @@ export default function AddStockModal({ currentUserID, exchangeRate = 0, onClose
         </div>
 
         <form onSubmit={handleSubmit} className='space-y-4'>
-          {/* Symbol + Exchange (inline) */}
-          <div className='grid grid-cols-2 gap-3'>
-            <div>
-              <label className='text-xs font-medium text-slate-500 mb-1 block'>티커 심볼</label>
-              <input
-                type='text'
-                value={symbol}
-                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                placeholder='AAPL'
-                required
-                className='w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300 placeholder:font-normal'
-              />
+          <div>
+            <label className='text-xs font-medium text-slate-500 mb-1 block'>시장</label>
+            <div className='flex gap-2'>
+              {MARKETS.map((m) => (
+                <Chip key={m.exchange} on={exchange === m.exchange} onClick={() => pickMarket(m)}>{m.label}</Chip>
+              ))}
             </div>
-            <div>
-              <label className='text-xs font-medium text-slate-500 mb-1 block'>거래소</label>
-              <select
-                value={exchange}
-                onChange={(e) => handleExchangeChange(e.target.value)}
-                className='w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white'
-              >
-                {EXCHANGES.map((ex) => (
-                  <option key={ex} value={ex}>
-                    {ex}
-                  </option>
-                ))}
-              </select>
-            </div>
+          </div>
+
+          <div>
+            <label className='text-xs font-medium text-slate-500 mb-1 block'>{currency === 'KRW' ? '종목코드' : '티커 심볼'}</label>
+            <input
+              type='text'
+              value={symbol}
+              onChange={(e) => changeSymbol(e.target.value)}
+              placeholder={currency === 'KRW' ? '005930' : 'AAPL'}
+              required
+              className='w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300 placeholder:font-normal'
+            />
           </div>
 
           {/* 종목명 */}
@@ -124,7 +123,7 @@ export default function AddStockModal({ currentUserID, exchangeRate = 0, onClose
               type='text'
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder='Apple Inc.'
+              placeholder={currency === 'KRW' ? '삼성전자' : 'Apple Inc.'}
               required
               className='w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-300'
             />
@@ -172,27 +171,6 @@ export default function AddStockModal({ currentUserID, exchangeRate = 0, onClose
               </p>
             </div>
           )}
-
-          {/* 통화 */}
-          <div>
-            <label className='text-xs font-medium text-slate-500 mb-2 block'>통화</label>
-            <div className='flex gap-2'>
-              {(['USD', 'KRW'] as const).map((c) => (
-                <button
-                  key={c}
-                  type='button'
-                  onClick={() => setCurrency(c)}
-                  className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all border ${
-                    currency === c
-                      ? 'bg-brand-600 text-white border-brand-600'
-                      : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  {c === 'USD' ? '🇺🇸 USD' : '🇰🇷 KRW'}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* 메모 */}
           <div>
