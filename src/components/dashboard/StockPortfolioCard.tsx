@@ -16,7 +16,7 @@ import type { StockAssetWithPrice, User, PortfolioSummary, TaxCheckResponse } fr
 import { Chip } from '@/components/ui/Card';
 import { apiFetch } from '@/lib/api';
 import { formatMan } from '@/lib/formatNumber';
-import { ownerSplit } from '@/lib/wealth';
+import { totalShares } from '@/lib/wealth';
 import { DragHandle, SortableList, SortableRow } from './SortableList';
 
 
@@ -349,7 +349,7 @@ function GroupedStockRow({
         <div className='min-w-0 flex-1'>
           <p className='truncate text-sm font-bold text-stone-800'>{group.currency === 'KRW' ? group.name : group.symbol}</p>
           <p className='truncate text-xs text-stone-400'>
-            {ownerSplit(group.assets, userMap)} · {formatCurrency(group.current_price, group.currency)}
+            {totalShares(group.assets)} · 평단 {formatCurrency(group.weightedAvg, group.currency)}
           </p>
         </div>
         <div className='shrink-0 text-right'>

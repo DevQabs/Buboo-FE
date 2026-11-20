@@ -148,7 +148,7 @@ test('고른 날 목록은 여러 날 일정의 가운데·끝 날에도 나온�
 })
 
 // ── Task 5: 자산현황 ──
-import { allocation, ownerSplit } from './wealth.ts'
+import { allocation, totalShares } from './wealth.ts'
 
 test('구성비: 주식·예적금·묶인 자산, 대출은 따로 빼서 순자산', () => {
   const assets = [
@@ -172,11 +172,9 @@ test('부동산은 예적금·묶인 자산과 따로 한 조각', () => {
 })
 
 test('명의 분할은 둘 이상일 때만', () => {
-  const names = { u1: { name: '남편' }, u2: { name: '아내' } }
-  assert.equal(ownerSplit([{ user_id: 'u1', quantity: 300 }, { user_id: 'u2', quantity: 112 }], names), '412주 · 남편 300 아내 112')
-  assert.equal(ownerSplit([{ user_id: 'u1', quantity: 98 }], names), '98주')
-  assert.equal(ownerSplit([{ user_id: 'u1', quantity: 0.5 }, { user_id: 'u1', quantity: 1.25 }], names), '1.75주')
-  assert.equal(ownerSplit([{ user_id: 'u1', quantity: 1204 }], names), '1,204주')
+  assert.equal(totalShares([{ quantity: 300 }, { quantity: 112 }]), '412주')
+  assert.equal(totalShares([{ quantity: 0.5 }, { quantity: 1.25 }]), '1.75주')
+  assert.equal(totalShares([{ quantity: 1204 }]), '1,204주')
 })
 
 // ── Task 6: 로드맵 ──

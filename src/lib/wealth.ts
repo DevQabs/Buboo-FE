@@ -31,14 +31,7 @@ export function allocation(stockKRW: number, assets: AssetFields[]): { slices: S
 
 const qty = (n: number) => n.toLocaleString('ko-KR', { maximumFractionDigits: 4 })
 
-/** "412주 · 남편 300 아내 112". 한 사람만 가졌으면 "98주". */
-export function ownerSplit(
-  holdings: { user_id: string; quantity: number }[],
-  names: Record<string, { name: string } | undefined>,
-): string {
-  const by = new Map<string, number>()
-  for (const h of holdings) by.set(h.user_id, (by.get(h.user_id) ?? 0) + h.quantity)
-  const total = Array.from(by.values()).reduce((s, q) => s + q, 0)
-  if (by.size < 2) return `${qty(total)}주`
-  return `${qty(total)}주 · ${Array.from(by).map(([id, q]) => `${names[id]?.name ?? '기타'} ${qty(q)}`).join(' ')}`
+/** 여러 명이 나눠 가진 종목의 합계 주식 수 "412주". 누가 얼마인지는 행을 펼쳐 본다. */
+export function totalShares(holdings: { quantity: number }[]): string {
+  return `${qty(holdings.reduce((s, h) => s + h.quantity, 0))}주`
 }
