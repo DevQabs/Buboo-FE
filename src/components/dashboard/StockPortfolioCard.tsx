@@ -58,7 +58,7 @@ function KRWFlashCard({
   const isUp     = pnlKRW >= 0;
 
   return (
-    <div className='absolute inset-0 bg-white z-10 flex flex-col justify-center px-3 py-2'>
+    <div className='flex flex-col justify-center bg-white py-3 pl-3 pr-5'>
       {/* 상단: symbol + 환율 + 닫기 */}
       <div className='flex items-center justify-between mb-1'>
         <div className='flex items-center gap-1.5 min-w-0'>
@@ -332,7 +332,10 @@ function GroupedStockRow({
 
   return (
     <SortableRow id={groupKey} className='relative'>
-      {/* Main grouped row */}
+      {/* 길게 누르면 원화 요약이 줄 자리를 대신한다(겹쳐 띄우면 줄 높이에 잘림) */}
+      {showDetail ? (
+        <KRWFlashCard asset={syntheticAsset} onClose={() => setShowDetail(false)} />
+      ) : (
       <div
         className='relative flex items-center gap-3 pl-3 pr-5 py-3 hover:bg-slate-50 transition-colors select-none cursor-pointer overflow-hidden'
         onClick={() => setExpanded(v => !v)}
@@ -367,10 +370,6 @@ function GroupedStockRow({
           </svg>
         </div>
       </div>
-
-      {/* KRW flash card overlay — positioned relative to <li> to avoid clipping */}
-      {showDetail && (
-        <KRWFlashCard asset={syntheticAsset} onClose={() => setShowDetail(false)} />
       )}
 
       {/* Expanded: per-user holdings */}
