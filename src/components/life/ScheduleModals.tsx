@@ -16,15 +16,65 @@ export const COLOR_MAP: Record<ScheduleColor, { bg: string; text: string; dot: s
   sky:     { bg: 'bg-sky-50',     text: 'text-sky-700',     dot: 'bg-sky-400' },
 }
 
-// 모달은 시각 입력 없이 항상 하루 종일(all_day: true)로 저장한다 — 선택지도 하루 종일 것만
-const ALL_DAY = true
+const INPUT = 'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500'
 
-function ReminderChips({ value, onChange }: { value: ReminderCode[]; onChange: (v: ReminderCode[]) => void }) {
+/** 날짜·시각 칸 상태. 하루 종일이면 날짜~종료일, 아니면 날짜 + 시작(필수)·끝 시각(같은 날) */
+interface When { allDay: boolean; startDate: string; endDate: string; startTime: string; endTime: string }
+
+/** 저장 전 검사(오류 문구) 와 요청 필드. 시간 지정은 끝 날짜를 보내지 않는다("" = 끝 지움, 백엔드가 시작 날짜로 본다) */
+function whenRequest(w: When): { error?: string; req: Pick<UpdateScheduleRequest, 'all_day' | 'start_date' | 'start_time' | 'end_date' | 'end_time'> } {
+  if (!w.allDay && !w.startTime) return { error: '시작 시각을 입력해주세요', req: {} }
+  if (!w.allDay && w.endTime && w.endTime < w.startTime) return { error: '끝 시각이 시작 시각보다 빨라요', req: {} }
+  return {
+    req: w.allDay
+      ? { all_day: true, start_date: w.startDate, start_time: '', end_date: w.endDate, end_time: '' }
+      : { all_day: false, start_date: w.startDate, start_time: w.startTime, end_date: '', end_time: w.endTime },
+  }
+}
+
+function WhenFields({ w, onChange }: { w: When; onChange: (w: When) => void }) {
+  const set = (p: Partial<When>) => onChange({ ...w, ...p })
+  return (
+    <>
+      <button type="button" role="switch" aria-checked={w.allDay} onClick={() => set({ allDay: !w.allDay })} className="flex min-h-11 items-center gap-2">
+        <span className={`relative h-5 w-10 rounded-full transition-colors ${w.allDay ? 'bg-brand-500' : 'bg-slate-200'}`}>
+          <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${w.allDay ? 'translate-x-5' : 'translate-x-0.5'}`} />
+        </span>
+        <span className="text-sm text-slate-700">하루 종일</span>
+      </button>
+      <div className="grid grid-cols-2 gap-2">
+        <div className={w.allDay ? '' : 'col-span-2'}>
+          <label className="text-xs font-medium text-slate-500 mb-1 block">날짜 *</label>
+          <input type="date" value={w.startDate} onChange={e => set({ startDate: e.target.value })} className={INPUT} />
+        </div>
+        {w.allDay ? (
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">종료일</label>
+            <input type="date" value={w.endDate} onChange={e => set({ endDate: e.target.value })} className={INPUT} />
+          </div>
+        ) : (
+          <>
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">시작 시각 *</label>
+              <input type="time" value={w.startTime} onChange={e => set({ startTime: e.target.value })} className={INPUT} />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">끝 시각</label>
+              <input type="time" value={w.endTime} onChange={e => set({ endTime: e.target.value })} className={INPUT} />
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  )
+}
+
+function ReminderChips({ allDay, value, onChange }: { allDay: boolean; value: ReminderCode[]; onChange: (v: ReminderCode[]) => void }) {
   return (
     <div>
       <label className="text-xs font-medium text-slate-500 mb-2 block">알림</label>
       <div className="flex flex-wrap gap-2">
-        {reminderOptions(ALL_DAY).map(c => (
+        {reminderOptions(allDay).map(c => (
           <Chip key={c} on={value.includes(c)} onClick={() => onChange(toggleReminder(value, c))}>
             {REMINDER_LABELS[c]}
           </Chip>
@@ -42,24 +92,27 @@ export function AddScheduleModal({ currentUserID, initialDate, onClose, onSave }
 }) {
   const [title, setTitle]       = useState('')
   const [desc, setDesc]         = useState('')
-  const [startDate, setStart]   = useState(initialDate ?? todayKST())
-  const [endDate, setEnd]       = useState('')
+  const [when, setWhen] = useState<When>({ allDay: true, startDate: initialDate ?? todayKST(), endDate: '', startTime: '', endTime: '' })
   const [isDDay, setIsDDay]     = useState(false)
   const [ddayLabel, setLabel]   = useState('')
   const [isAnniv, setIsAnniv] = useState(false)
   const [color, setColor]       = useState<ScheduleColor>('indigo')
   const [reminders, setReminders] = useState<ReminderCode[]>([])
+  // 하루 종일을 바꾸면 맞지 않는 알림은 뺀다
+  const changeWhen = (w: When) => { setWhen(w); setReminders(r => fitReminders(r, w.allDay)) }
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState('')
 
   const handleSave = async () => {
     if (!title.trim()) { setError('제목을 입력해주세요'); return }
+    const { error: whenError, req: whenReq } = whenRequest(when)
+    if (whenError) { setError(whenError); return }
     setSaving(true); setError('')
     try {
       await onSave({
         user_id: currentUserID, title, description: desc,
-        start_date: startDate, end_date: endDate || undefined,
-        all_day: ALL_DAY, is_dday: isDDay, is_anniversary: isAnniv, dday_label: ddayLabel, color, reminders,
+        ...whenReq, start_date: when.startDate, end_date: whenReq.end_date || undefined,
+        is_dday: isDDay, is_anniversary: isAnniv, dday_label: ddayLabel, color, reminders,
       })
       onClose()
     } catch (e) {
@@ -93,18 +146,7 @@ export function AddScheduleModal({ currentUserID, initialDate, onClose, onSave }
               className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="선택 사항" />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">날짜 *</label>
-              <input type="date" value={startDate} onChange={e => setStart(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">종료일</label>
-              <input type="date" value={endDate} onChange={e => setEnd(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            </div>
-          </div>
+          <WhenFields w={when} onChange={changeWhen} />
 
           {/* Color */}
           <div>
@@ -116,7 +158,7 @@ export function AddScheduleModal({ currentUserID, initialDate, onClose, onSave }
               ))}
             </div>
           </div>
-          <ReminderChips value={reminders} onChange={setReminders} />
+          <ReminderChips allDay={when.allDay} value={reminders} onChange={setReminders} />
 
           {/* D-Day */}
           <div className="flex items-center gap-3">
@@ -170,24 +212,30 @@ export function EditScheduleModal({ schedule, onClose, onSave }: {
 }) {
   const [title, setTitle]     = useState(schedule.title)
   const [desc, setDesc]       = useState(schedule.description)
-  const [startDate, setStart] = useState(schedule.start_date.slice(0, 10))
-  const [endDate, setEnd]     = useState(schedule.end_date?.slice(0, 10) ?? '')
+  const [when, setWhen] = useState<When>({
+    allDay: schedule.all_day, startDate: schedule.start_date.slice(0, 10),
+    endDate: schedule.all_day ? schedule.end_date?.slice(0, 10) ?? '' : '',
+    startTime: schedule.start_time ?? '', endTime: schedule.end_time ?? '',
+  })
   const [isDDay, setIsDDay]   = useState(schedule.is_dday)
   const [ddayLabel, setLabel] = useState(schedule.dday_label)
   const [isAnniv, setIsAnniv] = useState(schedule.is_anniversary ?? false)
   const [color, setColor]     = useState<ScheduleColor>(schedule.color)
-  const [reminders, setReminders] = useState<ReminderCode[]>(fitReminders(schedule.reminders ?? [], ALL_DAY))
+  const [reminders, setReminders] = useState<ReminderCode[]>(fitReminders(schedule.reminders ?? [], schedule.all_day))
+  // 하루 종일을 바꾸면 맞지 않는 알림은 뺀다
+  const changeWhen = (w: When) => { setWhen(w); setReminders(r => fitReminders(r, w.allDay)) }
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
 
   const handleSave = async () => {
     if (!title.trim()) { setError('제목을 입력해주세요'); return }
+    const { error: whenError, req: whenReq } = whenRequest(when)
+    if (whenError) { setError(whenError); return }
     setSaving(true); setError('')
     try {
       await onSave(schedule.id, {
         title, description: desc,
-        start_date: startDate, end_date: endDate || undefined,
-        all_day: ALL_DAY, is_dday: isDDay, is_anniversary: isAnniv, dday_label: ddayLabel, color, reminders,
+        ...whenReq, is_dday: isDDay, is_anniversary: isAnniv, dday_label: ddayLabel, color, reminders,
       })
       onClose()
     } catch (e) {
@@ -221,18 +269,7 @@ export function EditScheduleModal({ schedule, onClose, onSave }: {
               className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="선택 사항" />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">날짜 *</label>
-              <input type="date" value={startDate} onChange={e => setStart(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1 block">종료일</label>
-              <input type="date" value={endDate} onChange={e => setEnd(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            </div>
-          </div>
+          <WhenFields w={when} onChange={changeWhen} />
           <div>
             <label className="text-xs font-medium text-slate-500 mb-2 block">색상</label>
             <div className="flex gap-2">
@@ -242,7 +279,7 @@ export function EditScheduleModal({ schedule, onClose, onSave }: {
               ))}
             </div>
           </div>
-          <ReminderChips value={reminders} onChange={setReminders} />
+          <ReminderChips allDay={when.allDay} value={reminders} onChange={setReminders} />
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 cursor-pointer">
               <div

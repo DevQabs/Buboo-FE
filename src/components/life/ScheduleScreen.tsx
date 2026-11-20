@@ -10,7 +10,7 @@ import { Section } from '@/components/ui/Loading'
 import type { SectionState } from '@/lib/loadState'
 import MiniCalendar from './MiniCalendar'
 import { AddScheduleModal, COLOR_MAP, EditScheduleModal } from './ScheduleModals'
-import { addDays, daysBetween, stripDays, todayKST, weekdayOf } from '@/lib/date'
+import { addDays, daysBetween, fmtTime, stripDays, todayKST, weekdayOf } from '@/lib/date'
 import { buildAgenda, ddayBadge, fmtDDay, schedulesOn, weekBuckets } from '@/lib/dday'
 import { getHolidaysForMonth } from '@/lib/koreanHolidays'
 import { lunarFullLabel } from '@/lib/lunar'
@@ -18,6 +18,10 @@ import type { CreateScheduleRequest, DiaryEntry, Schedule, UpdateScheduleRequest
 
 const WD = ['일', '월', '화', '수', '목', '금', '토']
 const ymd = (iso: string) => iso.slice(0, 10)
+// 시간 지정 일정의 " 오후 2:00 – 오후 3:00". 하루 종일이면 없음
+const timeLabel = (s: Schedule) => s.start_time
+  ? <> <span className="whitespace-nowrap">{fmtTime(s.start_time)}{s.end_time ? ` – ${fmtTime(s.end_time)}` : ''}</span></>
+  : null
 
 function AgendaRow({ s, today, canEdit, onOpen, onRemove }: {
   s: Schedule
@@ -39,8 +43,8 @@ function AgendaRow({ s, today, canEdit, onOpen, onRemove }: {
           {(s.reminders?.length ?? 0) > 0 && <BellIcon aria-label="알림 있음" className="ml-1 inline h-3.5 w-3.5 align-[-2px] text-stone-400" />}
         </p>
         <p className="text-xs text-stone-400">
-          <FullDate d={start} />
-          {s.end_date && <> ~ <FullDate d={ymd(s.end_date)} /></>}
+          <FullDate d={start} />{timeLabel(s)}
+          {s.end_date && ymd(s.end_date) !== start && <> ~ <FullDate d={ymd(s.end_date)} /></>}
           <span className="whitespace-nowrap"> · {lunarFullLabel(start)}</span>
         </p>
         {s.description && <p className="truncate text-xs text-stone-500">{s.description}</p>}
@@ -84,7 +88,7 @@ function LaterRow({ s, today, canEdit, onOpen, onRemove }: {
             {(s.reminders?.length ?? 0) > 0 && <BellIcon aria-label="알림 있음" className="ml-1 inline h-3.5 w-3.5 align-[-2px] text-stone-400" />}
           </p>
           <p className="text-xs text-stone-500">
-            <FullDate d={start} />
+            <FullDate d={start} />{timeLabel(s)}
             {end && end !== start && <> – <FullDate d={end} withMonth={end.slice(0, 7) !== start.slice(0, 7)} /></>}
             <span className="whitespace-nowrap text-stone-400"> · {lunarFullLabel(start)}</span>
           </p>

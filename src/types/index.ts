@@ -512,6 +512,8 @@ export interface Schedule {
   dday_label: string
   color: ScheduleColor
   reminders?: ReminderCode[]  // 알림 시점(옛 응답·미리보기엔 없을 수 있다)
+  start_time?: string  // "HH:MM" KST, 하루 종일이면 "" (start_date 앞 10글자가 KST 날짜)
+  end_time?: string
   created_at: string
   updated_at: string
 }
@@ -521,7 +523,9 @@ export interface CreateScheduleRequest {
   title: string
   description?: string
   start_date: string
-  end_date?: string
+  start_time?: string  // "HH:MM" KST, all_day=false 면 필수
+  end_date?: string  // 수정에서 "" 는 끝 지움
+  end_time?: string
   all_day?: boolean
   is_dday?: boolean
   is_anniversary?: boolean
@@ -534,7 +538,9 @@ export interface UpdateScheduleRequest {
   title?: string
   description?: string
   start_date?: string
-  end_date?: string
+  start_time?: string  // "HH:MM" KST, all_day=false 면 필수
+  end_date?: string  // 수정에서 "" 는 끝 지움
+  end_time?: string
   all_day?: boolean
   is_dday?: boolean
   is_anniversary?: boolean

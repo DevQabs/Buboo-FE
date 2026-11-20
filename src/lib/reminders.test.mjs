@@ -20,3 +20,23 @@ test('칩을 누르면 넣고 다시 누르면 뺀다', () => {
   assert.deepEqual(toggleReminder([], 'd0_9'), ['d0_9'])
   assert.deepEqual(toggleReminder(['d0_9', 'd1_9'], 'd0_9'), ['d1_9'])
 })
+
+// 시간 지정 일정 표시·묶기
+import { fmtTime } from './date.ts'
+import { buildAgenda, schedulesOn } from './dday.ts'
+
+test('시각은 오전/오후 12시간제로 보인다', () => {
+  assert.equal(fmtTime('14:00'), '오후 2:00')
+  assert.equal(fmtTime('00:30'), '오전 12:30')
+  assert.equal(fmtTime('12:05'), '오후 12:05')
+  assert.equal(fmtTime('23:50'), '오후 11:50')
+  assert.equal(fmtTime(''), '')
+  assert.equal(fmtTime(undefined), '')
+})
+
+test('00:30 KST 일정은 응답의 KST 날짜(+09:00) 로 그 날에 묶인다', () => {
+  const s = { start_date: '2026-11-21T00:30:00+09:00', start_time: '00:30', is_dday: false, is_anniversary: false }
+  assert.deepEqual(schedulesOn([s], '2026-11-21'), [s])
+  assert.deepEqual(schedulesOn([s], '2026-11-20'), [])
+  assert.deepEqual(buildAgenda([s], '2026-11-21').thisWeek, [s])
+})

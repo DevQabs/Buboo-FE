@@ -57,3 +57,10 @@ export function stripDays(today: string, selected: string, moreWeeks: number): s
   if (selEnd > to) to = selEnd
   return Array.from({ length: daysBetween(from, to) + 1 }, (_, i) => addDays(from, i))
 }
+
+/** "14:00" → "오후 2:00", "00:30" → "오전 12:30". 빈 값은 "" */
+export function fmtTime(hm?: string): string {
+  if (!hm) return ''
+  const [h, m] = hm.split(':').map(Number)
+  return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(m).padStart(2, '0')}`
+}
