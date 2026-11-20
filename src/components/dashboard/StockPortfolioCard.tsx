@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import {
   PencilSquareIcon,
   TrashIcon,
   ExclamationTriangleIcon,
-  XMarkIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
 import { PlusIcon } from '@heroicons/react/24/solid';
@@ -40,108 +39,6 @@ interface StockPortfolioCardProps {
 function formatCurrency(value: number, currency: string): string {
   if (currency === 'KRW') return `₩${value.toLocaleString()}`;
   return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-// ─── KRW 플래시 카드 (롱프레스 시 종목 row 내 오버레이) ──────────────────────────
-
-function KRWFlashCard({
-  asset,
-  onClose,
-}: {
-  asset: StockAssetWithPrice;
-  onClose: () => void;
-}) {
-  const valueKRW = asset.current_value_krw ?? 0;
-  const pnlKRW   = asset.profit_loss_krw   ?? 0;
-  const pnlPct   = asset.profit_loss_pct   ?? 0;
-  const costKRW  = valueKRW - pnlKRW;
-  const isUp     = pnlKRW >= 0;
-
-  return (
-    <div className='flex flex-col justify-center bg-white py-3 pl-3 pr-5'>
-      {/* 상단: symbol + 환율 + 닫기 */}
-      <div className='flex items-center justify-between mb-1'>
-        <div className='flex items-center gap-1.5 min-w-0'>
-          <span className='text-[10px] font-bold text-brand-600 bg-brand-50 rounded-lg px-1.5 py-0.5 flex-shrink-0'>
-            {asset.symbol}
-          </span>
-          {asset.currency !== 'KRW' && asset.exchange_rate && (
-            <span className='text-[9px] text-slate-400 flex-shrink-0'>
-              {asset.exchange_rate.toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원/USD
-            </span>
-          )}
-        </div>
-        <button
-          onClick={onClose}
-          onMouseDown={e => e.stopPropagation()}
-          onTouchStart={e => e.stopPropagation()}
-          className='relative before:absolute before:content-[""] before:-inset-3 w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors flex-shrink-0'
-        >
-          <XMarkIcon className='h-3 w-3' />
-        </button>
-      </div>
-
-      {/* 수치 행 */}
-      <div className='flex items-start gap-1.5'>
-        {/* 보유금액 */}
-        <div className='flex-1 min-w-0'>
-          <p className='text-[9px] text-slate-400'>보유</p>
-          <p className='text-sm font-black text-slate-900 tabular-nums leading-tight'>{formatMan(valueKRW)}</p>
-        </div>
-
-        <div className='w-px h-7 bg-slate-100 flex-shrink-0 mt-1' />
-
-        {/* 매수금액 */}
-        <div className='flex-1 min-w-0'>
-          <p className='text-[9px] text-slate-400'>매수</p>
-          <p className='text-xs font-bold text-slate-600 tabular-nums leading-tight'>{formatMan(costKRW)}</p>
-        </div>
-
-        <div className='w-px h-7 bg-slate-100 flex-shrink-0 mt-1' />
-
-        {/* 수익 */}
-        <div className='flex-1 min-w-0 text-right'>
-          <p className={`text-[9px] font-semibold ${isUp ? 'text-emerald-500' : 'text-rose-400'}`}>
-            {isUp ? '수익' : '손실'}
-          </p>
-          <p className={`text-xs font-bold tabular-nums leading-tight ${isUp ? 'text-emerald-700' : 'text-rose-600'}`}>
-            {isUp ? '+' : ''}{formatMan(pnlKRW)}
-          </p>
-          <p className={`text-[9px] tabular-nums ${isUp ? 'text-emerald-500' : 'text-rose-400'}`}>
-            {isUp ? '+' : ''}{pnlPct.toFixed(2)}%
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── 롱프레스 훅 ────────────────────────────────────────────────────────────────
-
-function useLongPress(onLongPress: () => void, delay = 500) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const start = useCallback(() => {
-    timerRef.current = setTimeout(() => {
-      onLongPress();
-    }, delay);
-  }, [onLongPress, delay]);
-
-  const cancel = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  return {
-    onMouseDown:   start,
-    onMouseUp:     cancel,
-    onMouseLeave:  cancel,
-    onTouchStart:  start,
-    onTouchEnd:    cancel,
-    onTouchMove:   cancel,
-  };
 }
 
 // ─── Group assets by symbol ───────────────────────────────────────────────────
@@ -313,33 +210,15 @@ function GroupedStockRow({
   onDelete: (asset: StockAssetWithPrice) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
 
   const pnlPct = group.pnlPct;
   const isUp = pnlPct >= 0;
 
-  // Synthetic asset for KRW flash card
-  const syntheticAsset: StockAssetWithPrice = {
-    ...group.assets[0],
-    quantity: group.totalQty,
-    average_price: group.weightedAvg,
-    current_value_krw: group.totalValueKRW,
-    profit_loss_krw: group.pnlKRW,
-    profit_loss_pct: group.pnlPct,
-  };
-
-  const longPressHandlers = useLongPress(() => setShowDetail(true));
-
   return (
     <SortableRow id={groupKey} className='relative'>
-      {/* 길게 누르면 원화 요약이 줄 자리를 대신한다(겹쳐 띄우면 줄 높이에 잘림) */}
-      {showDetail ? (
-        <KRWFlashCard asset={syntheticAsset} onClose={() => setShowDetail(false)} />
-      ) : (
       <div
         className='relative flex items-center gap-3 pl-3 pr-5 py-3 hover:bg-slate-50 transition-colors select-none cursor-pointer overflow-hidden'
         onClick={() => setExpanded(v => !v)}
-        {...longPressHandlers}
       >
         <DragHandle />
 
@@ -370,7 +249,6 @@ function GroupedStockRow({
           </svg>
         </div>
       </div>
-      )}
 
       {/* Expanded: per-user holdings */}
       {expanded && group.assets.map(asset => (
